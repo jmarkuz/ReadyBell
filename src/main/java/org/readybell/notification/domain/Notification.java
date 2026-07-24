@@ -154,4 +154,30 @@ public class Notification {
     public String payload() {
         return payload;
     }
+
+    // -------------------------------------------------------------------------
+    // Reconstitution — used by the JPA adapter to rebuild the aggregate from a
+    // stored entity without recording any domain events.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Rebuilds a {@code Notification} from its stored state.
+     *
+     * <p>Intended for use by the JPA persistence adapter only; no domain events are
+     * recorded.
+     *
+     * @param id             the persisted notification identity
+     * @param tenantId       the persisted tenant
+     * @param subscriptionId the persisted subscription
+     * @param status         the persisted notification status
+     * @param payload        the persisted payload
+     * @return a notification aggregate with no pending events
+     */
+    public static Notification reconstitute(NotificationId id,
+                                            TenantId tenantId,
+                                            DeviceSubscriptionId subscriptionId,
+                                            NotificationStatus status,
+                                            String payload) {
+        return new Notification(id, tenantId, subscriptionId, status, payload);
+    }
 }

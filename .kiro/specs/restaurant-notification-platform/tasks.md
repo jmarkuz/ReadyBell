@@ -129,23 +129,23 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - Test PENDING → SENT → DELIVERED and PENDING → FAILED transitions and event recording
     - _Requirements: 6.4, 6.5_
 
-- [-] 8. Checkpoint - domain model complete
+- [x] 8. Checkpoint - domain model complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 9. Define outbound ports and their test fakes
-  - [ ] 9.1 Define the `DomainEventPublisher` port and its recording fake
+- [x] 9. Define outbound ports and their test fakes
+  - [x] 9.1 Define the `DomainEventPublisher` port and its recording fake
     - Create the `DomainEventPublisher` interface (`publish`, `publishAll`, `EventPublicationException`) and a recording fake capturing published events; domain references only the interface
     - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-  - [ ] 9.2 Define the `NotificationSender` port and its fake
+  - [x] 9.2 Define the `NotificationSender` port and its fake
     - Create the `NotificationSender` interface with `SendResult` (ACCEPTED, REJECTED, ENDPOINT_EXPIRED) and a configurable fake sender driving accept/reject/expired outcomes
     - _Requirements: 6.2, 6.7, 6.8, 3.6_
 
-  - [ ] 9.3 Define the repository ports and in-memory fakes
+  - [x] 9.3 Define the repository ports and in-memory fakes
     - Create `CustomerSessionRepository`, `OrderRepository`, `DeviceSubscriptionRepository`, `RestaurantRepository`, `NotificationRepository` interfaces and tenant-aware in-memory fakes for testing application logic without I/O
     - _Requirements: 10.2, 10.4_
 
-  - [ ] 9.4 Define the `TenantContext` resolution port and a fixed-value fake
+  - [x] 9.4 Define the `TenantContext` resolution port and a fixed-value fake
     - Create the `TenantContext` port used by application services and a fixed-tenant fake for tests
     - _Requirements: 10.4, 10.5_
 
@@ -157,8 +157,8 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - **Property 26: Event publication failure is recorded and the event is retained**
     - **Validates: Requirements 11.4**
 
-- [ ] 10. Implement the StartSession use case
-  - [ ] 10.1 Implement `StartSessionUseCase` and its service
+- [x] 10. Implement the StartSession use case
+  - [x] 10.1 Implement `StartSessionUseCase` and its service
     - Parse the QR payload, resolve the Restaurant via `RestaurantRepository`, reject malformed/unresolved/deactivated restaurants, create + persist the session, and publish recorded events through `DomainEventPublisher`
     - _Requirements: 1.1, 1.4, 1.6, 1.7, 9.6_
 
@@ -170,8 +170,8 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - **Property 4: Deactivated restaurant rejects session start**
     - **Validates: Requirements 9.6**
 
-- [ ] 11. Implement the ManageOrder use case
-  - [ ] 11.1 Implement order creation in `ManageOrderUseCase`
+- [x] 11. Implement the ManageOrder use case
+  - [x] 11.1 Implement order creation in `ManageOrderUseCase`
     - Validate the target session exists, is active, and shares the staff tenant; create + persist the order and publish `OrderCreated`
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
@@ -179,7 +179,7 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - **Property 12: Order creation for an invalid or cross-tenant session is rejected**
     - **Validates: Requirements 4.5, 4.6**
 
-  - [ ] 11.3 Implement order status transition in `ManageOrderUseCase`
+  - [x] 11.3 Implement order status transition in `ManageOrderUseCase`
     - Load the order under the tenant context, apply `transitionTo`, persist under optimistic locking so at most one concurrent transition wins, and publish `OrderStatusUpdated` (+ `OrderReady` on READY)
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8_
 
@@ -187,8 +187,8 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - **Property 16: Concurrent transitions apply at most one**
     - **Validates: Requirements 5.8**
 
-- [ ] 12. Implement the ManageSubscription use case
-  - [ ] 12.1 Implement register/update/delete in `ManageSubscriptionUseCase`
+- [x] 12. Implement the ManageSubscription use case
+  - [x] 12.1 Implement register/update/delete in `ManageSubscriptionUseCase`
     - Register a subscription bound to session + tenant, update the existing subscription when the same endpoint re-registers, delete on customer revoke, and delete on sender-reported expired/invalid endpoint so no further messages target it
     - _Requirements: 3.1, 3.2, 3.4, 3.5, 3.6_
 
@@ -204,8 +204,8 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - **Property 9: Revoked or invalid subscriptions receive no further messages**
     - **Validates: Requirements 3.5, 3.6**
 
-- [ ] 13. Implement the Notification OrderReady handler and order-ready flow
-  - [ ] 13.1 Implement `OrderReadyHandler` and the notification composition flow
+- [x] 13. Implement the Notification OrderReady handler and order-ready flow
+  - [x] 13.1 Implement `OrderReadyHandler` and the notification composition flow
     - On `OrderReady`, query `DeviceSubscription`s for the event's session where `TenantId` matches, compose a `Notification` per subscription, send via `NotificationSender` concurrently, publish `NotificationSent` on accept and `NotificationDelivered` on confirm, record failures/timeouts per subscription and continue, delete expired/invalid endpoints, and record "none delivered" when there are no subscriptions
     - _Requirements: 6.1, 6.2, 6.4, 6.5, 6.6, 6.7, 6.8, 3.6_
 
@@ -225,8 +225,8 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - Assert no notification is delivered and no error is raised when the session has no subscriptions
     - _Requirements: 6.6_
 
-- [ ] 14. Implement the RestaurantAdmin use case
-  - [ ] 14.1 Implement `RestaurantAdminUseCase`
+- [x] 14. Implement the RestaurantAdmin use case
+  - [x] 14.1 Implement `RestaurantAdminUseCase`
     - Create/update/deactivate staff accounts scoped to the admin's tenant (deactivation denies subsequent access), persist tenant-scoped configuration changes, and reject invalid/duplicate/cross-tenant operations leaving existing data unchanged
     - _Requirements: 8.3, 8.4, 8.5, 8.6, 8.7, 8.8_
 
@@ -238,8 +238,8 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - **Property 21: Invalid staff account and configuration changes are rejected without side effects**
     - **Validates: Requirements 8.4, 8.7**
 
-- [ ] 15. Implement the PlatformAdmin use case
-  - [ ] 15.1 Implement `PlatformAdminUseCase`
+- [x] 15. Implement the PlatformAdmin use case
+  - [x] 15.1 Implement `PlatformAdminUseCase`
     - Create restaurants with a unique `TenantId`, update and deactivate restaurants, reject creation with missing fields or duplicate identifiers (creating nothing), and deny tenant-management to non-platform-admins
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
@@ -251,19 +251,19 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - Assert a non-platform-admin request to a tenant-management function is denied
     - _Requirements: 9.4_
 
-- [ ] 16. Checkpoint - core flow complete against fakes
+- [x] 16. Checkpoint - core flow complete against fakes
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 17. Implement persistence adapters and multi-tenancy enforcement
-  - [ ] 17.1 Implement the tenant-scoped JPA base and enforcement mechanics
+  - [-] 17.1 Implement the tenant-scoped JPA base and enforcement mechanics
     - Create the `TenantScopedEntity` `@MappedSuperclass` with the Hibernate `@FilterDef`/`@Filter` (`tenant_id = :tenantId`) and the `@PrePersist` listener stamping the current tenant from `TenantContextHolder`
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.6; ADR-004_
 
-  - [ ] 17.2 Implement JPA entities and tenant-filtered repository adapters
+  - [-] 17.2 Implement JPA entities and tenant-filtered repository adapters
     - Map `restaurant`, `staff_account`, `customer_session`, `order` (with `@Version`), `device_subscription` (unique `(tenant_id, session_id, endpoint_url)`), and `notification` tables; implement the repository ports as Spring Data JPA adapters that enable the tenant filter per session, with the required indexes
     - _Requirements: 3.4, 5.8, 8.4, 10.1, 10.2, 10.4, 10.6; ADR-007_
 
-  - [ ] 17.3 Implement tenant resolution filter and the Redis-backed TenantContext adapter
+  - [-] 17.3 Implement tenant resolution filter and the Redis-backed TenantContext adapter
     - Add an inbound request filter that resolves the request `TenantId` (from authenticated staff/admin tenant or session tenant) into a request-scoped `TenantContext`, rejecting tenant-scoped requests with no resolvable tenant; externalize session/cache state to Redis
     - _Requirements: 10.4, 10.5, 12.5; ADR-006_
 
@@ -280,7 +280,7 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - _Requirements: 10.5_
 
 - [ ] 18. Implement the DomainEventPublisher production adapter
-  - [ ] 18.1 Implement the Spring `ApplicationEventPublisher`-backed adapter
+  - [-] 18.1 Implement the Spring `ApplicationEventPublisher`-backed adapter
     - Implement `DomainEventPublisher` over Spring's in-process event publisher and register the `OrderReadyHandler` as an in-process listener; on publication failure, record it, retain the event, and surface an error naming the event
     - _Requirements: 11.1, 11.3, 11.4, 11.5; ADR-003_
 
@@ -289,7 +289,7 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - _Requirements: 11.2_
 
 - [ ] 19. Implement the NotificationSender VAPID adapter
-  - [ ] 19.1 Implement the VAPID Web Push adapter
+  - [-] 19.1 Implement the VAPID Web Push adapter
     - Implement `NotificationSender` using the Web Push/VAPID library, mapping HTTP outcomes to `ACCEPTED`/`REJECTED`/`ENDPOINT_EXPIRED`, keeping VAPID keys/config in the adapter only
     - _Requirements: 6.2, 6.7, 6.8, 3.6; ADR-005_
 

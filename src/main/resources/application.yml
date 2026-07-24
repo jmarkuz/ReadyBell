@@ -14,6 +14,17 @@ spring:
     redis:
       host: localhost
       port: 6379
+      # Connection/command timeout for Redis operations.
+      # Session and cache state are externalized to Redis so any replica can serve
+      # any request (Req 12.5; ADR-006). Spring Session with Redis can be enabled
+      # by adding spring-session-data-redis to the build and @EnableRedisHttpSession.
+      timeout: 2000ms
+
+readybell:
+  vapid:
+    public-key: ${VAPID_PUBLIC_KEY:placeholder-public-key}
+    private-key: ${VAPID_PRIVATE_KEY:placeholder-private-key}
+    subject: mailto:admin@readybell.example.com
 
 management:
   endpoint:

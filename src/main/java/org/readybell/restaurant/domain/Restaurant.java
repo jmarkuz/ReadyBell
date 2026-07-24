@@ -112,4 +112,30 @@ public class Restaurant {
     public boolean isActive() {
         return status == RestaurantStatus.ACTIVE;
     }
+
+    // -------------------------------------------------------------------------
+    // Reconstitution — used by the JPA adapter to rebuild the aggregate from a
+    // stored entity without applying default state overrides.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Rebuilds a {@code Restaurant} from its stored state.
+     *
+     * <p>Unlike {@link #create} this method applies the persisted {@code status}
+     * directly rather than defaulting to ACTIVE. Intended for use by the JPA adapter only.
+     *
+     * @param tenantId   the persisted tenant identity
+     * @param identifier the persisted business identifier
+     * @param status     the persisted restaurant status
+     * @param config     the persisted restaurant configuration
+     * @return a restaurant aggregate with the given state
+     */
+    public static Restaurant reconstitute(TenantId tenantId,
+                                          String identifier,
+                                          RestaurantStatus status,
+                                          RestaurantConfig config) {
+        var r = new Restaurant(tenantId, identifier, config);
+        r.status = status;
+        return r;
+    }
 }

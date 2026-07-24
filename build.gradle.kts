@@ -31,6 +31,8 @@ dependencies {
 
     // Web Push / VAPID (kept behind the NotificationSender port; ADR-005)
     implementation("nl.martijndwars:web-push:5.1.1")
+    // BouncyCastle is required by web-push for EC cryptography (VAPID key operations)
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")

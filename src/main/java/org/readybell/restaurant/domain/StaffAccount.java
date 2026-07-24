@@ -82,4 +82,30 @@ public class StaffAccount {
     public AccountStatus getStatus() {
         return status;
     }
+
+    // -------------------------------------------------------------------------
+    // Reconstitution — used by the JPA adapter to rebuild the aggregate from a
+    // stored entity without generating a new id.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Rebuilds a {@code StaffAccount} from its stored state.
+     *
+     * <p>Unlike {@link #create} this method uses the supplied {@code id} as-is
+     * rather than generating a fresh one. Intended for use by the JPA adapter only.
+     *
+     * @param id       the persisted account identity
+     * @param tenantId the persisted tenant
+     * @param username the persisted username
+     * @param role     the persisted role
+     * @param status   the persisted account status
+     * @return a staff account aggregate
+     */
+    public static StaffAccount reconstitute(StaffAccountId id,
+                                            TenantId tenantId,
+                                            String username,
+                                            Role role,
+                                            AccountStatus status) {
+        return new StaffAccount(id, tenantId, username, role, status);
+    }
 }

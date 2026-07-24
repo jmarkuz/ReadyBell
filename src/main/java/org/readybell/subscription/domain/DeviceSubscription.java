@@ -96,4 +96,28 @@ public class DeviceSubscription {
     public PushEndpoint getEndpoint() {
         return endpoint;
     }
+
+    // -------------------------------------------------------------------------
+    // Reconstitution — used by the JPA adapter to rebuild the aggregate from a
+    // stored entity without invoking the register factory.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Rebuilds a {@code DeviceSubscription} from its stored state.
+     *
+     * <p>Intended for use by the JPA persistence adapter only; the supplied {@code id}
+     * is used as-is rather than generating a fresh one.
+     *
+     * @param id        the persisted subscription identity
+     * @param tenantId  the persisted tenant
+     * @param sessionId the persisted customer session
+     * @param endpoint  the persisted push endpoint
+     * @return a subscription aggregate ready to use
+     */
+    public static DeviceSubscription reconstitute(DeviceSubscriptionId id,
+                                                  TenantId tenantId,
+                                                  CustomerSessionId sessionId,
+                                                  PushEndpoint endpoint) {
+        return new DeviceSubscription(id, tenantId, sessionId, endpoint);
+    }
 }

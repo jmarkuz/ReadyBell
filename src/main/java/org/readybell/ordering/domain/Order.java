@@ -199,4 +199,32 @@ public class Order {
     public void clearPendingEvents() {
         pendingEvents.clear();
     }
+
+    // -------------------------------------------------------------------------
+    // Reconstitution — used by the JPA adapter to rebuild the aggregate from a
+    // stored entity without recording any domain events.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Rebuilds an {@code Order} from its stored state.
+     *
+     * <p>Unlike the {@link #create} factory this method does <em>not</em> generate a new id
+     * or record any domain event. Intended for use by the JPA persistence adapter only.
+     *
+     * @param id        the persisted order identity
+     * @param tenantId  the persisted tenant
+     * @param sessionId the persisted customer session
+     * @param status    the persisted order status
+     * @param version   the persisted optimistic-lock version
+     * @return an order aggregate with no pending events
+     */
+    public static Order reconstitute(OrderId id,
+                                     TenantId tenantId,
+                                     CustomerSessionId sessionId,
+                                     OrderStatus status,
+                                     long version) {
+        var order = new Order(id, tenantId, sessionId, status);
+        order.version = version;
+        return order;
+    }
 }

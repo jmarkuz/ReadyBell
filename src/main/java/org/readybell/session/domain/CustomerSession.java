@@ -125,4 +125,29 @@ public class CustomerSession {
     public void clearPendingEvents() {
         pendingEvents.clear();
     }
+
+    // -------------------------------------------------------------------------
+    // Reconstitution — used by the JPA adapter to rebuild the aggregate from a
+    // stored entity without recording any domain events (no side-effects).
+    // -------------------------------------------------------------------------
+
+    /**
+     * Rebuilds a {@code CustomerSession} from its stored state.
+     *
+     * <p>Unlike the {@link #start} factory this method does <em>not</em> generate a new id
+     * or record any domain event — it simply restores the aggregate to the state that was
+     * persisted. Intended for use by the JPA persistence adapter only.
+     *
+     * @param id        the persisted session identity
+     * @param tenantId  the persisted tenant
+     * @param status    the persisted status
+     * @param startedAt the persisted start timestamp
+     * @return a session aggregate with no pending events
+     */
+    public static CustomerSession reconstitute(CustomerSessionId id,
+                                               TenantId tenantId,
+                                               SessionStatus status,
+                                               Instant startedAt) {
+        return new CustomerSession(id, tenantId, status, startedAt);
+    }
 }
