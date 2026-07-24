@@ -225,12 +225,12 @@ public class GlobalExceptionHandler {
      * Handles registration attempts against a session that does not exist or is not
      * active for the given tenant (Req 3.1).
      *
-     * @return 404 Not Found with a problem detail identifying the inactive/missing session
+     * @return 422 Unprocessable Entity with a problem detail identifying the inactive/missing session
      */
     @ExceptionHandler(SessionNotActiveException.class)
     public ResponseEntity<Map<String, Object>> handleSessionNotActive(SessionNotActiveException ex) {
         return problem(
-                HttpStatus.NOT_FOUND,
+                HttpStatus.UNPROCESSABLE_ENTITY,
                 "https://readybell.org/problems/session-not-active",
                 "Session Not Active",
                 ex.getMessage()
