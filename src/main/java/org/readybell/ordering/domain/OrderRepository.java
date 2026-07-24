@@ -60,4 +60,15 @@ public interface OrderRepository {
      * @return immutable list of matching orders, possibly empty
      */
     List<Order> findByTenantAndSession(TenantId tenantId, CustomerSessionId sessionId);
+
+    /**
+     * Returns all orders belonging to the given tenant (Req 7.3, 7.7, 10.2, 10.4).
+     *
+     * <p>Used by the Restaurant Staff panel to list all orders for the authenticated
+     * tenant. Returns an empty list when the tenant has no orders.
+     *
+     * @param tenantId the tenant scope (must not be null)
+     * @return immutable list of all orders for the tenant, possibly empty
+     */
+    List<Order> findAllByTenant(TenantId tenantId);
 }

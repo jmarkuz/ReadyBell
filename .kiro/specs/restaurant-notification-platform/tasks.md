@@ -254,16 +254,16 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
 - [x] 16. Checkpoint - core flow complete against fakes
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 17. Implement persistence adapters and multi-tenancy enforcement
-  - [-] 17.1 Implement the tenant-scoped JPA base and enforcement mechanics
+- [x] 17. Implement persistence adapters and multi-tenancy enforcement
+  - [x] 17.1 Implement the tenant-scoped JPA base and enforcement mechanics
     - Create the `TenantScopedEntity` `@MappedSuperclass` with the Hibernate `@FilterDef`/`@Filter` (`tenant_id = :tenantId`) and the `@PrePersist` listener stamping the current tenant from `TenantContextHolder`
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.6; ADR-004_
 
-  - [-] 17.2 Implement JPA entities and tenant-filtered repository adapters
+  - [x] 17.2 Implement JPA entities and tenant-filtered repository adapters
     - Map `restaurant`, `staff_account`, `customer_session`, `order` (with `@Version`), `device_subscription` (unique `(tenant_id, session_id, endpoint_url)`), and `notification` tables; implement the repository ports as Spring Data JPA adapters that enable the tenant filter per session, with the required indexes
     - _Requirements: 3.4, 5.8, 8.4, 10.1, 10.2, 10.4, 10.6; ADR-007_
 
-  - [-] 17.3 Implement tenant resolution filter and the Redis-backed TenantContext adapter
+  - [x] 17.3 Implement tenant resolution filter and the Redis-backed TenantContext adapter
     - Add an inbound request filter that resolves the request `TenantId` (from authenticated staff/admin tenant or session tenant) into a request-scoped `TenantContext`, rejecting tenant-scoped requests with no resolvable tenant; externalize session/cache state to Redis
     - _Requirements: 10.4, 10.5, 12.5; ADR-006_
 
@@ -279,8 +279,8 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - Assert a tenant-scoped request with no resolvable tenant is rejected, returns zero records, and produces a "tenant context missing" error
     - _Requirements: 10.5_
 
-- [ ] 18. Implement the DomainEventPublisher production adapter
-  - [-] 18.1 Implement the Spring `ApplicationEventPublisher`-backed adapter
+- [x] 18. Implement the DomainEventPublisher production adapter
+  - [x] 18.1 Implement the Spring `ApplicationEventPublisher`-backed adapter
     - Implement `DomainEventPublisher` over Spring's in-process event publisher and register the `OrderReadyHandler` as an in-process listener; on publication failure, record it, retain the event, and surface an error naming the event
     - _Requirements: 11.1, 11.3, 11.4, 11.5; ADR-003_
 
@@ -288,8 +288,8 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - ArchUnit-style test asserting the domain layer imports no messaging or framework implementation
     - _Requirements: 11.2_
 
-- [ ] 19. Implement the NotificationSender VAPID adapter
-  - [-] 19.1 Implement the VAPID Web Push adapter
+- [x] 19. Implement the NotificationSender VAPID adapter
+  - [x] 19.1 Implement the VAPID Web Push adapter
     - Implement `NotificationSender` using the Web Push/VAPID library, mapping HTTP outcomes to `ACCEPTED`/`REJECTED`/`ENDPOINT_EXPIRED`, keeping VAPID keys/config in the adapter only
     - _Requirements: 6.2, 6.7, 6.8, 3.6; ADR-005_
 
@@ -298,23 +298,23 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - _Requirements: 6.2, 3.6_
 
 - [ ] 20. Implement inbound REST controllers and SSE live updates
-  - [ ] 20.1 Implement the Customer Session API
+  - [-] 20.1 Implement the Customer Session API
     - `POST /api/sessions` (start from `{qrToken}`) and `GET /api/sessions/{id}/orders` (list orders + states, empty indication), served over HTTPS with RFC 7807 error responses
     - _Requirements: 1.1, 1.3, 1.4, 1.5, 1.6, 1.7, 2.2, 2.5, 9.6_
 
-  - [ ] 20.2 Implement the Subscription API
+  - [-] 20.2 Implement the Subscription API
     - `POST /api/sessions/{id}/subscriptions` (register/update) and `DELETE /api/sessions/{id}/subscriptions/{subId}` (revoke) over encrypted channels
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.7_
 
-  - [ ] 20.3 Implement the Order Management API
+  - [-] 20.3 Implement the Order Management API
     - `POST /api/orders` (create for a session), `GET /api/orders` (list tenant orders + states), `PATCH /api/orders/{id}/status` (transition), tenant-scoped with cross-tenant access denied
     - _Requirements: 4.1, 4.5, 4.6, 5.1, 5.3, 5.4, 5.7, 7.3, 7.5, 7.6, 7.7_
 
-  - [ ] 20.4 Implement the Restaurant Admin API and staff authentication scoping
+  - [-] 20.4 Implement the Restaurant Admin API and staff authentication scoping
     - `POST/PUT/DELETE /api/admin/staff` and `PUT /api/admin/config`, with authentication granting tenant-scoped access and denying cross-tenant operations
     - _Requirements: 7.1, 7.2, 8.1, 8.2, 8.3, 8.6, 8.8_
 
-  - [ ] 20.5 Implement the Platform Admin API
+  - [-] 20.5 Implement the Platform Admin API
     - `POST/PUT/DELETE /api/platform/restaurants` with platform-admin authentication and non-admin denial
     - _Requirements: 9.1, 9.3, 9.4_
 

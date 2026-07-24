@@ -71,6 +71,16 @@ public class JpaOrderRepository implements OrderRepository {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Order> findAllByTenant(TenantId tenantId) {
+        enableTenantFilter(tenantId);
+        return springRepo.findByTenantId(tenantId.value())
+                .stream()
+                .map(OrderJpaEntity::toDomain)
+                .toList();
+    }
+
     // -------------------------------------------------------------------------
     // Tenant filter helper
     // -------------------------------------------------------------------------

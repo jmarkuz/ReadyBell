@@ -47,6 +47,13 @@ public class InMemoryOrderRepository implements OrderRepository {
                 .toList();
     }
 
+    @Override
+    public List<Order> findAllByTenant(TenantId tenantId) {
+        return store.values().stream()
+                .filter(order -> order.getTenantId().equals(tenantId))
+                .toList();
+    }
+
     /** Convenience helper — returns the total number of stored orders. */
     public int size() {
         return store.size();
