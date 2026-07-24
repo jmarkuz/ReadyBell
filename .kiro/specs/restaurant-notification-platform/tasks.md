@@ -298,23 +298,23 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - _Requirements: 6.2, 3.6_
 
 - [ ] 20. Implement inbound REST controllers and SSE live updates
-  - [-] 20.1 Implement the Customer Session API
+  - [ ] 20.1 Implement the Customer Session API
     - `POST /api/sessions` (start from `{qrToken}`) and `GET /api/sessions/{id}/orders` (list orders + states, empty indication), served over HTTPS with RFC 7807 error responses
     - _Requirements: 1.1, 1.3, 1.4, 1.5, 1.6, 1.7, 2.2, 2.5, 9.6_
 
-  - [-] 20.2 Implement the Subscription API
+  - [ ] 20.2 Implement the Subscription API
     - `POST /api/sessions/{id}/subscriptions` (register/update) and `DELETE /api/sessions/{id}/subscriptions/{subId}` (revoke) over encrypted channels
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.7_
 
-  - [-] 20.3 Implement the Order Management API
+  - [ ] 20.3 Implement the Order Management API
     - `POST /api/orders` (create for a session), `GET /api/orders` (list tenant orders + states), `PATCH /api/orders/{id}/status` (transition), tenant-scoped with cross-tenant access denied
     - _Requirements: 4.1, 4.5, 4.6, 5.1, 5.3, 5.4, 5.7, 7.3, 7.5, 7.6, 7.7_
 
-  - [-] 20.4 Implement the Restaurant Admin API and staff authentication scoping
+  - [ ] 20.4 Implement the Restaurant Admin API and staff authentication scoping
     - `POST/PUT/DELETE /api/admin/staff` and `PUT /api/admin/config`, with authentication granting tenant-scoped access and denying cross-tenant operations
     - _Requirements: 7.1, 7.2, 8.1, 8.2, 8.3, 8.6, 8.8_
 
-  - [-] 20.5 Implement the Platform Admin API
+  - [ ] 20.5 Implement the Platform Admin API
     - `POST/PUT/DELETE /api/platform/restaurants` with platform-admin authentication and non-admin denial
     - _Requirements: 9.1, 9.3, 9.4_
 

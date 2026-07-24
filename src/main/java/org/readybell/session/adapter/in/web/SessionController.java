@@ -1,6 +1,5 @@
 package org.readybell.session.adapter.in.web;
 
-import org.readybell.ordering.domain.Order;
 import org.readybell.ordering.domain.OrderRepository;
 import org.readybell.session.application.StartSessionUseCase;
 import org.readybell.session.domain.CustomerSession;
@@ -18,9 +17,15 @@ import java.util.UUID;
  *
  * <p>Exposes two endpoints:
  * <ul>
- *   <li>{@code POST /api/sessions} — starts a new session from a QR token (Req 1.1, 1.3–1.7).</li>
- *   <li>{@code GET  /api/sessions/{id}/orders} — lists all orders for a session (Req 2.2, 2.5).</li>
+ *   <li>{@code POST /api/sessions} — starts a new session from a QR token
+ *       (Req 1.1, 1.3, 1.4, 1.5, 1.6, 1.7, 9.6).</li>
+ *   <li>{@code GET  /api/sessions/{id}/orders} — lists all orders for a session
+ *       with their current status; returns an empty list when the session has no
+ *       orders (Req 2.2, 2.5).</li>
  * </ul>
+ *
+ * <p>Error responses use {@code application/problem+json} (RFC 7807) and are
+ * produced by {@link org.readybell.platform.GlobalExceptionHandler}.
  */
 @RestController
 @RequestMapping("/api/sessions")
@@ -32,82 +37,51 @@ public class SessionController {
     public SessionController(StartSessionUseCase startSessionUseCase,
                              OrderRepository orderRepository) {
         this.startSessionUseCase = startSessionUseCase;
-        this.orderRepository = orderRepository;
+        this.orderRepository     = orderRepository;
     }
 
     /**
      * Starts a new customer session identified by the QR-code token.
      *
+     * <p>On success returns 201 Created with a {@link SessionResponse} body containing
+     * the session id, status, and start timestamp (Req 1.1, 1.3, 1.6).
+     *
+     * <p>On failure the {@link org.readybell.platform.GlobalExceptionHandler} maps:
+     * <ul>
+     *   <li>{@link org.readybell.session.application.InvalidQrTokenException} →
+     *       422 Unprocessable Entity (Req 1.4, 1.7)</li>
+     *   <li>{@link org.readybell.restaurant.domain.DeactivatedRestaurantException} →
+     *       422 Unprocessable Entity (Req 9.6)</li>
+     * </ul>
+     *
      * @param request body containing the {@code qrToken}
-     * @return 201 Created with {@code sessionId} and {@code tenantId}
+     * @return 201 Created with a {@link SessionResponse}
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public StartSessionResponse startSession(@RequestBody StartSessionRequest request) {
+    public SessionResponse startSession(@RequestBody StartSessionRequest request) {
         CustomerSession session = startSessionUseCase.startSession(request.qrToken());
-        return new StartSessionResponse(
-                session.getId().value().toString(),
-                session.getTenantId().value().toString()
-        );
+        return SessionResponse.from(session);
     }
 
     /**
-     * Returns all orders associated with a session, scoped to the resolved tenant.
+     * Returns all orders associated with the given session, scoped to the current tenant.
      *
-     * <p>When the session has no orders the response includes {@code "empty": true}
-     * to signal the absence explicitly (Req 2.5).
+     * <p>When the session has no orders the response is an empty list — callers detect
+     * the absence by checking the list size (Req 2.5).
      *
      * @param id the session UUID path variable
-     * @return 200 OK with the order list (may be empty)
+     * @return 200 OK with the (possibly empty) list of {@link OrderStateResponse}
      */
     @GetMapping("/{id}/orders")
-    public OrderListResponse listOrders(@PathVariable("id") UUID id) {
+    public List<OrderStateResponse> listOrders(@PathVariable("id") UUID id) {
         TenantId tenantId = TenantContextHolder.require();
         CustomerSessionId sessionId = new CustomerSessionId(id);
 
-        List<Order> orders = orderRepository.findByTenantAndSession(tenantId, sessionId);
-
-        List<OrderSummary> summaries = orders.stream()
-                .map(o -> new OrderSummary(
-                        o.getId().value().toString(),
-                        o.getStatus().name()))
+        return orderRepository
+                .findByTenantAndSession(tenantId, sessionId)
+                .stream()
+                .map(OrderStateResponse::from)
                 .toList();
-
-        return new OrderListResponse(summaries, summaries.isEmpty());
     }
-
-    // -------------------------------------------------------------------------
-    // Request / Response records
-    // -------------------------------------------------------------------------
-
-    /**
-     * Request body for {@code POST /api/sessions}.
-     *
-     * @param qrToken the QR-code payload identifying the restaurant (Req 1.7)
-     */
-    public record StartSessionRequest(String qrToken) {}
-
-    /**
-     * Response body for a successfully started session (Req 1.3).
-     *
-     * @param sessionId the newly created session identifier
-     * @param tenantId  the restaurant (tenant) the session belongs to
-     */
-    public record StartSessionResponse(String sessionId, String tenantId) {}
-
-    /**
-     * A single order summary entry in the order-list response.
-     *
-     * @param orderId the order identifier
-     * @param status  the current order status label
-     */
-    public record OrderSummary(String orderId, String status) {}
-
-    /**
-     * Response body for {@code GET /api/sessions/{id}/orders} (Req 2.2, 2.5).
-     *
-     * @param orders the list of order summaries (may be empty)
-     * @param empty  {@code true} when the session has no orders
-     */
-    public record OrderListResponse(List<OrderSummary> orders, boolean empty) {}
 }

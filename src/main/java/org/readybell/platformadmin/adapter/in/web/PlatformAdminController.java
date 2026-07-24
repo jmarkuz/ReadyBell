@@ -1,12 +1,18 @@
 package org.readybell.platformadmin.adapter.in.web;
 
+import org.readybell.platformadmin.application.DuplicateRestaurantIdentifierException;
 import org.readybell.platformadmin.application.PlatformAdminUseCase;
+import org.readybell.platformadmin.application.RestaurantNotFoundException;
 import org.readybell.restaurant.domain.Restaurant;
 import org.readybell.restaurant.domain.RestaurantConfig;
 import org.readybell.shared.domain.TenantId;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -27,6 +33,9 @@ import java.util.UUID;
 @RequestMapping("/api/platform/restaurants")
 public class PlatformAdminController {
 
+    private static final MediaType PROBLEM_JSON =
+            MediaType.parseMediaType("application/problem+json");
+
     private final PlatformAdminUseCase platformAdminUseCase;
 
     public PlatformAdminController(PlatformAdminUseCase platformAdminUseCase) {
@@ -45,14 +54,10 @@ public class PlatformAdminController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CreateRestaurantResponse createRestaurant(@RequestBody CreateRestaurantRequest request) {
+    public RestaurantResponse createRestaurant(@RequestBody CreateRestaurantRequest request) {
         RestaurantConfig config = RestaurantConfig.of(request.name());
         Restaurant restaurant = platformAdminUseCase.createRestaurant(request.identifier(), config);
-        return new CreateRestaurantResponse(
-                restaurant.getTenantId().value().toString(),
-                restaurant.getIdentifier(),
-                restaurant.getStatus().name()
-        );
+        return RestaurantResponse.from(restaurant);
     }
 
     // -------------------------------------------------------------------------
@@ -67,16 +72,12 @@ public class PlatformAdminController {
      * @return 200 OK with the updated restaurant details
      */
     @PutMapping("/{tenantId}")
-    public CreateRestaurantResponse updateRestaurant(@PathVariable("tenantId") UUID tenantId,
-                                                     @RequestBody UpdateRestaurantRequest request) {
+    public RestaurantResponse updateRestaurant(@PathVariable("tenantId") UUID tenantId,
+                                               @RequestBody UpdateRestaurantRequest request) {
         TenantId tid = new TenantId(tenantId);
         RestaurantConfig config = RestaurantConfig.of(request.name());
         Restaurant restaurant = platformAdminUseCase.updateRestaurant(tid, config);
-        return new CreateRestaurantResponse(
-                restaurant.getTenantId().value().toString(),
-                restaurant.getIdentifier(),
-                restaurant.getStatus().name()
-        );
+        return RestaurantResponse.from(restaurant);
     }
 
     // -------------------------------------------------------------------------
@@ -93,41 +94,78 @@ public class PlatformAdminController {
      * @return 200 OK with the deactivated restaurant details
      */
     @DeleteMapping("/{tenantId}")
-    public CreateRestaurantResponse deactivateRestaurant(@PathVariable("tenantId") UUID tenantId) {
+    public RestaurantResponse deactivateRestaurant(@PathVariable("tenantId") UUID tenantId) {
         TenantId tid = new TenantId(tenantId);
         Restaurant restaurant = platformAdminUseCase.deactivateRestaurant(tid);
-        return new CreateRestaurantResponse(
-                restaurant.getTenantId().value().toString(),
-                restaurant.getIdentifier(),
-                restaurant.getStatus().name()
+        return RestaurantResponse.from(restaurant);
+    }
+
+    // -------------------------------------------------------------------------
+    // Exception handlers (RFC 7807 Problem Details)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Handles duplicate restaurant identifier on creation (Req 9.5).
+     *
+     * @return 409 Conflict with a problem detail identifying the duplicate identifier
+     */
+    @ExceptionHandler(DuplicateRestaurantIdentifierException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicateIdentifier(
+            DuplicateRestaurantIdentifierException ex) {
+        return problem(
+                HttpStatus.CONFLICT,
+                "https://readybell.org/problems/duplicate-restaurant-identifier",
+                "Duplicate Restaurant Identifier",
+                ex.getMessage()
+        );
+    }
+
+    /**
+     * Handles a restaurant not found for platform admin operations (Req 9.3).
+     *
+     * @return 404 Not Found with a problem detail
+     */
+    @ExceptionHandler(RestaurantNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(RestaurantNotFoundException ex) {
+        return problem(
+                HttpStatus.NOT_FOUND,
+                "https://readybell.org/problems/restaurant-not-found",
+                "Restaurant Not Found",
+                ex.getMessage()
+        );
+    }
+
+    /**
+     * Handles invalid input (blank identifier, null config field, etc.).
+     *
+     * @return 400 Bad Request with a problem detail describing the validation failure
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "https://readybell.org/problems/invalid-request",
+                "Invalid Request",
+                ex.getMessage()
         );
     }
 
     // -------------------------------------------------------------------------
-    // Request / Response records
+    // Helper
     // -------------------------------------------------------------------------
 
-    /**
-     * Request body for {@code POST /api/platform/restaurants}.
-     *
-     * @param identifier the unique business identifier for the new restaurant (Req 9.5)
-     * @param name       the display name for the restaurant
-     */
-    public record CreateRestaurantRequest(String identifier, String name) {}
-
-    /**
-     * Request body for {@code PUT /api/platform/restaurants/{tenantId}}.
-     *
-     * @param name the new display name for the restaurant
-     */
-    public record UpdateRestaurantRequest(String name) {}
-
-    /**
-     * Response body for restaurant CRUD operations (Req 9.2).
-     *
-     * @param tenantId   the platform-assigned unique tenant identifier
-     * @param identifier the business identifier of the restaurant
-     * @param status     the current restaurant status ({@code ACTIVE} or {@code DEACTIVATED})
-     */
-    public record CreateRestaurantResponse(String tenantId, String identifier, String status) {}
+    private ResponseEntity<Map<String, Object>> problem(HttpStatus status,
+                                                        String type,
+                                                        String title,
+                                                        String detail) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("type",   type);
+        body.put("title",  title);
+        body.put("status", status.value());
+        body.put("detail", detail);
+        return ResponseEntity
+                .status(status)
+                .contentType(PROBLEM_JSON)
+                .body(body);
+    }
 }

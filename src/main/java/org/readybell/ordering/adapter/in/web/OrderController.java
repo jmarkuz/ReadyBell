@@ -3,7 +3,6 @@ package org.readybell.ordering.adapter.in.web;
 import org.readybell.ordering.application.CreateOrderCommand;
 import org.readybell.ordering.application.ManageOrderUseCase;
 import org.readybell.ordering.application.TransitionOrderCommand;
-import org.readybell.ordering.domain.Order;
 import org.readybell.ordering.domain.OrderId;
 import org.readybell.ordering.domain.OrderRepository;
 import org.readybell.ordering.domain.OrderStatus;
@@ -22,14 +21,24 @@ import java.util.UUID;
  *
  * <p>Exposes three endpoints:
  * <ul>
- *   <li>{@code POST  /api/orders}          — creates an order for a session (Req 4.1–4.6).</li>
- *   <li>{@code GET   /api/orders}          — lists all orders for the authenticated tenant (Req 7.3, 7.7).</li>
+ *   <li>{@code POST  /api/orders}             — creates an order for a session (Req 4.1–4.6).</li>
+ *   <li>{@code GET   /api/orders}             — lists all orders for the authenticated tenant (Req 7.3, 7.7).</li>
  *   <li>{@code PATCH /api/orders/{id}/status} — transitions order status (Req 5.1–5.8).</li>
  * </ul>
  *
  * <p>All endpoints resolve the current tenant via {@link TenantContextHolder#require()}.
  * Tenant isolation is enforced at the repository query layer (Req 10.2, 10.4). Cross-tenant
  * access is denied at both the application service and repository levels (Req 7.7, 10.3).
+ *
+ * <p>Error responses are produced by {@link org.readybell.platform.GlobalExceptionHandler}
+ * as RFC 7807 {@code application/problem+json} bodies for:
+ * <ul>
+ *   <li>{@link org.readybell.ordering.application.InvalidSessionException} → 422 (Req 4.5)</li>
+ *   <li>{@link org.readybell.ordering.application.CrossTenantAccessException} → 403 (Req 4.6, 7.7)</li>
+ *   <li>{@link org.readybell.ordering.application.OrderNotFoundException} → 404 (Req 7.7, 10.3)</li>
+ *   <li>{@link org.readybell.ordering.domain.InvalidTransitionException} → 422 (Req 5.3, 5.4)</li>
+ *   <li>{@link org.readybell.ordering.domain.TerminalStateException} → 422 (Req 5.7)</li>
+ * </ul>
  */
 @RestController
 @RequestMapping("/api/orders")
@@ -56,18 +65,16 @@ public class OrderController {
      * belongs to a different tenant (Req 4.6).
      *
      * @param request body containing the {@code sessionId}
-     * @return 201 Created with the new order id and CREATED status
+     * @return 201 Created with the new order summary
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public OrderResponse createOrder(@RequestBody CreateOrderRequest request) {
         TenantId tenantId = TenantContextHolder.require();
         CustomerSessionId sessionId = new CustomerSessionId(request.sessionId());
-        Order order = manageOrderUseCase.createOrder(
+        var order = manageOrderUseCase.createOrder(
                 new CreateOrderCommand(tenantId, sessionId));
-        return new OrderResponse(
-                order.getId().value().toString(),
-                order.getStatus().name());
+        return OrderResponse.from(order);
     }
 
     /**
@@ -82,9 +89,7 @@ public class OrderController {
         TenantId tenantId = TenantContextHolder.require();
         return orderRepository.findAllByTenant(tenantId)
                 .stream()
-                .map(o -> new OrderResponse(
-                        o.getId().value().toString(),
-                        o.getStatus().name()))
+                .map(OrderResponse::from)
                 .toList();
     }
 
@@ -104,44 +109,16 @@ public class OrderController {
      *
      * @param id      the order UUID path variable
      * @param request body containing the target {@code status}
-     * @return 200 OK with the updated order id and new status
+     * @return 200 OK with the updated order summary
      */
     @PatchMapping("/{id}/status")
     public OrderResponse transitionOrderStatus(@PathVariable("id") UUID id,
-                                               @RequestBody TransitionStatusRequest request) {
+                                               @RequestBody TransitionOrderRequest request) {
         TenantId tenantId = TenantContextHolder.require();
         OrderId orderId = new OrderId(id);
         OrderStatus targetStatus = OrderStatus.valueOf(request.status());
-        Order order = manageOrderUseCase.transitionOrderStatus(
+        var order = manageOrderUseCase.transitionOrderStatus(
                 new TransitionOrderCommand(tenantId, orderId, targetStatus));
-        return new OrderResponse(
-                order.getId().value().toString(),
-                order.getStatus().name());
+        return OrderResponse.from(order);
     }
-
-    // -------------------------------------------------------------------------
-    // Request / Response records
-    // -------------------------------------------------------------------------
-
-    /**
-     * Request body for {@code POST /api/orders}.
-     *
-     * @param sessionId the customer session UUID this order belongs to (Req 4.4)
-     */
-    public record CreateOrderRequest(UUID sessionId) {}
-
-    /**
-     * Request body for {@code PATCH /api/orders/{id}/status}.
-     *
-     * @param status the target {@link OrderStatus} name (e.g. "IN_PROGRESS")
-     */
-    public record TransitionStatusRequest(String status) {}
-
-    /**
-     * Response body for order creation and status transition.
-     *
-     * @param orderId the order identifier
-     * @param status  the current order status label
-     */
-    public record OrderResponse(String orderId, String status) {}
 }

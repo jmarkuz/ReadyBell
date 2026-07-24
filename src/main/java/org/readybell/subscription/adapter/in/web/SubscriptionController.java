@@ -92,9 +92,9 @@ public class SubscriptionController {
 
         DeviceSubscription subscription = manageSubscriptionUseCase.registerSubscription(command);
 
-        String subId = subscription.getId().value().toString();
-        var response = new SubscriptionResponse(subId);
-        var location = URI.create("/api/sessions/" + sessionId + "/subscriptions/" + subId);
+        var response = SubscriptionResponse.from(subscription);
+        var location = URI.create(
+                "/api/sessions/" + sessionId + "/subscriptions/" + response.subscriptionId());
 
         return ResponseEntity.created(location).body(response);
     }
