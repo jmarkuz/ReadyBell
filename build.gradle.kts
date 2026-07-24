@@ -36,6 +36,9 @@ dependencies {
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+
+    // Embedded H2 for the test profile (application-test.yml uses H2 in PostgreSQL mode)
+    testRuntimeOnly("com.h2database:h2")
     testImplementation("org.springframework.security:spring-security-test")
 
     // JUnit 5 (BOM already present via Spring Boot; keep explicit for clarity)

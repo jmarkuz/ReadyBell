@@ -297,28 +297,28 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - Exercise the adapter against a stubbed push endpoint to verify accept/reject/expired mapping
     - _Requirements: 6.2, 3.6_
 
-- [ ] 20. Implement inbound REST controllers and SSE live updates
-  - [ ] 20.1 Implement the Customer Session API
+- [x] 20. Implement inbound REST controllers and SSE live updates
+  - [x] 20.1 Implement the Customer Session API
     - `POST /api/sessions` (start from `{qrToken}`) and `GET /api/sessions/{id}/orders` (list orders + states, empty indication), served over HTTPS with RFC 7807 error responses
     - _Requirements: 1.1, 1.3, 1.4, 1.5, 1.6, 1.7, 2.2, 2.5, 9.6_
 
-  - [ ] 20.2 Implement the Subscription API
+  - [x] 20.2 Implement the Subscription API
     - `POST /api/sessions/{id}/subscriptions` (register/update) and `DELETE /api/sessions/{id}/subscriptions/{subId}` (revoke) over encrypted channels
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.7_
 
-  - [ ] 20.3 Implement the Order Management API
+  - [x] 20.3 Implement the Order Management API
     - `POST /api/orders` (create for a session), `GET /api/orders` (list tenant orders + states), `PATCH /api/orders/{id}/status` (transition), tenant-scoped with cross-tenant access denied
     - _Requirements: 4.1, 4.5, 4.6, 5.1, 5.3, 5.4, 5.7, 7.3, 7.5, 7.6, 7.7_
 
-  - [ ] 20.4 Implement the Restaurant Admin API and staff authentication scoping
+  - [x] 20.4 Implement the Restaurant Admin API and staff authentication scoping
     - `POST/PUT/DELETE /api/admin/staff` and `PUT /api/admin/config`, with authentication granting tenant-scoped access and denying cross-tenant operations
     - _Requirements: 7.1, 7.2, 8.1, 8.2, 8.3, 8.6, 8.8_
 
-  - [ ] 20.5 Implement the Platform Admin API
+  - [x] 20.5 Implement the Platform Admin API
     - `POST/PUT/DELETE /api/platform/restaurants` with platform-admin authentication and non-admin denial
     - _Requirements: 9.1, 9.3, 9.4_
 
-  - [ ] 20.6 Implement SSE live order-state updates
+  - [x] 20.6 Implement SSE live order-state updates
     - Feed an SSE stream from the in-process `OrderStatusUpdated` handler for PWA (≤5s) and Panel (≤10s) consumers, with a polling fallback endpoint
     - _Requirements: 2.3, 7.4; ADR-009_
 
@@ -330,8 +330,8 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - **Property 5: Order projection exposes only valid lifecycle states**
     - **Validates: Requirements 2.2**
 
-- [ ] 21. Wire the composition root
-  - [ ] 21.1 Implement Spring configuration wiring ports to production adapters
+- [x] 21. Wire the composition root
+  - [x] 21.1 Implement Spring configuration wiring ports to production adapters
     - Bind repositories, `DomainEventPublisher`, `NotificationSender`, and `TenantContext` to their production adapters; configure Spring Security for panel/admin/platform endpoints and register the tenant resolution filter, leaving no orphaned components
     - _Requirements: 7.1, 8.1, 9.1, 10.4, 11.1_
 
@@ -339,10 +339,10 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - Drive the wired application (fake sender) from session start through order READY and assert a notification is composed for the session's subscription
     - _Requirements: 1.1, 4.1, 5.6, 6.1_
 
-- [ ] 22. Checkpoint - full stack wired
+- [x] 22. Checkpoint - full stack wired
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 23. Verify non-functional requirements
+- [x] 23. Verify non-functional requirements
   - [ ]* 23.1 Write the notification-latency verification test
     - Automated test asserting the `NotificationSender` accepts the push within 2s of `OrderReady`, and that exceeding the window is recorded as a failure and processing continues
     - _Requirements: 6.3, 6.7_
@@ -355,7 +355,7 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - Assert Actuator liveness/readiness probes drive replica removal within the probe window, and verify TLS-in-transit and encryption-at-rest configuration for subscription data
     - _Requirements: 12.4, 3.7, 3.8_
 
-- [ ] 24. Final checkpoint - ensure all tests pass
+- [x] 24. Final checkpoint - ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
