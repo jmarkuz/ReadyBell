@@ -86,15 +86,15 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - Create `OrderId`, the `Order` aggregate with `create(...)` factory (starts in CREATED, carries `TenantId` + `CustomerSessionId`), `transitionTo(...)` enforcing the invariants, a `version` field for optimistic locking, and the `OrderCreated`, `OrderStatusUpdated`, `OrderReady` events plus `InvalidTransitionException` / `TerminalStateException`
     - _Requirements: 4.1, 4.2, 4.4, 5.3, 5.4, 5.5, 5.6, 5.7_
 
-  - [ ]* 4.5 Write property test for well-formed order creation
+  - [x]* 4.5 Write property test for well-formed order creation
     - **Property 10: A newly created order is well-formed**
     - **Validates: Requirements 4.1, 4.2, 4.4**
 
-  - [ ]* 4.6 Write property test for OrderCreated emission
+  - [x]* 4.6 Write property test for OrderCreated emission
     - **Property 11: OrderCreated is published on creation**
     - **Validates: Requirements 4.3**
 
-  - [ ]* 4.7 Write property test for status-change and READY event emission
+  - [x]* 4.7 Write property test for status-change and READY event emission
     - **Property 15: State changes and READY publish the correct events**
     - **Validates: Requirements 5.5, 5.6**
 
