@@ -36,6 +36,7 @@ dependencies {
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    runtimeOnly("com.h2database:h2")
 
     // Embedded H2 for the test profile (application-test.yml uses H2 in PostgreSQL mode)
     testRuntimeOnly("com.h2database:h2")
