@@ -11,6 +11,8 @@ import org.readybell.subscription.domain.PushEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.security.Security;
@@ -27,8 +29,13 @@ import java.security.Security;
  *   <li>404 / 410 → {@link SendResult#ENDPOINT_EXPIRED} (Req 3.6)</li>
  *   <li>any other status / exception → {@link SendResult#REJECTED} (Req 6.7, 6.8)</li>
  * </ul>
+ *
+ * <p>This bean is only created in non-test profiles. In test profiles, a
+ * {@link org.readybell.notification.domain.FakeNotificationSender} is used instead
+ * (via {@link IntegrationTestConfig}).
  */
 @Component
+@Profile("!test")
 class VapidNotificationSenderAdapter implements NotificationSender {
 
     private static final Logger log = LoggerFactory.getLogger(VapidNotificationSenderAdapter.class);

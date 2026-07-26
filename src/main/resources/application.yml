@@ -22,6 +22,7 @@ spring:
 
 readybell:
   vapid:
+    enabled: true
     public-key: ${VAPID_PUBLIC_KEY:placeholder-public-key}
     private-key: ${VAPID_PRIVATE_KEY:placeholder-private-key}
     subject: mailto:admin@readybell.example.com

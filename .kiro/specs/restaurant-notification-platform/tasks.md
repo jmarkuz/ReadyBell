@@ -35,7 +35,7 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - Add a base `application.yml` for datasource, Redis, and Actuator liveness/readiness probes
     - _Requirements: 12.1, 12.4; ADR-001, ADR-008_
 
-  - [ ]* 1.3 Write a context-load smoke test
+  - [x]* 1.3 Write a context-load smoke test
     - Verify the Spring `ApplicationContext` boots (with test profile) so later wiring has a baseline
     - _Requirements: 12.1_
 
@@ -335,7 +335,7 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - Bind repositories, `DomainEventPublisher`, `NotificationSender`, and `TenantContext` to their production adapters; configure Spring Security for panel/admin/platform endpoints and register the tenant resolution filter, leaving no orphaned components
     - _Requirements: 7.1, 8.1, 9.1, 10.4, 11.1_
 
-  - [ ]* 21.2 Write an end-to-end integration test of the QR → session → order → notification flow
+  - [-]* 21.2 Write an end-to-end integration test of the QR → session → order → notification flow
     - Drive the wired application (fake sender) from session start through order READY and assert a notification is composed for the session's subscription
     - _Requirements: 1.1, 4.1, 5.6, 6.1_
 
