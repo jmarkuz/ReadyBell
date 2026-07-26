@@ -15,7 +15,6 @@ import org.readybell.ordering.domain.OrderStatus;
 import org.readybell.restaurant.domain.Restaurant;
 import org.readybell.restaurant.domain.RestaurantConfig;
 import org.readybell.restaurant.domain.RestaurantRepository;
-import org.readybell.restaurant.domain.RestaurantStatus;
 import org.readybell.session.adapter.in.web.SessionResponse;
 import org.readybell.session.adapter.in.web.StartSessionRequest;
 import org.readybell.session.domain.CustomerSession;
@@ -36,7 +35,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 
 import java.util.List;
 import java.util.UUID;

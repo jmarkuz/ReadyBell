@@ -28,9 +28,6 @@ class OrderStatusTransitionTests {
      * Validates Requirements 5.1, 5.2.
      */
     @Property(tries = 100)
-    @org.junit.jupiter.api.Tag("restaurant-notification-platform")
-    @org.junit.jupiter.api.Tag("property-13")
-    @org.junit.jupiter.api.Tag("Allowed lifecycle transitions succeed and land in the target state")
     void allowedTransitionsSucceedAndLandInTargetState(
             @ForAll OrderStatus source,
             @ForAll OrderStatus target) {
@@ -57,9 +54,6 @@ class OrderStatusTransitionTests {
      * Validates Requirements 5.3, 5.4, 5.7.
      */
     @Property(tries = 100)
-    @org.junit.jupiter.api.Tag("restaurant-notification-platform")
-    @org.junit.jupiter.api.Tag("property-14")
-    @org.junit.jupiter.api.Tag("Disallowed, self, and post-terminal transitions are rejected without state change")
     void disallowedTransitionsAreRejected(
             @ForAll OrderStatus source,
             @ForAll OrderStatus target) {

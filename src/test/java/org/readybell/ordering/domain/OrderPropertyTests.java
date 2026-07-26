@@ -34,9 +34,6 @@ class OrderPropertyTests {
      * Property 10: A newly created order is well-formed
      */
     @Property(tries = 100)
-    @org.junit.jupiter.api.Tag("restaurant-notification-platform")
-    @org.junit.jupiter.api.Tag("property-10")
-    @org.junit.jupiter.api.Tag("A newly created order is well-formed")
     void newlyCreatedOrderIsWellFormed() {
         TenantId tenantId = new TenantId(UUID.randomUUID());
         CustomerSessionId sessionId = CustomerSessionId.newId();
@@ -55,9 +52,6 @@ class OrderPropertyTests {
      * Property 11: OrderCreated is published on creation
      */
     @Property(tries = 100)
-    @org.junit.jupiter.api.Tag("restaurant-notification-platform")
-    @org.junit.jupiter.api.Tag("property-11")
-    @org.junit.jupiter.api.Tag("OrderCreated is published on creation")
     void orderCreatedEventIsPublishedOnCreation() {
         TenantId tenantId = new TenantId(UUID.randomUUID());
         CustomerSessionId sessionId = CustomerSessionId.newId();
@@ -67,7 +61,7 @@ class OrderPropertyTests {
 
         assertEquals(1, events.size());
         assertTrue(events.get(0) instanceof OrderCreated);
-
+        
         OrderCreated created = (OrderCreated) events.get(0);
         assertEquals(order.getId(), created.orderId());
         assertEquals(tenantId, created.tenantId());
@@ -78,9 +72,6 @@ class OrderPropertyTests {
      * Property 15: State changes publish the correct events
      */
     @Property(tries = 100)
-    @org.junit.jupiter.api.Tag("restaurant-notification-platform")
-    @org.junit.jupiter.api.Tag("property-15")
-    @org.junit.jupiter.api.Tag("State changes and READY publish the correct events")
     void stateChangesAndReadyPublishCorrectEvents(
             @ForAll("allowedTransition") AllowedTransition transition) {
 
