@@ -74,11 +74,11 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - Create the `OrderStatus` enum with the allowed-transition map, `canTransitionTo`, and `isTerminal`
     - _Requirements: 5.1, 5.2, 5.7_
 
-  - [ ]* 4.2 Write property test for allowed transitions
+  - [x]* 4.2 Write property test for allowed transitions
     - **Property 13: Allowed lifecycle transitions succeed and land in the target state**
     - **Validates: Requirements 5.1, 5.2**
 
-  - [ ]* 4.3 Write property test for disallowed/self/terminal transitions
+  - [x]* 4.3 Write property test for disallowed/self/terminal transitions
     - **Property 14: Disallowed, self, and post-terminal transitions are rejected without state change**
     - **Validates: Requirements 5.3, 5.4, 5.7**
 
