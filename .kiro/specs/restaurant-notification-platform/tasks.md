@@ -48,7 +48,7 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - Implement `TenantContext` and `TenantContextHolder` (request-scoped resolution + `require()` that fails with a "tenant context missing" signal when unresolved)
     - _Requirements: 10.4, 10.5_
 
-  - [ ]* 2.3 Write unit tests for shared kernel primitives
+  - [x]* 2.3 Write unit tests for shared kernel primitives
     - Test `TenantId` null rejection and `TenantContextHolder.require()` behavior when empty
     - _Requirements: 10.5_
 
@@ -57,15 +57,15 @@ Implementation language: **Java 21** (per the design and ADR-008). All code live
     - Create `CustomerSessionId`, `SessionStatus` (ACTIVE, ENDED), the `CustomerSession` aggregate with the `start(TenantId, Clock)` factory (no public constructor, no credentials), pending-event recording, and the `CustomerSessionStarted` domain event
     - _Requirements: 1.1, 1.5, 1.6, 10.1_
 
-  - [ ]* 3.2 Write property test for session start identity and tenant assignment
+  - [x]* 3.2 Write property test for session start identity and tenant assignment
     - **Property 1: Session start assigns tenant and distinct identity**
     - **Validates: Requirements 1.1, 1.6**
 
-  - [ ]* 3.3 Write property test for session-started event emission
+  - [x]* 3.3 Write property test for session-started event emission
     - **Property 2: Session start publishes CustomerSessionStarted**
     - **Validates: Requirements 1.2**
 
-  - [ ]* 3.4 Write unit test for credential-free creation
+  - [x]* 3.4 Write unit test for credential-free creation
     - Assert a session is created without any authentication input (Req 1.5)
     - _Requirements: 1.5_
 
