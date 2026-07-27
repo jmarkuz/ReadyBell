@@ -56,16 +56,16 @@ public class RestaurantAdminService implements RestaurantAdminUseCase {
         Objects.requireNonNull(username, "username must not be null");
         Objects.requireNonNull(role, "role must not be null");
 
-        // Step 1 — duplicate username check within tenant (Req 8.4)
+        // Check for an existing account with the same username within the tenant (Req 8.4)
         staffRepository.findByTenantAndUsername(tenantId, username)
                 .ifPresent(existing -> {
                     throw new DuplicateUsernameException(tenantId, username);
                 });
 
-        // Step 2 — create account (Req 8.3)
+        // Create account (Req 8.3)
         StaffAccount account = StaffAccount.create(tenantId, username, role);
 
-        // Step 3 — persist and return
+        // Persist and return
         staffRepository.save(account);
         return account;
     }
@@ -87,14 +87,14 @@ public class RestaurantAdminService implements RestaurantAdminUseCase {
         Objects.requireNonNull(tenantId, "tenantId must not be null");
         Objects.requireNonNull(accountId, "accountId must not be null");
 
-        // Step 1 — load account scoped to tenant; cross-tenant returns empty (Req 8.8)
+        // Load account scoped to tenant; cross-tenant returns empty (Req 8.8)
         StaffAccount account = staffRepository.findByTenantAndId(tenantId, accountId)
                 .orElseThrow(() -> new StaffAccountNotFoundException(tenantId, accountId));
 
-        // Step 2 — deactivate (Req 8.5)
+        // Deactivate (Req 8.5)
         account.deactivate();
 
-        // Step 3 — persist and return
+        // Persist and return
         staffRepository.save(account);
         return account;
     }
@@ -115,14 +115,14 @@ public class RestaurantAdminService implements RestaurantAdminUseCase {
         Objects.requireNonNull(tenantId, "tenantId must not be null");
         Objects.requireNonNull(config, "config must not be null");
 
-        // Step 1 — load restaurant for tenant (Req 8.8)
+        // Load restaurant for tenant (Req 8.8)
         Restaurant restaurant = restaurantRepository.findByTenantId(tenantId)
                 .orElseThrow(() -> new RestaurantNotFoundException(tenantId));
 
-        // Step 2 — apply configuration update (Req 8.6)
+        // Apply configuration update (Req 8.6)
         restaurant.updateConfig(config);
 
-        // Step 3 — persist and return
+        // Persist and return
         restaurantRepository.save(restaurant);
         return restaurant;
     }

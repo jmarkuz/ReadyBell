@@ -65,10 +65,6 @@ public class Notification {
                 NotificationStatus.PENDING, payload);
     }
 
-    // -------------------------------------------------------------------------
-    // State transitions
-    // -------------------------------------------------------------------------
-
     /**
      * Transitions from {@link NotificationStatus#PENDING} to {@link NotificationStatus#SENT}
      * and records a {@link NotificationSent} domain event (Req 6.4).
@@ -118,10 +114,6 @@ public class Notification {
         status = NotificationStatus.FAILED;
     }
 
-    // -------------------------------------------------------------------------
-    // Pending domain events
-    // -------------------------------------------------------------------------
-
     /**
      * Returns the domain events recorded since this aggregate was created or loaded.
      * The returned list is unmodifiable; events are cleared by the application layer after
@@ -130,10 +122,6 @@ public class Notification {
     public List<DomainEvent> pendingEvents() {
         return Collections.unmodifiableList(pendingEvents);
     }
-
-    // -------------------------------------------------------------------------
-    // Accessors
-    // -------------------------------------------------------------------------
 
     public NotificationId id() {
         return id;
@@ -154,11 +142,6 @@ public class Notification {
     public String payload() {
         return payload;
     }
-
-    // -------------------------------------------------------------------------
-    // Reconstitution — used by the JPA adapter to rebuild the aggregate from a
-    // stored entity without recording any domain events.
-    // -------------------------------------------------------------------------
 
     /**
      * Rebuilds a {@code Notification} from its stored state.

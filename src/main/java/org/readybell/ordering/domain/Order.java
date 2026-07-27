@@ -55,10 +55,6 @@ public class Order {
     /** Pending events to be published by the application layer after transaction commit. */
     private final List<DomainEvent> pendingEvents = new ArrayList<>();
 
-    // -------------------------------------------------------------------------
-    // Private constructor — use the factory method
-    // -------------------------------------------------------------------------
-
     private Order(OrderId id,
                   TenantId tenantId,
                   CustomerSessionId sessionId,
@@ -73,10 +69,6 @@ public class Order {
         this.status    = status;
         this.version   = 0L;
     }
-
-    // -------------------------------------------------------------------------
-    // Factory — only way to create an order
-    // -------------------------------------------------------------------------
 
     /**
      * Creates a new {@code Order} in the {@link OrderStatus#CREATED} state.
@@ -99,10 +91,6 @@ public class Order {
         order.record(OrderCreated.of(order.id, tenantId, sessionId, clock.instant()));
         return order;
     }
-
-    // -------------------------------------------------------------------------
-    // Command — lifecycle transition
-    // -------------------------------------------------------------------------
 
     /**
      * Transitions this order to the given {@code target} status, enforcing all
@@ -148,10 +136,6 @@ public class Order {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Query methods
-    // -------------------------------------------------------------------------
-
     public OrderId getId() {
         return id;
     }
@@ -187,10 +171,6 @@ public class Order {
         return Collections.unmodifiableList(pendingEvents);
     }
 
-    // -------------------------------------------------------------------------
-    // Internal helpers
-    // -------------------------------------------------------------------------
-
     private void record(DomainEvent event) {
         pendingEvents.add(event);
     }
@@ -199,11 +179,6 @@ public class Order {
     public void clearPendingEvents() {
         pendingEvents.clear();
     }
-
-    // -------------------------------------------------------------------------
-    // Reconstitution — used by the JPA adapter to rebuild the aggregate from a
-    // stored entity without recording any domain events.
-    // -------------------------------------------------------------------------
 
     /**
      * Rebuilds an {@code Order} from its stored state.

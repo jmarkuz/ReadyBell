@@ -46,10 +46,6 @@ public class RestaurantAdminController {
         this.adminUseCase = adminUseCase;
     }
 
-    // -------------------------------------------------------------------------
-    // POST /api/admin/staff — create staff account (Req 8.3, 8.4)
-    // -------------------------------------------------------------------------
-
     /**
      * Creates a new staff account within the authenticated admin's restaurant.
      *
@@ -69,10 +65,6 @@ public class RestaurantAdminController {
         return StaffAccountResponse.from(account);
     }
 
-    // -------------------------------------------------------------------------
-    // DELETE /api/admin/staff/{accountId} — deactivate staff account (Req 8.5, 8.8)
-    // -------------------------------------------------------------------------
-
     /**
      * Deactivates the staff account identified by {@code accountId}.
      *
@@ -91,10 +83,6 @@ public class RestaurantAdminController {
         return StaffAccountResponse.from(account);
     }
 
-    // -------------------------------------------------------------------------
-    // PUT /api/admin/config — update restaurant configuration (Req 8.6, 8.7)
-    // -------------------------------------------------------------------------
-
     /**
      * Updates the restaurant configuration for the authenticated admin's tenant.
      *
@@ -110,10 +98,6 @@ public class RestaurantAdminController {
         Restaurant restaurant = adminUseCase.updateRestaurantConfig(tenantId, config);
         return new RestaurantConfigResponse(restaurant.getConfig().name());
     }
-
-    // -------------------------------------------------------------------------
-    // Response records
-    // -------------------------------------------------------------------------
 
     /**
      * Response body for {@code PUT /api/admin/config}.

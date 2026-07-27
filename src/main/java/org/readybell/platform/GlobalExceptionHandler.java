@@ -35,11 +35,6 @@ public class GlobalExceptionHandler {
     private static final MediaType PROBLEM_JSON =
             MediaType.parseMediaType("application/problem+json");
 
-    /**
-     * Handles invalid or unresolvable QR tokens (Req 1.4, 1.7).
-     *
-     * @return 422 Unprocessable Entity with a problem detail describing the invalid token
-     */
     @ExceptionHandler(InvalidQrTokenException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidQrToken(InvalidQrTokenException ex) {
         return problem(
@@ -50,11 +45,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles attempts to start sessions at a deactivated restaurant (Req 9.6).
-     *
-     * @return 422 Unprocessable Entity with a problem detail describing the deactivated restaurant
-     */
     @ExceptionHandler(DeactivatedRestaurantException.class)
     public ResponseEntity<Map<String, Object>> handleDeactivatedRestaurant(DeactivatedRestaurantException ex) {
         return problem(
@@ -65,11 +55,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles requests that arrive without a resolved tenant context (Req 10.5).
-     *
-     * @return 403 Forbidden with a problem detail indicating the missing tenant context
-     */
     @ExceptionHandler(MissingTenantContextException.class)
     public ResponseEntity<Map<String, Object>> handleMissingTenantContext(MissingTenantContextException ex) {
         return problem(
@@ -80,11 +65,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles duplicate username within a tenant (Req 8.4).
-     *
-     * @return 409 Conflict with a problem detail identifying the duplicate field
-     */
     @ExceptionHandler(DuplicateUsernameException.class)
     public ResponseEntity<Map<String, Object>> handleDuplicateUsername(DuplicateUsernameException ex) {
         return problem(
@@ -95,11 +75,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles a staff account not found (or cross-tenant) lookup (Req 8.8).
-     *
-     * @return 404 Not Found with a problem detail
-     */
     @ExceptionHandler(StaffAccountNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleStaffAccountNotFound(StaffAccountNotFoundException ex) {
         return problem(
@@ -126,11 +101,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles requests referencing an invalid or inactive customer session (Req 4.5).
-     *
-     * @return 422 Unprocessable Entity with a problem detail identifying the invalid session
-     */
     @ExceptionHandler(InvalidSessionException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidSession(InvalidSessionException ex) {
         return problem(
@@ -141,11 +111,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles cross-tenant access attempts on order creation (Req 4.6, 7.7).
-     *
-     * @return 403 Forbidden with a problem detail identifying the inaccessible session
-     */
     @ExceptionHandler(CrossTenantAccessException.class)
     public ResponseEntity<Map<String, Object>> handleCrossTenantAccess(CrossTenantAccessException ex) {
         return problem(
@@ -156,11 +121,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles order not found (or cross-tenant silenced) lookups (Req 7.7, 10.3).
-     *
-     * @return 404 Not Found with a problem detail
-     */
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleOrderNotFound(OrderNotFoundException ex) {
         return problem(
@@ -171,11 +131,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles disallowed or self-transitions (Req 5.3, 5.4).
-     *
-     * @return 422 Unprocessable Entity identifying the invalid transition
-     */
     @ExceptionHandler(InvalidTransitionException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidTransition(InvalidTransitionException ex) {
         return problem(
@@ -186,11 +141,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles transition attempts on already-terminal orders (Req 5.7).
-     *
-     * @return 422 Unprocessable Entity identifying the terminal state
-     */
     @ExceptionHandler(TerminalStateException.class)
     public ResponseEntity<Map<String, Object>> handleTerminalState(TerminalStateException ex) {
         return problem(
