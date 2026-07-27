@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.security.Security;
+import java.util.Optional;
 
 /**
  * VAPID Web Push implementation of {@link NotificationSender}.
@@ -40,30 +41,55 @@ class VapidNotificationSenderAdapter implements NotificationSender {
 
     private static final Logger log = LoggerFactory.getLogger(VapidNotificationSenderAdapter.class);
 
-    private final PushService pushService;
+    private final Optional<PushService> pushService;
 
     VapidNotificationSenderAdapter(
             @Value("${readybell.vapid.public-key}") String publicKey,
             @Value("${readybell.vapid.private-key}") String privateKey,
-            @Value("${readybell.vapid.subject}") String subject) throws Exception {
+            @Value("${readybell.vapid.subject}") String subject) {
 
-        // BouncyCastle is required by the web-push library for EC key operations
-        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
-            Security.addProvider(new BouncyCastleProvider());
+        // Skip initialization if using placeholder keys (development/testing without real VAPID credentials)
+        if (isPlaceholder(publicKey) || isPlaceholder(privateKey)) {
+            log.warn("VAPID credentials are not configured. Web Push notifications will be rejected. " +
+                    "Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables for production use.");
+            this.pushService = Optional.empty();
+        } else {
+            this.pushService = initializePushService(publicKey, privateKey, subject);
         }
-
-        this.pushService = new PushService(publicKey, privateKey, subject);
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>Builds a VAPID-signed Web Push message and dispatches it to the push service.
-     * The JSON payload carries {@code title} and {@code body} fields so browsers can
-     * display a standard notification without additional parsing (Req 6.2).
-     */
+    private static Optional<PushService> initializePushService(String publicKey, String privateKey, String subject) {
+        try {
+            // BouncyCastle is required by the web-push library for EC key operations
+            if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+                Security.addProvider(new BouncyCastleProvider());
+            }
+
+            PushService service = new PushService(publicKey, privateKey, subject);
+            log.info("VAPID Web Push service initialized successfully.");
+            return Optional.of(service);
+        } catch (Exception e) {
+            log.error("Failed to initialize VAPID Web Push service with provided credentials. " +
+                    "Web Push notifications will be rejected.", e);
+            return Optional.empty();
+        }
+    }
+
+    private static boolean isPlaceholder(String key) {
+        return key == null || key.isBlank() || 
+               key.startsWith("placeholder-") || 
+               key.equals("${VAPID_PUBLIC_KEY:placeholder-public-key}") ||
+               key.equals("${VAPID_PRIVATE_KEY:placeholder-private-key}");
+    }
+
     @Override
     public SendResult send(PushEndpoint endpoint, NotificationPayload payload) {
+        // If VAPID service is not initialized, reject all sends
+        if (pushService.isEmpty()) {
+            log.debug("Rejecting Web Push send: VAPID service not initialized");
+            return SendResult.REJECTED;
+        }
+
         try {
             String json = buildJson(payload);
 
@@ -73,7 +99,7 @@ class VapidNotificationSenderAdapter implements NotificationSender {
                     endpoint.authKey(),
                     json);
 
-            HttpResponse response = pushService.send(notification);
+            HttpResponse response = pushService.get().send(notification);
             int statusCode = response.getStatusLine().getStatusCode();
 
             return mapStatusCode(statusCode);
@@ -86,10 +112,6 @@ class VapidNotificationSenderAdapter implements NotificationSender {
             return SendResult.REJECTED;
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
     private static String buildJson(NotificationPayload payload) {
         // Minimal JSON — avoids pulling in a serialisation library for a two-field object
