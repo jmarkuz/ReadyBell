@@ -333,7 +333,8 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: simulate SSE messages, table updates correctly
   - Result: Real-time updates working
 
-- [~] 7.3 Implement SSE fallback to polling
+- [x] 7.3 Implement SSE fallback to polling
+
   - If SSE fails, fall back to polling
   - Create `src/hooks/useOrderPolling.ts`
   - Poll interval: 5s for mobile, 10s for panel
