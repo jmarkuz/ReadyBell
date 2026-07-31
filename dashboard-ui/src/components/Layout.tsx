@@ -2,6 +2,7 @@ import React, { ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import { useSearch } from '@/context/SearchContext';
 
 interface LayoutProps {
   children?: ReactNode;
@@ -15,6 +16,8 @@ interface LayoutProps {
  * - Sidebar on left (collapsible on mobile)
  * - Main content area (scrollable independently)
  * 
+ * Uses SearchContext to manage search state across all pages.
+ * 
  * Responsive:
  * - Desktop (1024px+): Full sidebar visible, 4-column content
  * - Tablet (768px-1023px): Collapsed sidebar, 2-column content
@@ -22,6 +25,7 @@ interface LayoutProps {
  */
 export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const { setQuery } = useSearch();
 
   return (
     <div className="flex h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50">
@@ -52,7 +56,7 @@ export default function Layout({ children }: LayoutProps) {
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Header - Fixed at top */}
         <header className="sticky top-0 z-20 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-          <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+          <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} onSearch={setQuery} />
         </header>
 
         {/* Main Content Area - Scrollable independently */}

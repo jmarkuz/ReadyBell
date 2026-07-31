@@ -7,6 +7,7 @@ import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { SearchProvider } from '@/context/SearchContext';
 
 /**
  * Custom render function that wraps components with necessary providers
@@ -31,7 +32,9 @@ export function renderWithProviders(
   function Wrapper({ children }: { children: React.ReactNode }) {
     const content = (
       <ThemeProvider defaultMode={initialTheme} persistToLocalStorage={false}>
-        {children}
+        <SearchProvider>
+          {children}
+        </SearchProvider>
       </ThemeProvider>
     );
 

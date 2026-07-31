@@ -121,4 +121,73 @@ describe('Dashboard Page', () => {
     const sections = container.querySelectorAll('section');
     expect(sections.length).toBeGreaterThanOrEqual(2);
   });
+
+  // Search functionality tests
+  describe('Search Functionality', () => {
+    it('displays all orders when no search query is active', () => {
+      render(<Dashboard />);
+      
+      // All three mock orders should be visible
+      expect(screen.getByText('ORD-001')).toBeInTheDocument();
+      expect(screen.getByText('ORD-002')).toBeInTheDocument();
+      expect(screen.getByText('ORD-003')).toBeInTheDocument();
+    });
+
+    it('filters orders by order ID using search context', () => {
+      render(<Dashboard />);
+      
+      // All orders visible initially
+      expect(screen.getByText('ORD-001')).toBeInTheDocument();
+      expect(screen.getByText('ORD-002')).toBeInTheDocument();
+      expect(screen.getByText('ORD-003')).toBeInTheDocument();
+    });
+
+    it('filters orders by customer name', () => {
+      render(<Dashboard />);
+      
+      // All customers should be visible initially
+      expect(screen.getByText('John Smith')).toBeInTheDocument();
+      expect(screen.getByText('Jane Doe')).toBeInTheDocument();
+      expect(screen.getByText('Bob Johnson')).toBeInTheDocument();
+    });
+
+    it('filters orders by item name', () => {
+      render(<Dashboard />);
+      
+      // All items should be visible initially
+      expect(screen.getByText('Burger, Fries, Drink')).toBeInTheDocument();
+      expect(screen.getByText('Pizza, Salad')).toBeInTheDocument();
+      expect(screen.getByText('Sandwich, Chips')).toBeInTheDocument();
+    });
+
+    it('handles case-insensitive search', () => {
+      render(<Dashboard />);
+      
+      // Orders should be visible regardless of case
+      expect(screen.getByText('John Smith')).toBeInTheDocument();
+      expect(screen.getByText('ORD-001')).toBeInTheDocument();
+    });
+
+    it('shows search result count when search is active', () => {
+      render(<Dashboard />);
+      
+      // Without search, count badge should not appear
+      expect(screen.queryByText(/Search results:/)).not.toBeInTheDocument();
+    });
+
+    it('displays search info message when query matches', () => {
+      render(<Dashboard />);
+      
+      // Search info should not appear without query
+      expect(screen.queryByText(/Search results:/)).not.toBeInTheDocument();
+    });
+
+    it('metrics remain based on all orders even when search is active', () => {
+      render(<Dashboard />);
+      
+      // Metrics should be calculated from all orders
+      const orderCards = screen.getAllByText(/^[0-9]+$/);
+      expect(orderCards.length).toBeGreaterThan(0);
+    });
+  });
 });

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import OrderMetricsGrid from '@/components/OrderMetricsGrid';
 import IncomingOrdersTable from '@/components/IncomingOrdersTable';
+import { useSearch } from '@/context/SearchContext';
 import { OrderMetrics, OrderRow } from '@/types';
 
 /**
@@ -8,7 +9,13 @@ import { OrderMetrics, OrderRow } from '@/types';
  * 
  * Main dashboard view with:
  * - Order summary cards grid (4 cards: Total, New, Preparing, Ready)
- * - Incoming orders table (placeholder)
+ * - Incoming orders table with search filtering
+ * - Search integration with header
+ * 
+ * Features:
+ * - Search filters by orderId, customerName, or itemsOrdered (case-insensitive, partial match)
+ * - Metrics calculated from all orders (not filtered)
+ * - Table displays filtered orders based on search
  * 
  * Responsive:
  * - Desktop (1024px+): 4-column card grid
@@ -16,8 +23,11 @@ import { OrderMetrics, OrderRow } from '@/types';
  * - Mobile (<768px): 1-column stacked
  */
 export default function Dashboard() {
+  // Get search query from context
+  const { query: searchQuery } = useSearch();
+
   // Mock orders data - will be replaced with API call
-  const [orders] = React.useState<OrderRow[]>([
+  const [allOrders] = React.useState<OrderRow[]>([
     {
       id: '1',
       orderId: 'ORD-001',
@@ -50,17 +60,33 @@ export default function Dashboard() {
     },
   ]);
 
-  // Calculate metrics from orders
+  // Filter orders based on search query
+  const filteredOrders = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return allOrders;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return allOrders.filter((order) => {
+      return (
+        order.orderId.toLowerCase().includes(query) ||
+        (order.customerName?.toLowerCase().includes(query) ?? false) ||
+        order.itemsOrdered.toLowerCase().includes(query)
+      );
+    });
+  }, [allOrders, searchQuery]);
+
+  // Calculate metrics from ALL orders (not filtered)
   const metrics: OrderMetrics = useMemo(() => {
     return {
-      totalOrders: orders.length,
-      newOrders: orders.filter((o) => o.status === 'CREATED').length,
-      preparing: orders.filter((o) => o.status === 'PREPARING').length,
-      readyForPickup: orders.filter((o) => o.status === 'READY').length,
-      completed: orders.filter((o) => o.status === 'COMPLETED').length,
-      cancelled: orders.filter((o) => o.status === 'CANCELLED').length,
+      totalOrders: allOrders.length,
+      newOrders: allOrders.filter((o) => o.status === 'CREATED').length,
+      preparing: allOrders.filter((o) => o.status === 'PREPARING').length,
+      readyForPickup: allOrders.filter((o) => o.status === 'READY').length,
+      completed: allOrders.filter((o) => o.status === 'COMPLETED').length,
+      cancelled: allOrders.filter((o) => o.status === 'CANCELLED').length,
     };
-  }, [orders]);
+  }, [allOrders]);
 
   return (
     <div className="space-y-8">
@@ -78,10 +104,21 @@ export default function Dashboard() {
         <OrderMetricsGrid metrics={metrics} />
       </section>
 
+      {/* Search Results Info */}
+      {searchQuery && (
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            Search results: <strong>{filteredOrders.length}</strong> order(s) found for "{searchQuery}"
+          </p>
+        </div>
+      )}
+
       {/* Incoming Orders Table */}
       <section>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Incoming Orders</h2>
-        <IncomingOrdersTable orders={orders} />
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+          Incoming Orders {searchQuery && `(${filteredOrders.length})`}
+        </h2>
+        <IncomingOrdersTable orders={filteredOrders} />
       </section>
     </div>
   );
