@@ -6,7 +6,6 @@ interface UseOrderUpdatesOptions {
   orders: Order[];
   onOrdersUpdate: (orders: Order[]) => void;
   endpoint?: string;
-  enabled?: boolean;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   currentPage?: number;
@@ -55,7 +54,6 @@ export function useOrderUpdates(options: UseOrderUpdatesOptions): UseOrderUpdate
     orders,
     onOrdersUpdate,
     endpoint = '/api/orders/stream',
-    enabled = true,
     sortBy,
     sortOrder = 'desc',
     currentPage = 1,
@@ -132,7 +130,6 @@ export function useOrderUpdates(options: UseOrderUpdatesOptions): UseOrderUpdate
         updatedOrders[existingIndex] = {
           ...updatedOrders[existingIndex],
           ...orderUpdate,
-          updatedAt: new Date().toISOString(),
         };
       } else {
         // Add new order to top of list
@@ -143,11 +140,10 @@ export function useOrderUpdates(options: UseOrderUpdatesOptions): UseOrderUpdate
           restaurantId: orderUpdate.restaurantId || 'unknown',
           items: orderUpdate.items || [],
           status: orderUpdate.status || ('CREATED' as OrderStatus),
-          createdAt: orderUpdate.createdAt || new Date().toISOString(),
-          estimatedReadyAt: orderUpdate.estimatedReadyAt || new Date(Date.now() + 30 * 60000).toISOString(),
+          createdAt: orderUpdate.createdAt || new Date(),
+          estimatedReadyAt: orderUpdate.estimatedReadyAt || new Date(Date.now() + 30 * 60000),
           totalPrice: orderUpdate.totalPrice || 0,
           deliveryMethod: orderUpdate.deliveryMethod || 'pickup',
-          updatedAt: new Date().toISOString(),
         });
       }
 
@@ -187,7 +183,6 @@ export function useOrderUpdates(options: UseOrderUpdatesOptions): UseOrderUpdate
       ...prev,
       error,
       isUsingSSE: false,
-      isRetrying: false,
     }));
     onSSEError?.(error);
   }, [onSSEError]);

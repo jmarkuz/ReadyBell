@@ -3,23 +3,58 @@
  * Handles all HTTP requests to the backend with authentication, interceptors, and error handling
  * 
  * Base URL: configurable via VITE_API_BASE_URL env var or defaults to http://localhost:8080
+ * 
+ * Supports:
+ * - Bearer token authentication (Authorization header)
+ * - Tenant isolation (via authenticated user context)
+ * - RFC 7807 error responses
+ * - Multi-phase endpoint integration
  */
 
 import { ErrorResponse, DisplayError, PaginatedResponse, OrderRow } from '@/types';
 
 /**
+ * User profile from authentication
+ */
+export interface UserProfile {
+  id: string;
+  username: string;
+  email: string;
+  name: string;
+  role: 'STAFF' | 'ADMIN' | 'PLATFORM_ADMIN';
+  tenantId: string;
+  restaurantName?: string;
+}
+
+/**
  * API Client Class
- * Handles HTTP requests, authentication, error handling
+ * Implements restaurant-notification-platform endpoint specification
  */
 export class ApiClient {
   private baseURL: string;
   private defaultHeaders: HeadersInit;
+  private userProfile: UserProfile | null = null;
 
   constructor(baseURL?: string) {
     this.baseURL = baseURL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
     this.defaultHeaders = {
       'Content-Type': 'application/json',
     };
+    this.loadUserProfile();
+  }
+
+  /**
+   * Load user profile from localStorage
+   */
+  private loadUserProfile(): void {
+    try {
+      const profileJson = localStorage.getItem('user-profile');
+      if (profileJson) {
+        this.userProfile = JSON.parse(profileJson);
+      }
+    } catch (error) {
+      console.warn('Failed to load user profile:', error);
+    }
   }
 
   /**
@@ -47,6 +82,27 @@ export class ApiClient {
   }
 
   /**
+   * Get current user profile
+   */
+  getUserProfile(): UserProfile | null {
+    return this.userProfile;
+  }
+
+  /**
+   * Get current tenant ID
+   */
+  getTenantId(): string | null {
+    return this.userProfile?.tenantId || null;
+  }
+
+  /**
+   * Get current user role
+   */
+  getUserRole(): string | null {
+    return this.userProfile?.role || null;
+  }
+
+  /**
    * Map backend error response to frontend display error
    */
   private mapError(response: Response, data: unknown): DisplayError {
@@ -56,7 +112,7 @@ export class ApiClient {
       errorData = data as Partial<ErrorResponse>;
     }
 
-    // Determine error type based on HTTP status
+    // Determine error type based on HTTP status and error type
     let type: DisplayError['type'] = 'unknown';
     if (response.status === 401 || response.status === 403) {
       type = 'auth';
@@ -185,6 +241,13 @@ export class ApiClient {
   }
 
   /**
+   * PUT request
+   */
+  async put<T>(endpoint: string, body: unknown): Promise<T> {
+    return this.request<T>('PUT', endpoint, body);
+  }
+
+  /**
    * PATCH request
    */
   async patch<T>(endpoint: string, body: unknown): Promise<T> {
@@ -198,6 +261,10 @@ export class ApiClient {
     return this.request<T>('DELETE', endpoint);
   }
 
+  // ============================================================================
+  // PHASE 1: ORDER MANAGEMENT ENDPOINTS
+  // ============================================================================
+
   /**
    * Get order list with pagination and filtering
    * GET /api/orders?page=1&pageSize=25&status=CREATED,READY&sortBy=created&sortOrder=desc
@@ -206,7 +273,7 @@ export class ApiClient {
     page?: number;
     pageSize?: number;
     status?: string[];
-    sortBy?: 'eta' | 'status' | 'created';
+    sortBy?: 'eta' | 'status' | 'created' | 'customerName' | 'orderId';
     sortOrder?: 'asc' | 'desc';
     search?: string;
   }): Promise<PaginatedResponse<OrderRow>> {
@@ -232,79 +299,123 @@ export class ApiClient {
    * POST /api/orders
    */
   async createOrder(data: {
-    items: Array<{ menuItemId: string; quantity: number }>;
-    specialInstructions?: string;
-  }): Promise<{ id: string; orderId: string }> {
+    customerSessionId: string;
+    items: Array<{ menuItemId: string; quantity: number; specialInstructions?: string }>;
+  }): Promise<{ id: string; orderId: string; status: string; createdAt: string }> {
     return this.post('/api/orders', data);
   }
 
   /**
    * Update order status
    * PATCH /api/orders/{id}/status
+   * 
+   * Valid transitions:
+   * CREATED → IN_PROGRESS, CANCELLED
+   * IN_PROGRESS → READY, CANCELLED
+   * READY → COMPLETED, CANCELLED
+   * COMPLETED, CANCELLED → (terminal, no transitions)
    */
-  async updateOrderStatus(orderId: string, status: string): Promise<{ id: string; status: string; updatedAt: string }> {
+  async updateOrderStatus(
+    orderId: string,
+    status: 'IN_PROGRESS' | 'READY' | 'COMPLETED' | 'CANCELLED'
+  ): Promise<{ id: string; status: string; updatedAt: string }> {
     return this.patch(`/api/orders/${orderId}/status`, { status });
   }
 
   /**
-   * Setup EventSource for real-time updates
+   * Setup EventSource for real-time order updates
    * GET /api/orders/stream (Server-Sent Events)
+   * 
+   * Events:
+   * - OrderCreated
+   * - OrderStatusUpdated
+   * - OrderReady
    */
-  setupSSE(onMessage: (event: OrderUpdateEvent) => void, onError: (error: Error) => void): () => void {
+  setupSSE(
+    onMessage: (event: OrderUpdateEvent) => void,
+    onError: (error: Error) => void
+  ): () => void {
     // Note: Token authentication for EventSource requires backend support for token in URL or CORS headers
-    // This is a limitation of the EventSource API which doesn't support custom headers
-    // In production, consider using fetch with ReadableStream instead
-    
-    // Create SSE connection (EventSource doesn't support custom headers directly)
-    const source = new EventSource(
-      `${this.baseURL}/api/orders/stream`,
-      { withCredentials: true }
-    );
+    // Use fetch-based SSE instead of EventSource API for better control
+    const token = this.getAuthToken();
+    if (!token) {
+      onError(new Error('No authentication token available'));
+      return () => {};
+    }
 
-    source.addEventListener('OrderStatusUpdated', (event: Event) => {
+    // Use fetch with ReadableStream for SSE with Bearer token support
+    const controller = new AbortController();
+
+    const startSSE = async () => {
       try {
-        const data = JSON.parse((event as MessageEvent).data);
-        onMessage({
-          type: 'OrderStatusUpdated',
-          orderId: data.orderId,
-          status: data.status,
-          updatedAt: new Date(data.updatedAt),
+        const response = await fetch(`${this.baseURL}/api/orders/stream`, {
+          headers: this.getHeaders(),
+          signal: controller.signal,
         });
-      } catch (error) {
-        console.error('Failed to parse SSE message:', error);
-      }
-    });
 
-    source.addEventListener('OrderCreated', (event: Event) => {
-      try {
-        const data = JSON.parse((event as MessageEvent).data);
-        onMessage({
-          type: 'OrderCreated',
-          orderId: data.orderId,
-          status: data.status,
-          createdAt: new Date(data.createdAt),
-        });
-      } catch (error) {
-        console.error('Failed to parse SSE message:', error);
-      }
-    });
+        if (!response.ok) {
+          throw new Error(`SSE connection failed: ${response.status}`);
+        }
 
-    source.addEventListener('error', () => {
-      if (source.readyState === EventSource.CLOSED) {
-        onError(new Error('SSE connection closed'));
-        source.close();
-      } else if (source.readyState === EventSource.CONNECTING) {
-        console.warn('SSE connection error, retrying...');
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('Failed to get response reader');
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+
+          // Process complete lines
+          for (let i = 0; i < lines.length - 1; i++) {
+            const line = lines[i].trim();
+
+            if (line.startsWith('event:')) {
+              const eventType = line.slice(6).trim();
+              const dataLine = lines[i + 1];
+              if (dataLine?.startsWith('data:')) {
+                const dataStr = dataLine.slice(5).trim();
+                try {
+                  const data = JSON.parse(dataStr);
+                  onMessage({
+                    type: eventType as 'OrderCreated' | 'OrderStatusUpdated' | 'OrderReady',
+                    ...data,
+                  });
+                } catch (error) {
+                  console.error('Failed to parse SSE data:', error);
+                }
+              }
+              i++; // Skip the data line
+            }
+          }
+
+          // Keep incomplete line in buffer
+          buffer = lines[lines.length - 1];
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+          onError(error);
+        }
       }
-    });
+    };
+
+    startSSE();
 
     // Return cleanup function
-    return () => source.close();
+    return () => controller.abort();
   }
 
   /**
    * Polling fallback: Get orders updated since last fetch
    * GET /api/orders/poll?since=2024-01-15T10:00:00Z&eTag=abc123
+   * 
+   * Returns 304 Not Modified if ETag matches (no change)
    */
   async pollOrders(params?: {
     since?: Date;
@@ -318,6 +429,238 @@ export class ApiClient {
     const endpoint = `/api/orders/poll${queryString ? '?' + queryString : ''}`;
 
     return this.get(endpoint);
+  }
+
+  // ============================================================================
+  // AUTHENTICATION ENDPOINTS
+  // ============================================================================
+
+  /**
+   * Login with credentials
+   * POST /api/login
+   */
+  async login(credentials: {
+    username: string;
+    password: string;
+  }): Promise<{ token: string; role: string; tenantId: string; expiresIn: number }> {
+    const response = await this.post('/api/login', credentials);
+    
+    // Store token and user profile
+    const typedResponse = response as {
+      token: string;
+      role: string;
+      tenantId: string;
+      username?: string;
+      email?: string;
+      name?: string;
+      expiresIn: number;
+    };
+
+    if (typedResponse.token) {
+      localStorage.setItem('auth-token', typedResponse.token);
+      
+      const userProfile: UserProfile = {
+        id: typedResponse.username || '',
+        username: typedResponse.username || '',
+        email: typedResponse.email || '',
+        name: typedResponse.name || typedResponse.username || '',
+        role: typedResponse.role as 'STAFF' | 'ADMIN' | 'PLATFORM_ADMIN',
+        tenantId: typedResponse.tenantId,
+      };
+      
+      localStorage.setItem('user-profile', JSON.stringify(userProfile));
+      this.userProfile = userProfile;
+    }
+
+    return typedResponse;
+  }
+
+  /**
+   * Logout (clear tokens)
+   */
+  logout(): void {
+    localStorage.removeItem('auth-token');
+    localStorage.removeItem('user-profile');
+    this.userProfile = null;
+  }
+
+  /**
+   * Check if user is authenticated
+   */
+  isAuthenticated(): boolean {
+    return !!this.getAuthToken() && !!this.userProfile;
+  }
+
+  // ============================================================================
+  // PHASE 2: RESTAURANT STAFF ADMIN ENDPOINTS
+  // ============================================================================
+
+  /**
+   * Create staff account
+   * POST /api/admin/staff (ADMIN role required)
+   */
+  async createStaffAccount(data: {
+    username: string;
+    email: string;
+    password: string;
+    name: string;
+    role?: 'STAFF' | 'ADMIN';
+  }): Promise<{
+    id: string;
+    username: string;
+    email: string;
+    name: string;
+    role: string;
+    status: string;
+    createdAt: string;
+  }> {
+    return this.post('/api/admin/staff', data);
+  }
+
+  /**
+   * Deactivate staff account
+   * DELETE /api/admin/staff/{accountId} (ADMIN role required)
+   */
+  async deactivateStaffAccount(accountId: string): Promise<void> {
+    await this.delete(`/api/admin/staff/${accountId}`);
+  }
+
+  /**
+   * Update restaurant configuration
+   * PUT /api/admin/config (ADMIN role required)
+   */
+  async updateRestaurantConfig(data: {
+    restaurantName: string;
+    phoneNumber?: string;
+    address?: string;
+    cuisineType?: string;
+    averagePrepTime?: number;
+    webhookUrl?: string;
+  }): Promise<{
+    id: string;
+    restaurantName: string;
+    phoneNumber?: string;
+    address?: string;
+    cuisineType?: string;
+    averagePrepTime?: number;
+    webhookUrl?: string;
+    updatedAt: string;
+  }> {
+    return this.put('/api/admin/config', data);
+  }
+
+  // ============================================================================
+  // PHASE 3: PLATFORM ADMIN ENDPOINTS
+  // ============================================================================
+
+  /**
+   * Create restaurant tenant
+   * POST /api/platform/restaurants (PLATFORM_ADMIN role required)
+   */
+  async createRestaurant(data: {
+    restaurantName: string;
+    ownerEmail: string;
+    ownerName: string;
+  }): Promise<{
+    tenantId: string;
+    restaurantName: string;
+    status: string;
+    createdAt: string;
+  }> {
+    return this.post('/api/platform/restaurants', data);
+  }
+
+  /**
+   * Update restaurant (Platform Admin)
+   * PUT /api/platform/restaurants/{tenantId} (PLATFORM_ADMIN role required)
+   */
+  async updateRestaurant(
+    tenantId: string,
+    data: {
+      restaurantName?: string;
+      status?: 'ACTIVE' | 'INACTIVE';
+    }
+  ): Promise<{
+    tenantId: string;
+    restaurantName: string;
+    status: string;
+    updatedAt: string;
+  }> {
+    return this.put(`/api/platform/restaurants/${tenantId}`, data);
+  }
+
+  /**
+   * Deactivate restaurant
+   * DELETE /api/platform/restaurants/{tenantId} (PLATFORM_ADMIN role required)
+   */
+  async deactivateRestaurant(tenantId: string): Promise<void> {
+    await this.delete(`/api/platform/restaurants/${tenantId}`);
+  }
+
+  // ============================================================================
+  // PHASE 4: CUSTOMER SESSION ENDPOINTS (PWA - FUTURE)
+  // ============================================================================
+
+  /**
+   * Start customer session from QR code
+   * POST /api/sessions (public, no authentication required)
+   */
+  async startCustomerSession(qrToken: string): Promise<{
+    sessionId: string;
+    tenantId: string;
+    restaurantName: string;
+    status: string;
+    createdAt: string;
+    expiresAt: string;
+  }> {
+    return this.post('/api/sessions', { qrToken });
+  }
+
+  /**
+   * Get customer session orders
+   * GET /api/sessions/{sessionId}/orders (public, no authentication required)
+   */
+  async getCustomerSessionOrders(sessionId: string): Promise<{
+    sessionId: string;
+    orders: Array<{
+      id: string;
+      orderId: string;
+      status: string;
+      items: Array<{ name: string; quantity: number }>;
+      createdAt: string;
+      estimatedReadyTime: string;
+    }>;
+  }> {
+    return this.get(`/api/sessions/${sessionId}/orders`);
+  }
+
+  /**
+   * Register device for push notifications
+   * POST /api/sessions/{sessionId}/subscriptions (public)
+   */
+  async registerDeviceSubscription(
+    sessionId: string,
+    subscription: {
+      endpoint: string;
+      keys: {
+        p256dh: string;
+        auth: string;
+      };
+    }
+  ): Promise<{
+    subscriptionId: string;
+    endpoint: string;
+    createdAt: string;
+  }> {
+    return this.post(`/api/sessions/${sessionId}/subscriptions`, subscription);
+  }
+
+  /**
+   * Revoke device subscription
+   * DELETE /api/sessions/{sessionId}/subscriptions/{subscriptionId} (public)
+   */
+  async revokeDeviceSubscription(sessionId: string, subscriptionId: string): Promise<void> {
+    await this.delete(`/api/sessions/${sessionId}/subscriptions/${subscriptionId}`);
   }
 }
 
@@ -341,11 +684,13 @@ export class ApiError extends Error {
  * Order Update Event from SSE stream
  */
 export interface OrderUpdateEvent {
-  type: 'OrderStatusUpdated' | 'OrderCreated';
-  orderId: string;
+  type: 'OrderStatusUpdated' | 'OrderCreated' | 'OrderReady';
+  orderId?: string;
   status?: string;
-  updatedAt?: Date;
-  createdAt?: Date;
+  updatedAt?: Date | string;
+  createdAt?: Date | string;
+  customerName?: string;
+  previousStatus?: string;
 }
 
 /**

@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import OrderMetricsGrid from '@/components/OrderMetricsGrid';
 import IncomingOrdersTable from '@/components/IncomingOrdersTable';
 import StatusFilter from '@/components/StatusFilter';
 import { DateRangeFilter } from '@/components/DateRangeFilter';
 import { useSearch } from '@/context/SearchContext';
-import { OrderMetrics, OrderRow, OrderStatus } from '@/types';
+import { OrderMetrics, OrderRow, OrderStatus, Order } from '@/types';
+import { useOrderUpdates } from '@/hooks/useOrderUpdates';
 
 /**
  * Dashboard Page
@@ -29,6 +30,32 @@ import { OrderMetrics, OrderRow, OrderStatus } from '@/types';
  * - Tablet (768px-1023px): 2-column card grid
  * - Mobile (<768px): 1-column stacked
  */
+/**
+ * Convert Order entity to OrderRow for table display
+ */
+function convertOrderToRow(order: Order): OrderRow {
+  const now = Date.now();
+  const etaTime = order.estimatedReadyAt instanceof Date ? 
+    order.estimatedReadyAt.getTime() : 
+    new Date(order.estimatedReadyAt).getTime();
+  const estimatedWaitTime = Math.max(0, Math.round((etaTime - now) / 60000));
+
+  return {
+    id: order.id,
+    orderId: order.orderId,
+    customerName: `Customer ${order.customerId.slice(-4)}`, // Mock customer name
+    itemsOrdered: order.items
+      .map((item) => `${item.name}${item.quantity > 1 ? ` (x${item.quantity})` : ''}`)
+      .join(', ') || 'No items',
+    deliveryETA: order.estimatedReadyAt instanceof Date ? 
+      order.estimatedReadyAt : 
+      new Date(order.estimatedReadyAt),
+    status: order.status,
+    estimatedWaitTime,
+    itemCount: order.items.length,
+  };
+}
+
 export default function Dashboard() {
   // Get search query from context
   const { query: searchQuery } = useSearch();
@@ -39,63 +66,104 @@ export default function Dashboard() {
   const [dateRangeEnd, setDateRangeEnd] = useState<Date | null>(null);
   const [showDateFilter, setShowDateFilter] = useState(false);
 
-  // Mock orders data - will be replaced with API call
-  const [allOrders] = React.useState<OrderRow[]>([
+  // Mock initial orders data
+  const initialOrders: Order[] = [
     {
       id: '1',
       orderId: 'ORD-001',
-      customerName: 'John Smith',
-      itemsOrdered: 'Burger, Fries, Drink',
-      deliveryETA: new Date(Date.now() + 15 * 60000), // 15 minutes from now
+      customerId: 'cust-001',
+      restaurantId: 'rest-1',
+      items: [
+        { id: 'item-1', menuItemId: 'menu-1', name: 'Burger', quantity: 1, price: 12.99 },
+        { id: 'item-2', menuItemId: 'menu-2', name: 'Fries', quantity: 1, price: 4.99 },
+        { id: 'item-3', menuItemId: 'menu-3', name: 'Drink', quantity: 1, price: 2.99 },
+      ],
       status: 'PREPARING',
-      estimatedWaitTime: 15,
-      itemCount: 3,
+      createdAt: new Date(Date.now() - 15 * 60000),
+      estimatedReadyAt: new Date(Date.now() + 15 * 60000),
+      totalPrice: 20.97,
+      deliveryMethod: 'pickup',
     },
     {
       id: '2',
       orderId: 'ORD-002',
-      customerName: 'Jane Doe',
-      itemsOrdered: 'Pizza, Salad',
-      deliveryETA: new Date(Date.now() + 25 * 60000), // 25 minutes from now
+      customerId: 'cust-002',
+      restaurantId: 'rest-1',
+      items: [
+        { id: 'item-4', menuItemId: 'menu-4', name: 'Pizza', quantity: 1, price: 15.99 },
+        { id: 'item-5', menuItemId: 'menu-5', name: 'Salad', quantity: 1, price: 8.99 },
+      ],
       status: 'CREATED',
-      estimatedWaitTime: 25,
-      itemCount: 2,
+      createdAt: new Date(Date.now() - 5 * 60000),
+      estimatedReadyAt: new Date(Date.now() + 25 * 60000),
+      totalPrice: 24.98,
+      deliveryMethod: 'delivery',
     },
     {
       id: '3',
       orderId: 'ORD-003',
-      customerName: 'Bob Johnson',
-      itemsOrdered: 'Sandwich, Chips',
-      deliveryETA: new Date(Date.now() + 5 * 60000), // 5 minutes from now
+      customerId: 'cust-003',
+      restaurantId: 'rest-1',
+      items: [
+        { id: 'item-6', menuItemId: 'menu-6', name: 'Sandwich', quantity: 1, price: 10.99 },
+        { id: 'item-7', menuItemId: 'menu-7', name: 'Chips', quantity: 1, price: 3.99 },
+      ],
       status: 'READY',
-      estimatedWaitTime: 5,
-      itemCount: 2,
+      createdAt: new Date(Date.now() - 20 * 60000),
+      estimatedReadyAt: new Date(Date.now() + 5 * 60000),
+      totalPrice: 14.98,
+      deliveryMethod: 'pickup',
     },
     {
       id: '4',
       orderId: 'ORD-004',
-      customerName: 'Alice Brown',
-      itemsOrdered: 'Tacos, Rice, Beans',
-      deliveryETA: new Date(Date.now() + 35 * 60000), // 35 minutes from now
+      customerId: 'cust-004',
+      restaurantId: 'rest-1',
+      items: [
+        { id: 'item-8', menuItemId: 'menu-8', name: 'Tacos', quantity: 3, price: 3.99 },
+        { id: 'item-9', menuItemId: 'menu-9', name: 'Rice', quantity: 1, price: 2.99 },
+        { id: 'item-10', menuItemId: 'menu-10', name: 'Beans', quantity: 1, price: 2.99 },
+      ],
       status: 'COMPLETED',
-      estimatedWaitTime: 35,
-      itemCount: 3,
+      createdAt: new Date(Date.now() - 45 * 60000),
+      estimatedReadyAt: new Date(Date.now() - 10 * 60000),
+      completedAt: new Date(Date.now() - 10 * 60000),
+      totalPrice: 19.94,
+      deliveryMethod: 'delivery',
     },
     {
       id: '5',
       orderId: 'ORD-005',
-      customerName: 'Charlie Wilson',
-      itemsOrdered: 'Pasta, Sauce',
-      deliveryETA: new Date(Date.now() + 12 * 60000), // 12 minutes from now
+      customerId: 'cust-005',
+      restaurantId: 'rest-1',
+      items: [
+        { id: 'item-11', menuItemId: 'menu-11', name: 'Pasta', quantity: 1, price: 13.99 },
+        { id: 'item-12', menuItemId: 'menu-12', name: 'Sauce', quantity: 1, price: 2.99 },
+      ],
       status: 'PREPARING',
-      estimatedWaitTime: 12,
-      itemCount: 2,
+      createdAt: new Date(Date.now() - 12 * 60000),
+      estimatedReadyAt: new Date(Date.now() + 12 * 60000),
+      totalPrice: 16.98,
+      deliveryMethod: 'pickup',
     },
-  ]);
+  ];
+
+  // Manage orders state
+  const [allOrders, setAllOrders] = useState<Order[]>(initialOrders);
+
+  // Real-time SSE updates hook
+  const sseState = useOrderUpdates({
+    orders: allOrders,
+    onOrdersUpdate: setAllOrders,
+    endpoint: '/api/orders/stream',
+  });
+
+  // Convert orders to OrderRow format for table display
+  const displayOrders = useMemo(() => allOrders.map(convertOrderToRow), [allOrders]);
 
   // Filter orders based on search query, status, and date range
   const filteredOrders = useMemo(() => {
-    let result = [...allOrders];
+    let result = [...displayOrders];
 
     // Apply search filter
     if (searchQuery.trim()) {
@@ -123,7 +191,7 @@ export default function Dashboard() {
     }
 
     return result;
-  }, [allOrders, searchQuery, selectedStatuses, dateRangeStart, dateRangeEnd]);
+  }, [displayOrders, searchQuery, selectedStatuses, dateRangeStart, dateRangeEnd]);
 
   // Calculate metrics from ALL orders (not filtered)
   const metrics: OrderMetrics = useMemo(() => {
@@ -157,16 +225,38 @@ export default function Dashboard() {
     setDateRangeStart(null);
     setDateRangeEnd(null);
     setShowDateFilter(false);
-  };
+  };;
 
   return (
     <div className="space-y-8">
-      {/* Page title */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-2">
-          Welcome to the ReadyBell restaurant dashboard. Monitor incoming orders and track operations.
-        </p>
+      {/* Page title with SSE connection indicator */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">
+            Welcome to the ReadyBell restaurant dashboard. Monitor incoming orders and track operations.
+          </p>
+        </div>
+        
+        {/* Real-time connection status indicator */}
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800">
+          <div 
+            className={`w-2 h-2 rounded-full ${
+              sseState.isConnected 
+                ? 'bg-green-500 animate-pulse' 
+                : 'bg-red-500'
+            }`}
+            aria-label={sseState.isConnected ? 'Real-time connection active' : 'Real-time connection disconnected'}
+          />
+          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+            {sseState.isConnected ? 'Live' : 'Offline'}
+          </span>
+          {sseState.error && (
+            <span className="text-xs text-red-600 dark:text-red-400 ml-2">
+              ({sseState.error.message})
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Order Summary Cards Grid */}

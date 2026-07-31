@@ -325,7 +325,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: connection establishes, messages received
   - Result: SSE hook functional
 
-- [ ] 7.2 Create order update event handler
+- [x] 7.2 Create order update event handler
   - Create `src/hooks/useOrderUpdates.ts`
   - Listens to `/api/orders/stream` SSE endpoint
   - Updates table data with new/modified orders
@@ -377,7 +377,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Verify status badges announced with full text
   - Result: Screen reader tested and working
 
-- [ ] 8.4 Verify color contrast ratios
+- [-] 8.4 Verify color contrast ratios
   - Use WebAIM contrast checker on all color combinations
   - Verify ≥ 4.5:1 for normal text in both themes
   - Verify ≥ 3:1 for UI components in both themes
