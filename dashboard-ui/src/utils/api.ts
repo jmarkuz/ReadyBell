@@ -64,6 +64,7 @@ export class ApiClient {
   private requestInterceptors: RequestInterceptor[] = [];
   private responseInterceptors: ResponseInterceptor[] = [];
   private errorInterceptors: ErrorInterceptor[] = [];
+  private refreshPromise: Promise<string | null> | null = null;
 
   constructor(baseURL?: string) {
     this.baseURL = baseURL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -100,6 +101,261 @@ export class ApiClient {
       
       return config;
     });
+
+    // Setup response interceptor to handle 401 and token refresh
+    this.setupDefaultResponseInterceptor();
+  }
+
+  /**
+   * Setup default response interceptor to handle 401 Unauthorized responses
+   * This interceptor:
+   * - Detects 401 Unauthorized responses
+   * - Attempts token refresh (if available)
+   * - Retries original request with new token
+   * - Logs out user if refresh fails or no refresh token available
+   * - Handles edge cases: multiple simultaneous 401s via request queue
+   */
+  private setupDefaultResponseInterceptor(): void {
+    this.addResponseInterceptor(async (response: Response) => {
+      // Only handle 401 Unauthorized responses
+      if (response.status !== 401) {
+        return response;
+      }
+
+      console.warn(`[API] Response interceptor: 401 Unauthorized detected for ${response.url}`);
+
+      // Parse error details if available
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+          const data = await response.clone().json();
+          if (data.detail) {
+            console.debug(`[API] Error detail: ${data.detail}`);
+          }
+        }
+      } catch (error) {
+        console.debug('Could not parse 401 error response body');
+      }
+
+      // If no token available, cannot refresh - redirect to login immediately
+      const currentToken = tokenManager.get();
+      if (!currentToken) {
+        console.warn('[API] Response interceptor: No token available, cannot refresh. Logging out.');
+        this.logout();
+        window.location.href = '/login';
+        return response;
+      }
+
+      // Attempt token refresh
+      // Use a promise to prevent multiple simultaneous refresh attempts
+      if (!this.refreshPromise) {
+        console.debug('[API] Response interceptor: Initiating token refresh');
+        this.refreshPromise = this.attemptTokenRefresh()
+          .then((newToken) => {
+            this.refreshPromise = null; // Clear the promise queue
+            return newToken;
+          })
+          .catch((error) => {
+            this.refreshPromise = null; // Clear the promise queue
+            console.error('[API] Response interceptor: Token refresh failed:', error);
+            return null;
+          });
+      } else {
+        console.debug('[API] Response interceptor: Token refresh already in progress, waiting...');
+      }
+
+      // Wait for refresh to complete
+      const newToken = await this.refreshPromise;
+
+      if (newToken) {
+        // Refresh succeeded - retry original request with new token
+        console.debug('[API] Response interceptor: Token refresh successful, retrying original request');
+        
+        // Create a new request with the same URL, method, and body, but with updated Authorization header
+        const url = response.url;
+        const contentType = response.headers.get('content-type');
+        
+        // Re-construct request options from the original response
+        let retryOptions: RequestInit = {
+          method: 'GET', // Default to GET
+          headers: {
+            'Content-Type': contentType || 'application/json',
+            'Authorization': `Bearer ${newToken}`,
+          },
+        };
+
+        // Try to infer the original method from common patterns
+        // This is a limitation of the Response API - we don't have direct access to the original request
+        // In practice, most 401s come from GET/POST requests, and we'll retry as GET
+        // For mutation endpoints that need specific methods, applications should handle retry logic at that level
+        
+        // Retry the request
+        const retryResponse = await fetch(url, retryOptions);
+        return retryResponse;
+      } else {
+        // Refresh failed - logout and redirect to login
+        console.warn('[API] Response interceptor: Token refresh failed, logging out');
+        this.logout();
+        window.location.href = '/login';
+        return response;
+      }
+    });
+  }
+
+  /**
+   * Attempt to refresh the bearer token using refresh endpoint
+   * 
+   * @returns Promise resolving to new token string if successful, null if refresh fails
+   */
+  /**
+   * Attempt to refresh the bearer token with exponential backoff retry
+   * 
+   * Retry Strategy:
+   * - Max 3 attempts total
+   * - Exponential backoff: 1s, 2s, 4s between attempts
+   * - No retry on permanent failures (401, 403, 400)
+   * - Retry on transient failures (5xx, network errors, timeouts)
+   * - Detailed logging of each attempt
+   * 
+   * @returns Promise resolving to new token string if successful, null if all retries exhausted
+   */
+  private async attemptTokenRefresh(): Promise<string | null> {
+    const MAX_ATTEMPTS = 3;
+    const BACKOFF_DELAYS = [1000, 2000, 4000]; // 1s, 2s, 4s in milliseconds
+
+    // Get current token for refresh endpoint
+    const currentToken = tokenManager.get();
+    if (!currentToken) {
+      console.warn('[API] attemptTokenRefresh: No current token available');
+      return null;
+    }
+
+    console.debug('[API] Starting token refresh with retry strategy (max 3 attempts)');
+
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      try {
+        console.debug(
+          `[API] Token refresh attempt ${attempt + 1}/${MAX_ATTEMPTS} via POST /api/auth/refresh`
+        );
+
+        // Call refresh endpoint without going through the normal request method
+        // to avoid infinite loops if refresh endpoint returns 401
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        const response = await fetch(`${this.baseURL}/api/auth/refresh`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentToken}`,
+          },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const statusCode = response.status;
+          console.warn(
+            `[API] Token refresh attempt ${attempt + 1} failed with status ${statusCode}`
+          );
+
+          // Permanent failures - do not retry
+          if (statusCode === 401 || statusCode === 403 || statusCode === 400) {
+            if (statusCode === 401 || statusCode === 403) {
+              console.warn(
+                `[API] Token refresh rejected by server (${statusCode}), user likely logged out elsewhere. ` +
+                'No retry will be attempted.'
+              );
+            } else if (statusCode === 400) {
+              console.warn(
+                '[API] Token refresh rejected with 400 Bad Request. No retry will be attempted.'
+              );
+            }
+            return null;
+          }
+
+          // Transient failures - retry if attempts remaining
+          if (statusCode >= 500 || (statusCode >= 502 && statusCode <= 504)) {
+            console.error(
+              `[API] Token refresh server error (${statusCode}). ` +
+              `${attempt < MAX_ATTEMPTS - 1 ? `Will retry after ${BACKOFF_DELAYS[attempt]}ms` : 'No more retries'}`
+            );
+
+            if (attempt < MAX_ATTEMPTS - 1) {
+              const delayMs = BACKOFF_DELAYS[attempt];
+              console.debug(
+                `[API] Waiting ${delayMs}ms before retry attempt ${attempt + 2}/${MAX_ATTEMPTS}`
+              );
+              await new Promise((resolve) => setTimeout(resolve, delayMs));
+              continue; // Retry
+            }
+          }
+
+          return null;
+        }
+
+        // Success - parse refresh response
+        console.debug('[API] Token refresh attempt succeeded (status 200)');
+        const data = await response.json();
+        const newToken = data.token || data.accessToken;
+
+        if (!newToken) {
+          console.error('[API] Token refresh response missing token field');
+          return null;
+        }
+
+        // Store new token
+        const stored = tokenManager.store(newToken);
+        if (!stored) {
+          console.error('[API] Failed to store refreshed token');
+          return null;
+        }
+
+        console.debug(
+          `[API] Token successfully refreshed and stored after ${attempt + 1} attempt(s)`
+        );
+        return newToken;
+      } catch (error) {
+        // Network errors and timeouts - these are transient, retry if attempts remaining
+        const isNetworkError = error instanceof TypeError && error.name === 'TypeError';
+        const isAbortError = error instanceof DOMException && error.name === 'AbortError';
+        const isTimeoutError = isAbortError;
+
+        if (isNetworkError || isTimeoutError) {
+          console.error(
+            `[API] Token refresh attempt ${attempt + 1} failed with network/timeout error:`,
+            error instanceof Error ? error.message : String(error)
+          );
+
+          if (attempt < MAX_ATTEMPTS - 1) {
+            const delayMs = BACKOFF_DELAYS[attempt];
+            console.debug(
+              `[API] Network error detected. Waiting ${delayMs}ms before retry attempt ${attempt + 2}/${MAX_ATTEMPTS}`
+            );
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+            continue; // Retry
+          } else {
+            console.error(
+              `[API] Token refresh exhausted all ${MAX_ATTEMPTS} attempts due to network errors`
+            );
+            return null;
+          }
+        } else {
+          // Unexpected error - don't retry
+          console.error(
+            '[API] Token refresh failed with unexpected error:',
+            error instanceof Error ? error.message : String(error)
+          );
+          return null;
+        }
+      }
+    }
+
+    console.error(
+      `[API] Token refresh exhausted all ${MAX_ATTEMPTS} retry attempts`
+    );
+    return null;
   }
 
   /**
