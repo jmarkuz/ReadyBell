@@ -325,7 +325,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: connection establishes, messages received
   - Result: SSE hook functional
 
-- [-] 7.2 Create order update event handler
+- [x] 7.2 Create order update event handler
   - Create `src/hooks/useOrderUpdates.ts`
   - Listens to `/api/orders/stream` SSE endpoint
   - Updates table data with new/modified orders
@@ -342,7 +342,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: SSE failure triggers polling fallback
   - Result: Polling fallback implemented
 
-- [~] 7.4 Test real-time updates in table
+- [-] 7.4 Test real-time updates in table
   - Start dev server with mocked SSE
   - Simulate order updates
   - Verify table updates without full reload

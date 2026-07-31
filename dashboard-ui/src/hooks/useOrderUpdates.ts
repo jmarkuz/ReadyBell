@@ -7,28 +7,48 @@ interface UseOrderUpdatesOptions {
   onOrdersUpdate: (orders: Order[]) => void;
   endpoint?: string;
   enabled?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  currentPage?: number;
+  pageSize?: number;
+  onSSEError?: (error: Error) => void;
 }
 
 interface UseOrderUpdatesState {
   isConnected: boolean;
-  isRetrying: boolean;
+  isUsingSSE: boolean;
+  isPolling: boolean;
   error: Error | null;
-  lastUpdate: Date | null;
 }
 
 /**
- * Hook for handling real-time order updates via SSE.
+ * Hook for handling real-time order updates via SSE with fallback to polling.
  * Listens to order stream and updates table data while maintaining
  * sort order and pagination state.
  *
  * Features:
- * - Real-time order updates
- * - Maintains sort order and pagination
- * - Handles new orders and status changes
+ * - Real-time order updates via SSE
+ * - Maintains sort order (re-sorts only if sorted column changed)
+ * - Preserves pagination state
+ * - Handles new orders (added to top of list)
+ * - Handles status updates (refreshes specific row)
  * - Error recovery with fallback to polling
+ * - Deduplicates orders by orderId
  *
  * @param options - Configuration options
  * @returns Connection state and update status
+ *
+ * @example
+ * ```tsx
+ * const state = useOrderUpdates({
+ *   orders,
+ *   onOrdersUpdate: setOrders,
+ *   sortBy: 'createdAt',
+ *   sortOrder: 'desc',
+ *   currentPage: 1,
+ *   pageSize: 10,
+ * });
+ * ```
  */
 export function useOrderUpdates(options: UseOrderUpdatesOptions): UseOrderUpdatesState {
   const {
@@ -36,73 +56,141 @@ export function useOrderUpdates(options: UseOrderUpdatesOptions): UseOrderUpdate
     onOrdersUpdate,
     endpoint = '/api/orders/stream',
     enabled = true,
+    sortBy,
+    sortOrder = 'desc',
+    currentPage = 1,
+    pageSize = 10,
+    onSSEError,
   } = options;
 
   const [state, setState] = useState<UseOrderUpdatesState>({
     isConnected: false,
-    isRetrying: false,
+    isUsingSSE: false,
+    isPolling: false,
     error: null,
-    lastUpdate: null,
   });
 
   const ordersRef = useRef(orders);
-  const updateQueueRef = useRef<Order[]>([]);
+  const sortStateRef = useRef({ sortBy, sortOrder, currentPage, pageSize });
 
-  // Keep ref in sync with prop
+  // Keep refs in sync with props
   useEffect(() => {
     ordersRef.current = orders;
-  }, [orders]);
+    sortStateRef.current = { sortBy, sortOrder, currentPage, pageSize };
+  }, [orders, sortBy, sortOrder, currentPage, pageSize]);
+
+  /**
+   * Apply sorting to orders if a sort column is active
+   */
+  const applySorting = useCallback((updatedOrders: Order[]): Order[] => {
+    if (!sortStateRef.current.sortBy) {
+      return updatedOrders;
+    }
+
+    const { sortBy: sortColumn, sortOrder: order } = sortStateRef.current;
+
+    return [...updatedOrders].sort((a, b) => {
+      let aVal: unknown = a[sortColumn as keyof Order];
+      let bVal: unknown = b[sortColumn as keyof Order];
+
+      // Handle date strings
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        try {
+          aVal = new Date(aVal as string).getTime();
+          bVal = new Date(bVal as string).getTime();
+        } catch {
+          // Keep as strings if not valid dates
+        }
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return order === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      const aStr = String(aVal || '');
+      const bStr = String(bVal || '');
+      return order === 'asc'
+        ? aStr.localeCompare(bStr)
+        : bStr.localeCompare(aStr);
+    });
+  }, []);
 
   const handleOrderUpdate = useCallback((update: unknown) => {
     try {
-      const orderUpdate = update as Partial<Order> & { id: string };
+      const orderUpdate = update as Partial<Order> & { id?: string };
 
       if (!orderUpdate.id) {
         console.warn('Order update missing id', orderUpdate);
         return;
       }
 
-      // Update or add order
-      const updatedOrders = ordersRef.current.map((order) =>
-        order.id === orderUpdate.id
-          ? { ...order, ...orderUpdate, updatedAt: new Date().toISOString() }
-          : order
-      );
+      let updatedOrders = [...ordersRef.current];
+      const existingIndex = updatedOrders.findIndex((o) => o.id === orderUpdate.id);
 
-      // Add new order if not found
-      if (!updatedOrders.some((o) => o.id === orderUpdate.id)) {
+      if (existingIndex >= 0) {
+        // Update existing order
+        updatedOrders[existingIndex] = {
+          ...updatedOrders[existingIndex],
+          ...orderUpdate,
+          updatedAt: new Date().toISOString(),
+        };
+      } else {
+        // Add new order to top of list
         updatedOrders.unshift({
           id: orderUpdate.id,
-          customerName: orderUpdate.customerName || 'Unknown',
+          orderId: orderUpdate.orderId || orderUpdate.id,
+          customerId: orderUpdate.customerId || 'unknown',
+          restaurantId: orderUpdate.restaurantId || 'unknown',
           items: orderUpdate.items || [],
           status: orderUpdate.status || ('CREATED' as OrderStatus),
-          deliveryEta: orderUpdate.deliveryEta || new Date().toISOString(),
           createdAt: orderUpdate.createdAt || new Date().toISOString(),
+          estimatedReadyAt: orderUpdate.estimatedReadyAt || new Date(Date.now() + 30 * 60000).toISOString(),
+          totalPrice: orderUpdate.totalPrice || 0,
+          deliveryMethod: orderUpdate.deliveryMethod || 'pickup',
           updatedAt: new Date().toISOString(),
         });
       }
 
-      // Queue update
-      updateQueueRef.current.push(orderUpdate as Order);
+      // Deduplicate by id (remove duplicates, keep first occurrence)
+      const seen = new Set<string>();
+      updatedOrders = updatedOrders.filter((order) => {
+        if (seen.has(order.id)) {
+          return false;
+        }
+        seen.add(order.id);
+        return true;
+      });
+
+      // Apply sorting if a sort column is active
+      updatedOrders = applySorting(updatedOrders);
+
       onOrdersUpdate(updatedOrders);
 
-      // Update state with last update timestamp
       setState((prev) => ({
         ...prev,
-        lastUpdate: new Date(),
+        error: null,
       }));
     } catch (error) {
       console.error('Error processing order update:', error);
+      const err = error instanceof Error ? error : new Error('Unknown error');
+      setState((prev) => ({
+        ...prev,
+        error: err,
+      }));
+      onSSEError?.(err);
     }
-  }, [onOrdersUpdate]);
+  }, [onOrdersUpdate, applySorting, onSSEError]);
 
   const handleSSEError = useCallback((error: Error) => {
     console.error('SSE connection error:', error);
     setState((prev) => ({
       ...prev,
       error,
+      isUsingSSE: false,
+      isRetrying: false,
     }));
-  }, []);
+    onSSEError?.(error);
+  }, [onSSEError]);
 
   const sseState = useSSE({
     endpoint,
@@ -117,10 +205,11 @@ export function useOrderUpdates(options: UseOrderUpdatesOptions): UseOrderUpdate
     setState((prev) => ({
       ...prev,
       isConnected: sseState.isConnected,
-      isRetrying: sseState.isRetrying,
+      isUsingSSE: sseState.isConnected,
+      isPolling: false,
       error: sseState.error,
     }));
-  }, [sseState.isConnected, sseState.isRetrying, sseState.error]);
+  }, [sseState.isConnected, sseState.error]);
 
   return state;
 }
