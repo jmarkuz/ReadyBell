@@ -23,6 +23,54 @@ const Settings = lazy(() => import('@/pages/Settings'));
 const Support = lazy(() => import('@/pages/Support'));
 
 /**
+ * Login page component - simple placeholder for development
+ */
+const LoginPage = () => {
+  const handleLogin = async () => {
+    try {
+      const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLXRlc3QiLCJ1c2VybmFtZSI6InRlc3QtdXNlciIsImVtYWlsIjoidGVzdEB0ZXN0LmNvbSIsIm5hbWUiOiJUZXN0IFVzZXIiLCJyb2xlIjoiU1RBRkYiLCJ0ZW5hbnRfaWQiOiJ0ZW5hbnQtMTIzIiwiZXhwIjoyNzE2MjM5MDIyfQ.7XQZ_7xWKb0O9xwK8j7G5zK5zK5zK5zK5zK5zK5z';
+      
+      // Import tokenManager and store the token
+      const { tokenManager } = await import('@/utils/TokenManager');
+      const success = tokenManager.store(mockToken);
+      
+      if (success) {
+        console.log('[LoginPage] Token stored successfully');
+        // Redirect to dashboard
+        window.location.href = '/';
+      } else {
+        console.error('[LoginPage] Failed to store token');
+        alert('Failed to sign in. Check console for details.');
+      }
+    } catch (error) {
+      console.error('[LoginPage] Login error:', error);
+      alert('Login failed: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-xl">
+        <h1 className="text-2xl font-bold text-center text-slate-900 mb-8">
+          Dashboard Login
+        </h1>
+        <div className="space-y-4">
+          <p className="text-center text-slate-600 mb-6">
+            Development mode - using mock authentication
+          </p>
+          <button
+            onClick={handleLogin}
+            className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Sign In (Dev)
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
  * App Root Component
  * 
  * Sets up:
@@ -61,6 +109,7 @@ function App() {
         <SearchProvider>
           <AuthProvider>
             <Routes>
+              <Route path="/login" element={<LoginPage />} />
               <Route element={<Layout />}>
                 <Route 
                   path="/" 

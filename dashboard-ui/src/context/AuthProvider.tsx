@@ -22,7 +22,6 @@ import React, { createContext, ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageLoader } from '@/components/PageLoader';
 import { tokenManager } from '@/utils/TokenManager';
-import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Auth context provides authentication state and actions to all child components
@@ -58,14 +57,11 @@ interface AuthProviderProps {
  */
 export function AuthProvider({ children }: AuthProviderProps) {
   const navigate = useNavigate();
-  const { isAuthenticated, error: authError } = useAuth({
-    validateOnMount: true,
-    autoRefreshThreshold: 300,
-  });
 
   const [isValidating, setIsValidating] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   /**
    * Validate token on component mount
@@ -111,6 +107,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // Token is valid - restore authenticated state
         console.debug('[AuthProvider] Token validation successful, authenticated state restored');
+        setIsAuthenticated(true);
         setIsValidating(false);
         setIsInitialized(true);
       } catch (error) {
@@ -130,8 +127,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     validateTokenOnMount();
   }, [navigate]);
 
-  // While validating token, show loading UI
-  if (isValidating) {
+  // While validating token, show loading UI only if on authenticated routes (not on login)
+  // Check current pathname to avoid showing loader on login page
+  const isOnLoginPage = window.location.pathname === '/login';
+  
+  if (isValidating && !isOnLoginPage) {
     return (
       <div
         className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950"
@@ -151,7 +151,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         isInitialized,
         isAuthenticated,
         isValidating,
-        error: validationError || authError,
+        error: validationError,
       }}
     >
       {children}

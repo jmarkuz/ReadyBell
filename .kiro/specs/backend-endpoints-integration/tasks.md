@@ -76,6 +76,7 @@ Phase 5: Testing & Verification
 ### Phase 1: API Client Enhancement & Bearer Token Integration
 
 - [ ] 1.1 Implement Bearer Token Authentication in API Client
+
 **Description**: Enhance `src/utils/api.ts` to handle bearer token lifecycle including storage, request injection, token refresh, and logout.
 
 **Acceptance Criteria**:
@@ -97,11 +98,12 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P0 (Blocker for all other integrations)  
-**Effort**: 3 points  
+**Effort**: 3 points
 
 ---
 
-### Task 1.2: Implement RFC 7807 Error Handling in API Client
+- [ ] 1.2 Implement RFC 7807 Error Handling in API Client
+
 **Description**: Enhance error handling to parse and process Problem Detail responses consistently across all endpoints.
 
 **Acceptance Criteria**:
@@ -122,11 +124,12 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P0  
-**Effort**: 2 points  
+**Effort**: 2 points
 
 ---
 
-### Task 1.3: Implement SSE (Server-Sent Events) Real-Time Updates
+- [ ] 1.3 Implement SSE (Server-Sent Events) Real-Time Updates
+
 **Description**: Create `useSSE` hook to establish persistent SSE connection for real-time order updates with auto-reconnect.
 
 **Acceptance Criteria**:
@@ -148,11 +151,12 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P0  
-**Effort**: 4 points  
+**Effort**: 4 points
 
 ---
 
-### Task 1.4: Implement Polling Fallback for Real-Time Updates
+- [ ] 1.4 Implement Polling Fallback for Real-Time Updates
+
 **Description**: Create `useOrderPolling` hook as fallback when SSE is unavailable, using ETag-based conditional requests.
 
 **Acceptance Criteria**:
@@ -173,11 +177,12 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P0  
-**Effort**: 3 points  
+**Effort**: 3 points
 
 ---
 
-### Task 1.5: Enhance Order List with Pagination, Filtering, and Sorting
+- [ ] 1.5 Enhance Order List with Pagination, Filtering, and Sorting
+
 **Description**: Extend IncomingOrdersTable component to support backend query parameters for pagination, filtering, sorting.
 
 **Acceptance Criteria**:
@@ -199,11 +204,12 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P0  
-**Effort**: 3 points  
+**Effort**: 3 points
 
 ---
 
-### Task 1.6: Implement Order Status Transitions with Conflict Detection
+- [ ] 1.6 Implement Order Status Transitions with Conflict Detection
+
 **Description**: Enhance order status update logic to validate transitions, detect concurrent modifications (409 Conflict), and resolve conflicts.
 
 **Acceptance Criteria**:
@@ -225,11 +231,12 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P0  
-**Effort**: 3 points  
+**Effort**: 3 points
 
 ---
 
-### Task 1.7: Implement Multi-Tenant Data Isolation Validation
+- [ ] 1.7 Implement Multi-Tenant Data Isolation Validation
+
 **Description**: Add client-side tenant context validation to prevent accidental cross-tenant access and enforce authorization checks.
 
 **Acceptance Criteria**:
@@ -250,13 +257,14 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P0  
-**Effort**: 2 points  
+**Effort**: 2 points
 
 ---
 
-## Phase 2: Restaurant Staff Admin Pages
+### Phase 2: Restaurant Staff Admin Pages
 
-### Task 2.1: Create Staff Admin Navigation and Page Structure
+- [ ] 2.1 Create Staff Admin Navigation and Page Structure
+
 **Description**: Add Staff Admin section to navigation menu and create main Staff Admin page with two sections: Staff Accounts and Restaurant Settings.
 
 **Acceptance Criteria**:
@@ -276,11 +284,12 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P1  
-**Effort**: 2 points  
+**Effort**: 2 points
 
 ---
 
-### Task 2.2: Implement Staff Accounts Management UI
+- [ ] 2.2 Implement Staff Accounts Management UI
+
 **Description**: Create Staff Accounts section with table listing staff members and modal for creating new accounts.
 
 **Acceptance Criteria**:
@@ -305,11 +314,12 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P1  
-**Effort**: 4 points  
+**Effort**: 4 points
 
 ---
 
-### Task 2.3: Implement Restaurant Settings Management UI
+- [ ] 2.3 Implement Restaurant Settings Management UI
+
 **Description**: Create Restaurant Settings section with form to view and update restaurant configuration.
 
 **Acceptance Criteria**:
@@ -333,13 +343,14 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P1  
-**Effort**: 3 points  
+**Effort**: 3 points
 
 ---
 
-## Phase 3: Platform Admin Pages
+### Phase 3: Platform Admin Pages
 
-### Task 3.1: Create Platform Admin Navigation and Page Structure
+- [ ] 3.1 Create Platform Admin Navigation and Page Structure
+
 **Description**: Add Platform Admin section to navigation menu and create main Platform Admin page with Restaurant Management section.
 
 **Acceptance Criteria**:
@@ -357,11 +368,12 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P1  
-**Effort**: 1 point  
+**Effort**: 1 point
 
 ---
 
-### Task 3.2: Implement Restaurant Tenant Management UI
+- [ ] 3.2 Implement Restaurant Tenant Management UI
+
 **Description**: Create Restaurant Management section with table listing all restaurants and modals for creating/editing restaurants.
 
 **Acceptance Criteria**:
@@ -390,13 +402,14 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P1  
-**Effort**: 5 points  
+**Effort**: 5 points
 
 ---
 
-## Phase 4: Customer PWA Infrastructure (Preparation Only)
+### Phase 4: Customer PWA Infrastructure (Preparation Only)
 
-### Task 4.1: Prepare Customer Session API Client Methods
+- [ ] 4.1 Prepare Customer Session API Client Methods
+
 **Description**: Implement API client methods for customer session management (no UI, infrastructure only).
 
 **Acceptance Criteria**:
@@ -414,11 +427,12 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P2  
-**Effort**: 1 point  
+**Effort**: 1 point
 
 ---
 
-### Task 4.2: Prepare Web Push Subscription API Client Methods
+- [ ] 4.2 Prepare Web Push Subscription API Client Methods
+
 **Description**: Implement API client methods for push subscription management (no UI, infrastructure only).
 
 **Acceptance Criteria**:
@@ -435,13 +449,14 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P2  
-**Effort**: 1 point  
+**Effort**: 1 point
 
 ---
 
-## Phase 5: Testing & Verification
+### Phase 5: Testing & Verification
 
-### Task 5.1: Integration Test Suite for API Client
+- [ ] 5.1 Integration Test Suite for API Client
+
 **Description**: Write integration tests for all API client methods with real backend mocked responses.
 
 **Acceptance Criteria**:
@@ -463,11 +478,12 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P1  
-**Effort**: 3 points  
+**Effort**: 3 points
 
 ---
 
-### Task 5.2: End-to-End Testing with Real Backend
+- [ ] 5.2 End-to-End Testing with Real Backend
+
 **Description**: Test all implemented features with the real backend running locally.
 
 **Acceptance Criteria**:
@@ -496,11 +512,12 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P0  
-**Effort**: 4 points  
+**Effort**: 4 points
 
 ---
 
-### Task 5.3: Performance Verification
+- [ ] 5.3 Performance Verification
+
 **Description**: Verify performance targets are met for real-time updates and API response times.
 
 **Acceptance Criteria**:
@@ -523,40 +540,7 @@ Phase 5: Testing & Verification
 
 **Owner**: Frontend Team  
 **Priority**: P1  
-**Effort**: 2 points  
-
----
-
-## Dependency Graph
-
-```
-Phase 1: API Client Foundation
-  ├─ Task 1.1: Bearer Token Auth (BLOCKER)
-  ├─ Task 1.2: RFC 7807 Error Handling (BLOCKER)
-  ├─ Task 1.3: SSE Real-Time Updates
-  ├─ Task 1.4: Polling Fallback
-  ├─ Task 1.5: Pagination/Filtering/Sorting
-  ├─ Task 1.6: Order Status Transitions (depends on 1.5)
-  └─ Task 1.7: Multi-Tenant Isolation
-
-Phase 2: Staff Admin Pages
-  ├─ Task 2.1: Navigation & Structure (depends on Phase 1)
-  ├─ Task 2.2: Staff Account Management (depends on 2.1)
-  └─ Task 2.3: Restaurant Settings (depends on 2.1)
-
-Phase 3: Platform Admin Pages
-  ├─ Task 3.1: Navigation & Structure (depends on Phase 1)
-  └─ Task 3.2: Restaurant Tenant Management (depends on 3.1)
-
-Phase 4: Customer PWA Infrastructure
-  ├─ Task 4.1: Session API Methods (depends on Phase 1)
-  └─ Task 4.2: Push Subscription Methods (depends on Phase 1)
-
-Phase 5: Testing & Verification
-  ├─ Task 5.1: Integration Tests (depends on Phase 1)
-  ├─ Task 5.2: E2E Testing (depends on all phases)
-  └─ Task 5.3: Performance Verification (depends on all phases)
-```
+**Effort**: 2 points
 
 ---
 
@@ -682,6 +666,32 @@ Phase 5: Testing & Verification
 
 ---
 
+## Notes
+
+### Key Implementation Principles
+
+- **Wave 0 is Critical**: Both Task 1.1 (Bearer Token Auth) and Task 1.2 (RFC 7807 Error Handling) must complete before any other phase can begin. These are hard blockers.
+- **Real-Time Priority**: Tasks 1.3 and 1.4 (SSE + Polling) are the highest priority after auth. Order updates should reflect backend changes within 2 seconds.
+- **Multi-Tenant Enforcement**: Task 1.7 adds crucial security validation on the client side. This protects against accidental cross-tenant data access.
+- **Admin Pages are Secondary**: Tasks in Phases 2 and 3 depend on Phase 1 completion. They can run in parallel once Phase 1 is done.
+- **Testing is Final Gate**: Phase 5 testing validates all implementation work. E2E testing with the real backend (Task 5.2) is the ultimate verification step.
+
+### Risk Factors
+
+- **Backend Readiness**: All tasks depend on backend endpoints being implemented and running. If backend is delayed, frontend work stalls.
+- **Token Refresh Logic**: Task 1.1.4 is complex—token refresh with concurrent request handling can cause race conditions if not careful.
+- **SSE Connection Stability**: Task 1.3 requires solid auto-reconnect logic. Network instability testing is critical.
+- **Conflict Resolution**: Task 1.6 requires careful state management. Optimistic updates reverting on failure can confuse users if not handled smoothly.
+
+### Testing Strategy
+
+- All unit tests should run within the task's scope (sub-tasks 1.x.x, 2.x.x, etc.)
+- Integration tests in Task 5.1 combine multiple components
+- E2E testing in Task 5.2 validates against real backend
+- Performance verification in Task 5.3 ensures targets are met
+
+---
+
 **Last Updated**: 2024  
 **Status**: Ready for implementation  
-**Next Step**: Execute Wave 0 (Bearer Token Auth + RFC 7807 Error Handling)
+**Next Step**: Execute Wave 0 (Task 1.1 + Task 1.2)
