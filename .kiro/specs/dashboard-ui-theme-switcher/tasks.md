@@ -289,7 +289,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: search debounces, callback fires after delay
   - Result: Search input working
 
-- [-] 6.2 Implement status filter dropdown
+- [x] 6.2 Implement status filter dropdown
   - Create `src/components/StatusFilter.tsx`
   - Checkboxes for each status: CREATED, PREPARING, READY, COMPLETED
   - Select/deselect all toggle
@@ -298,7 +298,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: checkboxes toggle, apply fires callback
   - Result: Filter dropdown working
 
-- [~] 6.3 Implement date range filter
+- [-] 6.3 Implement date range filter
   - Create `src/components/DateRangeFilter.tsx`
   - Date picker UI (inputs or calendar)
   - Presets: Today, This Week, This Month, Custom
