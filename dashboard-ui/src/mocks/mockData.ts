@@ -10,7 +10,6 @@ import { OrderRow, OrderStatus } from '@/types';
  * Used in tests to simulate real order data
  */
 export function generateMockOrders(count: number = 25): OrderRow[] {
-  const statuses: OrderStatus[] = ['CREATED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'];
   const customerNames = ['John Smith', 'Sarah Johnson', 'Mike Chen', 'Emily Brown', 'David Lee', 'Lisa Garcia'];
   const items = ['Burger Combo', 'Pizza Margherita', 'Caesar Salad', 'Fish & Chips', 'Pasta Carbonara', 'Chicken Sandwich'];
 

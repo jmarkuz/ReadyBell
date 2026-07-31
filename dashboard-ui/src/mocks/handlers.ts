@@ -43,7 +43,7 @@ function validateAuthToken(request: Request): { valid: boolean; tenantId?: strin
  * Generate mock orders scoped to tenant
  */
 function generateMockOrders(count: number = 25, tenantId?: string): OrderRow[] {
-  const statuses = ['CREATED', 'IN_PROGRESS', 'READY', 'COMPLETED', 'CANCELLED'] as const;
+  const statuses = ['CREATED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'] as const;
   const customerNames = ['John Smith', 'Sarah Johnson', 'Mike Chen', 'Emily Brown', 'David Lee', 'Lisa Garcia'];
   const items = ['Burger Combo', 'Pizza Margherita', 'Caesar Salad', 'Fish & Chips', 'Pasta Carbonara'];
 
@@ -61,7 +61,7 @@ function generateMockOrders(count: number = 25, tenantId?: string): OrderRow[] {
       status = 'CREATED';
       eta = new Date(now.getTime() + 15 * 60000);
     } else if (rand < 0.50) {
-      status = 'IN_PROGRESS';
+      status = 'PREPARING';
       eta = new Date(now.getTime() + 10 * 60000);
     } else if (rand < 0.70) {
       status = 'READY';
@@ -200,7 +200,7 @@ export const handlers = [
 
     // Apply filters
     if (statusFilter.length > 0) {
-      const validStatuses = ['CREATED', 'IN_PROGRESS', 'READY', 'COMPLETED', 'CANCELLED'];
+      const validStatuses = ['CREATED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'];
       const invalidStatuses = statusFilter.filter(s => !validStatuses.includes(s));
       if (invalidStatuses.length > 0) {
         return HttpResponse.json(
@@ -326,7 +326,7 @@ export const handlers = [
         );
       }
 
-      const validStatuses = ['IN_PROGRESS', 'READY', 'COMPLETED', 'CANCELLED'];
+      const validStatuses = ['PREPARING', 'READY', 'COMPLETED', 'CANCELLED'];
       if (!validStatuses.includes(body.status)) {
         return HttpResponse.json(
           {
@@ -366,7 +366,7 @@ export const handlers = [
         controller.enqueue('data: {"type": "connection_established"}\n\n');
         const interval = setInterval(() => {
           const eventType = Math.random() > 0.6 ? 'OrderStatusUpdated' : 'OrderCreated';
-          const statuses = ['CREATED', 'IN_PROGRESS', 'READY', 'COMPLETED'];
+          const statuses = ['CREATED', 'PREPARING', 'READY', 'COMPLETED'];
           const data = {
             orderId: `#${Math.floor(Math.random() * 100000)}`,
             status: statuses[Math.floor(Math.random() * statuses.length)],

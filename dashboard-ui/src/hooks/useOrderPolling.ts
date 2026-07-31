@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Order } from '@/types';
 
-interface UseOrderPollingOptions {
+export interface UseOrderPollingOptions {
   orders: Order[];
   onOrdersUpdate: (orders: Order[]) => void;
   endpoint?: string;
@@ -10,7 +10,7 @@ interface UseOrderPollingOptions {
   useETag?: boolean;
 }
 
-interface UseOrderPollingState {
+export interface UseOrderPollingState {
   isPolling: boolean;
   error: Error | null;
   lastPolledAt: Date | null;
@@ -32,7 +32,6 @@ interface UseOrderPollingState {
  */
 export function useOrderPolling(options: UseOrderPollingOptions): UseOrderPollingState {
   const {
-    orders,
     onOrdersUpdate,
     endpoint = '/api/orders',
     enabled = true,

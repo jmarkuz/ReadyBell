@@ -393,7 +393,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Verify touch targets 44x44px on mobile
   - Result: Responsive design verified at all breakpoints
 
-- [-] 8.6 Test theme persistence on mobile
+- [x] 8.6 Test theme persistence on mobile
   - Test on iPhone Safari and Android Chrome
   - Toggle theme, reload, verify persistence
   - Test in private/incognito mode
@@ -401,7 +401,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
 
 ### Phase 9: Performance Optimization
 
-- [ ] 9.1 Code splitting and lazy loading
+- [-] 9.1 Code splitting and lazy loading
   - Split main bundle into chunks (header, sidebar, pages)
   - Lazy load each page with React.lazy()
   - Use Suspense for loading fallback

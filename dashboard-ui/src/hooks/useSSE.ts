@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-interface UseSSEOptions {
+export interface UseSSEOptions {
   endpoint: string;
   onMessage: (data: unknown) => void;
   onError?: (error: Error) => void;
@@ -10,7 +10,7 @@ interface UseSSEOptions {
   onClose?: () => void;
 }
 
-interface UseSSEState {
+export interface UseSSEState {
   isConnected: boolean;
   isRetrying: boolean;
   error: Error | null;

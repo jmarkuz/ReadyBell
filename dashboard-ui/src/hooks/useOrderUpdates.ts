@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Order, OrderStatus } from '@/types';
 import { useSSE } from './useSSE';
 
-interface UseOrderUpdatesOptions {
+export interface UseOrderUpdatesOptions {
   orders: Order[];
   onOrdersUpdate: (orders: Order[]) => void;
   endpoint?: string;
@@ -13,7 +13,7 @@ interface UseOrderUpdatesOptions {
   onSSEError?: (error: Error) => void;
 }
 
-interface UseOrderUpdatesState {
+export interface UseOrderUpdatesState {
   isConnected: boolean;
   isUsingSSE: boolean;
   isPolling: boolean;
