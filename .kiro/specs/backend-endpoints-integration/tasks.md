@@ -22,9 +22,60 @@ These tasks build on the existing dashboard-ui-theme-switcher implementation (co
 
 ---
 
-## Phase 1: API Client Enhancement & Bearer Token Integration
+# Implementation Plan
 
-### Task 1.1: Implement Bearer Token Authentication in API Client
+## Phased Approach
+
+This implementation is structured in 5 phases with wave-based execution to manage dependencies and parallel work:
+
+- **Wave 0** (P0 Blockers): Bearer token auth + RFC 7807 error handling
+- **Wave 1** (Real-Time & Query Features): SSE, polling, pagination, multi-tenant isolation (parallel)
+- **Wave 2** (Order State Management): Order status transitions with conflict resolution
+- **Wave 3** (Admin Navigation): Staff Admin and Platform Admin page structure
+- **Wave 4** (Admin Functionality): Staff accounts, restaurant settings, tenant management (parallel)
+- **Wave 5** (PWA Infrastructure): Session and push subscription API methods (parallel)
+- **Wave 6** (Testing): Integration tests, E2E testing, performance verification (parallel)
+
+See the Wave-Based Task Scheduling section for detailed execution order and dependencies.
+
+## Task Dependency Graph
+
+```
+Phase 1: API Client Foundation (BLOCKER)
+  Task 1.1: Bearer Token Auth ──┐
+  Task 1.2: RFC 7807 Errors ────┤
+                                 ├──> Task 1.3: SSE Updates ────┐
+                                 ├──> Task 1.4: Polling ────────┤
+                                 ├──> Task 1.5: Pagination ─────┤
+                                 │                               ├──> Task 1.6: Status Transitions
+                                 └──> Task 1.7: Multi-Tenant ───┤
+                                                                 ├──> Phase 2 & 3 Admin Pages
+                                                                 └──> Phase 4 PWA Infrastructure
+
+Phase 2: Staff Admin Pages
+  Task 2.1: Navigation ────> Task 2.2: Staff Accounts
+                        \──> Task 2.3: Restaurant Settings
+
+Phase 3: Platform Admin Pages
+  Task 3.1: Navigation ────> Task 3.2: Tenant Management
+
+Phase 4: Customer PWA Infrastructure
+  Task 4.1: Session API Methods
+  Task 4.2: Push Subscription Methods
+
+Phase 5: Testing & Verification
+  Task 5.1: Integration Tests
+  Task 5.2: E2E Testing (all phases)
+  Task 5.3: Performance Verification (all phases)
+```
+
+---
+
+## Tasks
+
+### Phase 1: API Client Enhancement & Bearer Token Integration
+
+- [ ] 1.1 Implement Bearer Token Authentication in API Client
 **Description**: Enhance `src/utils/api.ts` to handle bearer token lifecycle including storage, request injection, token refresh, and logout.
 
 **Acceptance Criteria**:
@@ -42,7 +93,7 @@ These tasks build on the existing dashboard-ui-theme-switcher implementation (co
 - [x] 1.1.4: Implement token refresh logic with retry
 - [x] 1.1.5: Create useAuth hook for components to access auth state
 - [x] 1.1.6: Add token validation on app initialization
-- [~] 1.1.7: Test bearer token flow end-to-end with real backend
+- [x] 1.1.7: Test bearer token flow end-to-end with real backend
 
 **Owner**: Frontend Team  
 **Priority**: P0 (Blocker for all other integrations)  
@@ -62,7 +113,7 @@ These tasks build on the existing dashboard-ui-theme-switcher implementation (co
 - ✅ Error logging configured for debugging
 
 **Sub-tasks**:
-- [~] 1.2.1: Create ProblemDetail interface and parser
+- [x] 1.2.1: Create ProblemDetail interface and parser
 - [~] 1.2.2: Implement error handler for all HTTP status codes
 - [~] 1.2.3: Map backend error types to user-friendly messages
 - [~] 1.2.4: Add retry logic for 5xx errors (exponential backoff)

@@ -5,6 +5,27 @@
 
 import React from 'react';
 
+// Export error types from errors module
+export type {
+  ProblemDetail,
+  ErrorContext,
+  ParsedError,
+} from './errors';
+export {
+  ERROR_MESSAGES,
+  parseProblemDetail,
+  extractProblemDetail,
+  createParsedError,
+  extractErrorContext,
+  mapErrorToUserMessage,
+  mapStatusToErrorType,
+  isRetryable,
+  mapStatusToSeverity,
+  logError,
+  ApiError,
+  handleErrorResponse,
+} from './errors';
+
 /* ============================================================================
    THEME & UI TYPES
    ============================================================================ */
