@@ -317,7 +317,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
 
 ### Phase 7: Real-Time Updates (SSE Integration)
 
-- [-] 7.1 Implement SSE client hook
+- [x] 7.1 Implement SSE client hook
   - Create `src/hooks/useSSE.ts`
   - Props: endpoint, onMessage, onError
   - Auto-reconnect with exponential backoff (1s, 2s, 4s, 8s, max 30s)
@@ -325,7 +325,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: connection establishes, messages received
   - Result: SSE hook functional
 
-- [~] 7.2 Create order update event handler
+- [-] 7.2 Create order update event handler
   - Create `src/hooks/useOrderUpdates.ts`
   - Listens to `/api/orders/stream` SSE endpoint
   - Updates table data with new/modified orders
