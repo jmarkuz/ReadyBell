@@ -325,7 +325,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: connection establishes, messages received
   - Result: SSE hook functional
 
-- [-] 7.2 Create order update event handler
+- [ ] 7.2 Create order update event handler
   - Create `src/hooks/useOrderUpdates.ts`
   - Listens to `/api/orders/stream` SSE endpoint
   - Updates table data with new/modified orders
@@ -377,14 +377,14 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Verify status badges announced with full text
   - Result: Screen reader tested and working
 
-- [-] 8.4 Verify color contrast ratios
+- [ ] 8.4 Verify color contrast ratios
   - Use WebAIM contrast checker on all color combinations
   - Verify ≥ 4.5:1 for normal text in both themes
   - Verify ≥ 3:1 for UI components in both themes
   - Document contrast ratios
   - Result: All colors WCAG AA compliant
 
-- [~] 8.5 Test responsive design at breakpoints
+- [ ] 8.5 Test responsive design at breakpoints
   - Test at: 320px (mobile), 768px (tablet), 1024px (desktop)
   - Chrome DevTools device emulation
   - Real device testing if possible
@@ -393,7 +393,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Verify touch targets 44x44px on mobile
   - Result: Responsive design verified at all breakpoints
 
-- [~] 8.6 Test theme persistence on mobile
+- [ ] 8.6 Test theme persistence on mobile
   - Test on iPhone Safari and Android Chrome
   - Toggle theme, reload, verify persistence
   - Test in private/incognito mode
@@ -401,7 +401,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
 
 ### Phase 9: Performance Optimization
 
-- [~] 9.1 Code splitting and lazy loading
+- [ ] 9.1 Code splitting and lazy loading
   - Split main bundle into chunks (header, sidebar, pages)
   - Lazy load each page with React.lazy()
   - Use Suspense for loading fallback
@@ -409,21 +409,21 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Target: main < 150KB gzipped
   - Result: Code splitting implemented
 
-- [~] 9.2 Component memoization
+- [ ] 9.2 Component memoization
   - Use React.memo on components that don't need frequent updates
   - Use useMemo for expensive computations
   - Use useCallback for stable function references
   - Verify with React DevTools Profiler
   - Result: Unnecessary re-renders eliminated
 
-- [~] 9.3 Image optimization
+- [ ] 9.3 Image optimization
   - Use WebP with JPEG fallback for images
   - Implement responsive images with srcset
   - Lazy load images below the fold
   - Inline SVG icons (no separate requests)
   - Result: Images optimized
 
-- [~] 9.4 Run Lighthouse audit
+- [ ] 9.4 Run Lighthouse audit
   - Build production bundle: `npm run build`
   - Run Lighthouse: Performance, Accessibility, Best Practices
   - Performance score target: ≥ 85
@@ -431,7 +431,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Document baseline metrics
   - Result: Lighthouse scores at targets
 
-- [~] 9.5 Performance testing
+- [ ] 9.5 Performance testing
   - Measure Core Web Vitals: LCP, FID, CLS
   - FCP (First Contentful Paint): < 1.5s
   - LCP (Largest Contentful Paint): < 2.5s
@@ -441,7 +441,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
 
 ### Phase 10: Testing & Quality Assurance
 
-- [~] 10.1 Write unit tests for components
+- [ ] 10.1 Write unit tests for components
   - Test all components: Layout, Header, Sidebar, Cards, Table, etc.
   - Test theme toggle functionality
   - Test sorting and pagination
@@ -449,14 +449,14 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Use @testing-library/react best practices
   - Result: Unit test suite > 85% coverage
 
-- [~] 10.2 Write integration tests
+- [ ] 10.2 Write integration tests
   - Test theme persistence end-to-end
   - Test search and filter integration
   - Test table updates with mock data
   - Test error states and recovery
   - Result: Integration tests passing
 
-- [~] 10.3 Write accessibility tests
+- [ ] 10.3 Write accessibility tests
   - Axe accessibility automated tests
   - Test keyboard navigation
   - Test color contrast
@@ -464,23 +464,23 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Run tests in CI pipeline
   - Result: Zero accessibility violations
 
-- [~] 10.4 Manual testing checklist
-  - [~] Theme toggle works and persists
-  - [~] All colors correct in light/dark modes
-  - [~] Layout responsive at all breakpoints
-  - [~] Search input debounces
-  - [~] Filters apply and table updates
-  - [~] Sorting works
-  - [~] Pagination works
-  - [~] Empty state displays
-  - [~] Loading skeleton shows
-  - [~] Error states display correctly
-  - [~] Keyboard navigation works
-  - [~] Screen reader works
-  - [~] Touch targets adequate on mobile
+- [ ] 10.4 Manual testing checklist
+  - [ ] Theme toggle works and persists
+  - [ ] All colors correct in light/dark modes
+  - [ ] Layout responsive at all breakpoints
+  - [ ] Search input debounces
+  - [ ] Filters apply and table updates
+  - [ ] Sorting works
+  - [ ] Pagination works
+  - [ ] Empty state displays
+  - [ ] Loading skeleton shows
+  - [ ] Error states display correctly
+  - [ ] Keyboard navigation works
+  - [ ] Screen reader works
+  - [ ] Touch targets adequate on mobile
   - Result: Manual testing complete
 
-- [~] 10.5 Create test coverage report
+- [ ] 10.5 Create test coverage report
   - Generate coverage report: `npm run test:coverage`
   - Target: ≥ 85% overall coverage
   - Document coverage by component
@@ -489,7 +489,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
 
 ### Phase 11: Browser & Device Testing
 
-- [~] 11.1 Test on multiple browsers
+- [ ] 11.1 Test on multiple browsers
   - Chrome (latest stable)
   - Firefox (latest stable)
   - Safari (latest stable)
@@ -498,7 +498,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Document any browser-specific issues
   - Result: Browser compatibility verified
 
-- [~] 11.2 Test on real devices
+- [ ] 11.2 Test on real devices
   - iPhone 12+ (iOS 15+)
   - Android phone (Android 12+)
   - iPad (iPadOS 15+)
@@ -507,7 +507,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Document any device-specific issues
   - Result: Real device testing complete
 
-- [~] 11.3 Test in private/incognito mode
+- [ ] 11.3 Test in private/incognito mode
   - Verify localStorage works in private mode
   - Verify no data persists between sessions
   - Test theme preference restoration
@@ -515,28 +515,28 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
 
 ### Phase 12: Documentation & Deployment
 
-- [~] 12.1 Write component documentation
+- [ ] 12.1 Write component documentation
   - Document each component: purpose, props, usage examples
   - Create Storybook stories for components (optional)
   - Document design tokens (colors, spacing, typography)
   - Create setup and development guide
   - Result: Component documentation complete
 
-- [~] 12.2 Create deployment guide
+- [ ] 12.2 Create deployment guide
   - Document build process: `npm run build`
   - Document environment variables required
   - Document server configuration (CORS, headers, proxies)
   - Create docker container configuration (optional)
   - Result: Deployment guide written
 
-- [~] 12.3 Setup CI/CD pipeline
+- [ ] 12.3 Setup CI/CD pipeline
   - Configure GitHub Actions or similar
   - Run tests on pull requests
   - Run linting and formatting checks
   - Build and deploy on merge to main
   - Result: CI/CD pipeline operational
 
-- [~] 12.4 Create user guide
+- [ ] 12.4 Create user guide
   - Document how to use dashboard as staff user
   - Screenshots of each page
   - Explain theme preference
@@ -546,7 +546,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
 
 ### Phase 13: Final Review & Release
 
-- [~] 13.1 Code review and quality gates
+- [ ] 13.1 Code review and quality gates
   - All code reviewed by 1+ team member
   - All tests passing (unit, integration, e2e)
   - Linting clean (ESLint, Prettier)
@@ -554,26 +554,26 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Lighthouse scores at targets
   - Result: Code review passed
 
-- [~] 13.2 Security audit
+- [ ] 13.2 Security audit
   - Review for XSS vulnerabilities
   - Review localStorage usage (no sensitive data)
   - Verify HTTPS enforced in production
   - Review API security
   - Result: Security audit passed
 
-- [~] 13.3 Performance review
+- [ ] 13.3 Performance review
   - Bundle size within targets
   - Core Web Vitals at targets
   - No memory leaks detected
   - Result: Performance review passed
 
-- [~] 13.4 Release to staging
+- [ ] 13.4 Release to staging
   - Deploy to staging environment
   - Conduct final manual testing
   - Get stakeholder sign-off
   - Result: Deployed to staging
 
-- [~] 13.5 Release to production
+- [ ] 13.5 Release to production
   - Deploy to production
   - Monitor error logs
   - Monitor performance metrics
