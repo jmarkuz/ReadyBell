@@ -86,7 +86,7 @@ export function meetsWCAGAA(
 export function getWCAGLevel(
   foreground: string,
   background: string
-): { level: 'AAA' | 'AA' | 'Fail'; ratio: number } {
+): { level: 'AAA' | 'AA' | 'AA (Large)' | 'Fail'; ratio: number } {
   const ratio = calculateContrastRatio(foreground, background);
   
   if (ratio >= 7.0) {
@@ -166,7 +166,7 @@ export function runContrastVerification(): Array<{
   ratio: number;
   meetsNormal: boolean;
   meetsLarge: boolean;
-  level: 'AAA' | 'AA' | 'Fail';
+  level: 'AAA' | 'AA' | 'AA (Large)' | 'Fail';
 }> {
   const results: Array<{
     theme: 'light' | 'dark';
@@ -175,7 +175,7 @@ export function runContrastVerification(): Array<{
     ratio: number;
     meetsNormal: boolean;
     meetsLarge: boolean;
-    level: 'AAA' | 'AA' | 'Fail';
+    level: 'AAA' | 'AA' | 'AA (Large)' | 'Fail';
   }> = [];
 
   const themes = Object.entries(themeColorTests) as Array<['light' | 'dark', typeof themeColorTests.light]>;
@@ -190,7 +190,7 @@ export function runContrastVerification(): Array<{
         const ratio = calculateContrastRatio(fg, bg);
         const meetsNormal = ratio >= 4.5;
         const meetsLarge = ratio >= 3.0;
-        const level = ratio >= 7.0 ? 'AAA' : ratio >= 4.5 ? 'AA' : ratio >= 3.0 ? 'Fail' : 'Fail';
+        const level = ratio >= 7.0 ? 'AAA' : ratio >= 4.5 ? 'AA' : ratio >= 3.0 ? 'AA (Large)' : 'Fail';
         
         results.push({
           theme: themeName,
@@ -211,7 +211,7 @@ export function runContrastVerification(): Array<{
         const ratio = calculateContrastRatio(statusColor, bg);
         const meetsNormal = ratio >= 4.5; // For text if used with status colors
         const meetsLarge = ratio >= 3.0; // For UI components
-        const level = ratio >= 7.0 ? 'AAA' : ratio >= 4.5 ? 'AA' : ratio >= 3.0 ? 'Fail' : 'Fail';
+        const level = ratio >= 7.0 ? 'AAA' : ratio >= 4.5 ? 'AA' : ratio >= 3.0 ? 'AA (Large)' : 'Fail';
         
         results.push({
           theme: themeName,
@@ -232,7 +232,7 @@ export function runContrastVerification(): Array<{
         const ratio = calculateContrastRatio(uiColor, bg);
         const meetsNormal = ratio >= 4.5;
         const meetsLarge = ratio >= 3.0;
-        const level = ratio >= 7.0 ? 'AAA' : ratio >= 4.5 ? 'AA' : ratio >= 3.0 ? 'Fail' : 'Fail';
+        const level = ratio >= 7.0 ? 'AAA' : ratio >= 4.5 ? 'AA' : ratio >= 3.0 ? 'AA (Large)' : 'Fail';
         
         results.push({
           theme: themeName,
