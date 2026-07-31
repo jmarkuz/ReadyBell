@@ -351,7 +351,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
 
 ### Phase 8: Accessibility & Responsive Design
 
-- [-] 8.1 Add semantic HTML and ARIA labels
+- [x] 8.1 Add semantic HTML and ARIA labels
   - Review all components for semantic tags: nav, main, header, aside, article, table, section
   - Add aria-labels to interactive elements
   - Add aria-live for dynamic updates
@@ -360,7 +360,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: HTML validator passes, accessibility audit clean
   - Result: Semantic HTML and ARIA complete
 
-- [~] 8.2 Verify keyboard navigation
+- [-] 8.2 Verify keyboard navigation
   - Tab through all interactive elements
   - Verify tab order is logical (left-to-right, top-to-bottom)
   - Test all buttons activate with Enter/Space
