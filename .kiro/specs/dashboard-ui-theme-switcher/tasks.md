@@ -377,14 +377,14 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Verify status badges announced with full text
   - Result: Screen reader tested and working
 
-- [-] 8.4 Verify color contrast ratios
+- [x] 8.4 Verify color contrast ratios
   - Use WebAIM contrast checker on all color combinations
   - Verify ≥ 4.5:1 for normal text in both themes
   - Verify ≥ 3:1 for UI components in both themes
   - Document contrast ratios
   - Result: All colors WCAG AA compliant
 
-- [ ] 8.5 Test responsive design at breakpoints
+- [x] 8.5 Test responsive design at breakpoints
   - Test at: 320px (mobile), 768px (tablet), 1024px (desktop)
   - Chrome DevTools device emulation
   - Real device testing if possible
@@ -393,7 +393,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Verify touch targets 44x44px on mobile
   - Result: Responsive design verified at all breakpoints
 
-- [ ] 8.6 Test theme persistence on mobile
+- [-] 8.6 Test theme persistence on mobile
   - Test on iPhone Safari and Android Chrome
   - Toggle theme, reload, verify persistence
   - Test in private/incognito mode
