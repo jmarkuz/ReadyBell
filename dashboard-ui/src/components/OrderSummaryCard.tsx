@@ -67,11 +67,12 @@ export default function OrderSummaryCard({
         trend ? `${trend.direction === 'up' ? 'up' : 'down'} ${trend.value}% ${trend.label}` : ''
       }
       `}
+      type="button"
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">{title}</h3>
         {Icon && (
-          <Icon className="w-5 h-5 text-slate-400 dark:text-slate-500 opacity-50" />
+          <Icon className="w-5 h-5 text-slate-400 dark:text-slate-500 opacity-50" aria-hidden="true" />
         )}
       </div>
 
@@ -86,11 +87,11 @@ export default function OrderSummaryCard({
             : 'text-red-600 dark:text-red-400'
         }`}>
           {trend.direction === 'up' ? (
-            <TrendingUp className="w-4 h-4" />
+            <TrendingUp className="w-4 h-4" aria-hidden="true" />
           ) : (
-            <TrendingDown className="w-4 h-4" />
+            <TrendingDown className="w-4 h-4" aria-hidden="true" />
           )}
-          <span>{trend.value}% {trend.label}</span>
+          <span><span className="sr-only">Trend: </span>{trend.value}% {trend.label}</span>
         </div>
       )}
     </button>

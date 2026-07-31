@@ -112,15 +112,15 @@ export default function IncomingOrdersTable({
     return (
       <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full" role="status" aria-label="Loading orders table">
+          <table className="w-full" role="table" aria-label="Loading orders table">
             <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Order ID</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Customer</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Items</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">ETA</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Status</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Actions</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">Order ID</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">Customer</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">Items</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">ETA</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">Status</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -156,13 +156,22 @@ export default function IncomingOrdersTable({
   return (
     <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse" role="table">
+        <table className="w-full border-collapse" role="table" aria-label="Incoming orders list">
+          <caption className="sr-only">List of incoming orders with sorting and pagination</caption>
           <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
             <tr>
               <th
                 className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 onClick={() => handleSort('id')}
+                scope="col"
                 aria-sort={sortField === 'id' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleSort('id');
+                  }
+                }}
               >
                 <div className="flex items-center gap-2">
                   Order ID
@@ -172,7 +181,15 @@ export default function IncomingOrdersTable({
               <th
                 className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 onClick={() => handleSort('customerName')}
+                scope="col"
                 aria-sort={sortField === 'customerName' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleSort('customerName');
+                  }
+                }}
               >
                 <div className="flex items-center gap-2">
                   Customer
@@ -182,7 +199,15 @@ export default function IncomingOrdersTable({
               <th
                 className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 onClick={() => handleSort('itemsOrdered')}
+                scope="col"
                 aria-sort={sortField === 'itemsOrdered' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleSort('itemsOrdered');
+                  }
+                }}
               >
                 <div className="flex items-center gap-2">
                   Items
@@ -192,7 +217,15 @@ export default function IncomingOrdersTable({
               <th
                 className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 onClick={() => handleSort('deliveryETA')}
+                scope="col"
                 aria-sort={sortField === 'deliveryETA' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleSort('deliveryETA');
+                  }
+                }}
               >
                 <div className="flex items-center gap-2">
                   ETA
@@ -202,14 +235,22 @@ export default function IncomingOrdersTable({
               <th
                 className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 onClick={() => handleSort('status')}
+                scope="col"
                 aria-sort={sortField === 'status' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleSort('status');
+                  }
+                }}
               >
                 <div className="flex items-center gap-2">
                   Status
                   <SortIndicator field="status" />
                 </div>
               </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
+              <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">
                 Actions
               </th>
             </tr>
@@ -241,19 +282,21 @@ export default function IncomingOrdersTable({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onRowClick?.(order.id)}
-                      className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
+                      className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
                       aria-label={`View details for order ${order.orderId}`}
                       title="View Details"
+                      type="button"
                     >
-                      <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                      <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => onStatusChange?.(order.id, order.status)}
-                      className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
-                      aria-label={`Update status for order ${order.orderId}`}
+                      className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                      aria-label={`Update status for order ${order.orderId}, currently ${order.status}`}
                       title="Update Status"
+                      type="button"
                     >
-                      <Edit2 className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                      <Edit2 className="w-4 h-4 text-slate-600 dark:text-slate-400" aria-hidden="true" />
                     </button>
                   </div>
                 </td>
@@ -265,7 +308,7 @@ export default function IncomingOrdersTable({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-6 py-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between px-6 py-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700" role="region" aria-label="Table pagination">
           <div className="text-sm text-slate-600 dark:text-slate-400">
             Page {currentPage} of {totalPages} ({sortedOrders.length} total orders)
           </div>
@@ -273,16 +316,18 @@ export default function IncomingOrdersTable({
             <button
               onClick={() => onPageChange?.(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              aria-label="Previous page"
+              className="px-3 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+              aria-label="Go to previous page"
+              type="button"
             >
               Previous
             </button>
             <button
               onClick={() => onPageChange?.(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              aria-label="Next page"
+              className="px-3 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+              aria-label="Go to next page"
+              type="button"
             >
               Next
             </button>

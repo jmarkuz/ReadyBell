@@ -69,8 +69,8 @@ export default function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
       role="status"
       aria-label={config.label}
     >
-      <Icon className="w-3.5 h-3.5" />
-      {config.label}
+      <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+      <span>{config.label}</span>
     </span>
   );
 }

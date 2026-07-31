@@ -170,14 +170,15 @@ export default function Dashboard() {
       </div>
 
       {/* Order Summary Cards Grid */}
-      <section>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Order Summary</h2>
+      <section aria-labelledby="order-summary-heading">
+        <h2 id="order-summary-heading" className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Order Summary</h2>
         <OrderMetricsGrid metrics={metrics} />
       </section>
 
       {/* Filters Section */}
-      <section className="space-y-4">
-        <div className="flex flex-col gap-4">
+      <section aria-labelledby="filters-heading" className="space-y-4">
+        <h2 id="filters-heading" className="text-lg font-semibold text-slate-900 dark:text-white">Filters</h2>
+        <div className="space-y-4">
           {/* Filter Controls */}
           <div className="flex items-center gap-3 flex-wrap">
             <StatusFilter
@@ -186,13 +187,17 @@ export default function Dashboard() {
             />
             <button
               onClick={() => setShowDateFilter(!showDateFilter)}
-              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative"
+              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
               aria-label={`Date range filter ${dateRangeStart && dateRangeEnd ? '(active)' : ''}`}
               aria-expanded={showDateFilter}
+              type="button"
             >
               <span className="text-sm font-medium">Date Range</span>
               {dateRangeStart && dateRangeEnd && (
-                <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                <span 
+                  className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                  aria-label="1 date filter active"
+                >
                   1
                 </span>
               )}
@@ -202,8 +207,9 @@ export default function Dashboard() {
             {activeFilterCount > 0 && (
               <button
                 onClick={handleClearAllFilters}
-                className="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                aria-label="Clear all filters"
+                className="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+                aria-label={`Clear all ${activeFilterCount} active filters`}
+                type="button"
               >
                 Clear All ({activeFilterCount})
               </button>
@@ -230,7 +236,12 @@ export default function Dashboard() {
 
         {/* Active Filters Display */}
         {(selectedStatuses.length > 0 || (dateRangeStart && dateRangeEnd)) && (
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div 
+            className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             <p className="text-sm text-blue-700 dark:text-blue-300">
               <strong>Active Filters:</strong>
               {selectedStatuses.length > 0 && ` Status (${selectedStatuses.length})`}
@@ -243,7 +254,12 @@ export default function Dashboard() {
 
       {/* Search Results Info */}
       {searchQuery && (
-        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <div 
+          className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           <p className="text-sm text-blue-700 dark:text-blue-300">
             Search results: <strong>{filteredOrders.length}</strong> order(s) found for "{searchQuery}"
           </p>
@@ -251,8 +267,8 @@ export default function Dashboard() {
       )}
 
       {/* Incoming Orders Table */}
-      <section>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <section aria-labelledby="orders-heading">
+        <h2 id="orders-heading" className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
           Incoming Orders {filteredOrders.length !== allOrders.length && `(${filteredOrders.length})`}
         </h2>
         <IncomingOrdersTable orders={filteredOrders} />

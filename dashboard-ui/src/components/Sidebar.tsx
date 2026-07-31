@@ -62,17 +62,19 @@ export default function Sidebar({
     <div className="flex flex-col h-full bg-white dark:bg-slate-900">
       {/* Logo/Brand Section */}
       <div className="flex items-center gap-3 px-6 py-6 border-b border-slate-200 dark:border-slate-800">
-        <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-          <span className="text-white font-bold">RB</span>
-        </div>
-        <div className="hidden md:block min-w-0">
-          <p className="font-bold text-sm truncate">ReadyBell</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Restaurant Panel</p>
-        </div>
+        <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity" aria-label="ReadyBell Dashboard home">
+          <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+            <span className="text-white font-bold" aria-hidden="true">RB</span>
+          </div>
+          <div className="hidden md:block min-w-0">
+            <p className="font-bold text-sm truncate">ReadyBell</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Restaurant Panel</p>
+          </div>
+        </a>
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto" aria-label="Main navigation">
+      <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto" id="main-navigation" aria-label="Main navigation">
         {menuItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -81,7 +83,7 @@ export default function Sidebar({
               to={item.route}
               onClick={() => onNavigate?.(item.route)}
               className={({ isActive }: { isActive: boolean }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group
+                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group relative
                 ${
                   isActive
                     ? 'bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
@@ -92,14 +94,17 @@ export default function Sidebar({
             >
               {({ isActive }: { isActive: boolean }) => (
                 <>
-                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                   <span className="hidden md:inline text-sm font-medium truncate">{item.label}</span>
                   
                   {/* Tooltip for mobile/collapsed state */}
-                  <div className="md:hidden absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-700 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                  <div 
+                    className="md:hidden absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-700 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50"
+                    role="tooltip"
+                  >
                     {item.label}
                   </div>
-                  {isActive && <span className="sr-only">(current page)</span>}
+                  {isActive && <span className="sr-only">(current page) - Press Tab to move to main content</span>}
                 </>
               )}
             </NavLink>
@@ -108,7 +113,7 @@ export default function Sidebar({
       </nav>
 
       {/* User Profile Section */}
-      <div className="border-t border-slate-200 dark:border-slate-800 p-4">
+      <section className="border-t border-slate-200 dark:border-slate-800 p-4" aria-label="User profile">
         {userProfile ? (
           <div className="flex items-center gap-3 mb-3">
             {userProfile.avatarUrl ? (
@@ -118,7 +123,10 @@ export default function Sidebar({
                 className="w-10 h-10 rounded-full flex-shrink-0 object-cover"
               />
             ) : (
-              <div className="w-10 h-10 bg-blue-200 dark:bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0">
+              <div 
+                className="w-10 h-10 bg-blue-200 dark:bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0"
+                aria-label={`Avatar for ${userProfile.name}`}
+              >
                 <span className="text-sm font-bold text-blue-700 dark:text-blue-300">
                   {userProfile.name
                     .split(' ')
@@ -149,18 +157,22 @@ export default function Sidebar({
 
         {/* Logout button */}
         <button
-          className="w-full flex items-center gap-3 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors group"
-          aria-label="Logout"
+          className="w-full flex items-center gap-3 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+          aria-label="Logout from dashboard"
+          type="button"
         >
-          <LogOut className="w-5 h-5 flex-shrink-0" />
+          <LogOut className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
           <span className="hidden md:inline text-sm font-medium">Logout</span>
           
           {/* Tooltip for mobile/collapsed state */}
-          <div className="md:hidden absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-700 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+          <div 
+            className="md:hidden absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-700 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50"
+            role="tooltip"
+          >
             Logout
           </div>
         </button>
-      </div>
+      </section>
     </div>
   );
 }

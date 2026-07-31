@@ -40,6 +40,7 @@ export default function Layout({ children }: LayoutProps) {
           md:w-20 md:hover:w-64
           overflow-y-auto
         `}
+        aria-label="Main navigation"
       >
         <Sidebar onToggleCollapse={() => setSidebarOpen(!sidebarOpen)} />
       </aside>
@@ -49,18 +50,20 @@ export default function Layout({ children }: LayoutProps) {
         <div
           className="fixed inset-0 z-30 bg-black/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
+          role="presentation"
+          aria-hidden="true"
         />
       )}
 
       {/* Main layout: Header + Content */}
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Header - Fixed at top */}
-        <header className="sticky top-0 z-20 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <header className="sticky top-0 z-20 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900" role="banner">
           <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} onSearch={setQuery} />
         </header>
 
         {/* Main Content Area - Scrollable independently */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950">
+        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950" id="main-content">
           <div className="container mx-auto px-4 py-8 max-w-7xl">
             {/* If children provided, render them; otherwise use React Router Outlet */}
             {children || <Outlet />}
