@@ -369,7 +369,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test skip link to main content
   - Result: Full keyboard navigation verified
 
-- [~] 8.3 Test screen reader support
+- [x] 8.3 Test screen reader support
   - Test with NVDA (Windows) or VoiceOver (Mac)
   - Verify all text readable by screen reader
   - Verify headings announced correctly
@@ -377,7 +377,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Verify status badges announced with full text
   - Result: Screen reader tested and working
 
-- [~] 8.4 Verify color contrast ratios
+- [-] 8.4 Verify color contrast ratios
   - Use WebAIM contrast checker on all color combinations
   - Verify ≥ 4.5:1 for normal text in both themes
   - Verify ≥ 3:1 for UI components in both themes
