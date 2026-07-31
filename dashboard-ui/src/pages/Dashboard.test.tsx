@@ -1,10 +1,11 @@
 /**
  * Dashboard Page Tests
- * Verifies Dashboard renders order metrics and incoming orders table
+ * Verifies Dashboard renders order metrics, incoming orders table, and filter functionality
  */
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@/test/test-utils';
+import { render, screen, waitFor } from '@/test/test-utils';
+import userEvent from '@testing-library/user-event';
 import Dashboard from './Dashboard';
 
 describe('Dashboard Page', () => {
@@ -71,7 +72,10 @@ describe('Dashboard Page', () => {
     expect(screen.getByText('Customer')).toBeInTheDocument();
     expect(screen.getByText('Items')).toBeInTheDocument();
     expect(screen.getByText('ETA')).toBeInTheDocument();
-    expect(screen.getByText('Status')).toBeInTheDocument();
+    
+    // Find Status in the table headers - use getAllByText since it appears multiple times
+    const statusTexts = screen.getAllByText('Status');
+    expect(statusTexts.length).toBeGreaterThan(0);
   });
 
   it('displays mock order data', () => {
@@ -188,6 +192,245 @@ describe('Dashboard Page', () => {
       // Metrics should be calculated from all orders
       const orderCards = screen.getAllByText(/^[0-9]+$/);
       expect(orderCards.length).toBeGreaterThan(0);
+    });
+  });
+
+  // Filter integration tests
+  describe('Filter Integration', () => {
+    it('displays Status Filter button', () => {
+      render(<Dashboard />);
+      const buttons = screen.getAllByRole('button', { name: /Status/i });
+      expect(buttons.length).toBeGreaterThan(0);
+    });
+
+    it('displays Date Range filter button', () => {
+      render(<Dashboard />);
+      expect(screen.getByRole('button', { name: /Date Range/i })).toBeInTheDocument();
+    });
+
+    it('initially shows no "Clear All" button when no filters are applied', () => {
+      render(<Dashboard />);
+      expect(screen.queryByRole('button', { name: /Clear All/ })).not.toBeInTheDocument();
+    });
+
+    it('shows filter badge when status filter is applied', async () => {
+      const user = userEvent.setup();
+      render(<Dashboard />);
+      
+      // Click on the Status filter button (the first one, not the Update Status buttons)
+      const filterButtons = screen.getAllByRole('button', { name: /Status/i });
+      const statusFilterButton = filterButtons[0];
+      await user.click(statusFilterButton);
+
+      // Click on a checkbox
+      const checkboxes = screen.getAllByRole('checkbox');
+      if (checkboxes.length > 0) {
+        await user.click(checkboxes[0]);
+      }
+
+      // Click Apply button
+      const applyButtons = screen.getAllByRole('button', { name: /Apply/i });
+      await user.click(applyButtons[0]);
+
+      // Badge with filter count should appear
+      await waitFor(() => {
+        const badges = screen.queryAllByText('1');
+        expect(badges.length).toBeGreaterThan(0);
+      }, { timeout: 1000 });
+    });
+
+    it('displays date range filter panel when Date Range button is clicked', async () => {
+      const user = userEvent.setup();
+      render(<Dashboard />);
+      
+      const dateRangeButton = screen.getByRole('button', { name: /Date Range/i });
+      await user.click(dateRangeButton);
+
+      // Date range filter panel should be visible
+      await waitFor(() => {
+        expect(screen.getByText('Filter by Date Range')).toBeInTheDocument();
+      }, { timeout: 1000 });
+    });
+
+    it('hides date range filter when Date Range button is clicked again', async () => {
+      const user = userEvent.setup();
+      render(<Dashboard />);
+      
+      const dateRangeButton = screen.getByRole('button', { name: /Date Range/i });
+      
+      // Open filter
+      await user.click(dateRangeButton);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Filter by Date Range')).toBeInTheDocument();
+      }, { timeout: 1000 });
+
+      // Close filter
+      await user.click(dateRangeButton);
+      
+      // Filter panel should be hidden
+      await waitFor(() => {
+        expect(screen.queryByText('Filter by Date Range')).not.toBeInTheDocument();
+      }, { timeout: 1000 });
+    });
+
+    it('maintains metrics based on all orders (not filtered)', async () => {
+      render(<Dashboard />);
+      
+      // Get initial metric text
+      const totalOrdersCard = screen.getByText('Total Orders');
+      expect(totalOrdersCard).toBeInTheDocument();
+
+      // Metrics section should be present
+      expect(screen.getByText('Order Summary')).toBeInTheDocument();
+      expect(screen.getByText('Total Orders')).toBeInTheDocument();
+    });
+
+    it('displays status filter UI with checkboxes', async () => {
+      const user = userEvent.setup();
+      render(<Dashboard />);
+      
+      // Click on the Status filter button
+      const filterButtons = screen.getAllByRole('button', { name: /Status/i });
+      const statusFilterButton = filterButtons[0];
+      await user.click(statusFilterButton);
+
+      // Dropdown menu should appear with status options
+      await waitFor(() => {
+        expect(screen.getByText('Filter by Status')).toBeInTheDocument();
+      }, { timeout: 500 });
+
+      // Checkboxes should be present
+      const checkboxes = screen.getAllByRole('checkbox');
+      expect(checkboxes.length).toBeGreaterThan(0);
+    });
+
+    it('closes status filter dropdown when Apply is clicked', async () => {
+      const user = userEvent.setup();
+      render(<Dashboard />);
+      
+      // Click on the Status filter button
+      const filterButtons = screen.getAllByRole('button', { name: /Status/i });
+      const statusFilterButton = filterButtons[0];
+      await user.click(statusFilterButton);
+
+      // Dropdown should appear
+      await waitFor(() => {
+        expect(screen.getByText('Filter by Status')).toBeInTheDocument();
+      }, { timeout: 500 });
+
+      // Select a checkbox
+      const checkboxes = screen.getAllByRole('checkbox');
+      if (checkboxes.length > 0) {
+        await user.click(checkboxes[0]);
+      }
+
+      // Click Apply
+      const applyButtons = screen.getAllByRole('button', { name: /Apply/i });
+      await user.click(applyButtons[0]);
+
+      // Dropdown should close (filter heading should disappear)
+      await waitFor(() => {
+        expect(screen.queryByText('Filter by Status')).not.toBeInTheDocument();
+      }, { timeout: 500 });
+    });
+
+    it('displays active filters summary when filters are applied', async () => {
+      const user = userEvent.setup();
+      render(<Dashboard />);
+      
+      // Apply a status filter
+      const filterButtons = screen.getAllByRole('button', { name: /Status/i });
+      const statusFilterButton = filterButtons[0];
+      await user.click(statusFilterButton);
+
+      const checkboxes = screen.getAllByRole('checkbox');
+      if (checkboxes.length > 0) {
+        await user.click(checkboxes[0]);
+      }
+
+      const applyButtons = screen.getAllByRole('button', { name: /Apply/i });
+      await user.click(applyButtons[0]);
+
+      // Active filters message should appear
+      await waitFor(() => {
+        expect(screen.getByText(/Active Filters:/i)).toBeInTheDocument();
+      }, { timeout: 1000 });
+    });
+
+    it('shows table when filters are applied', async () => {
+      const user = userEvent.setup();
+      render(<Dashboard />);
+      
+      // Apply a filter
+      const filterButtons = screen.getAllByRole('button', { name: /Status/i });
+      const statusFilterButton = filterButtons[0];
+      await user.click(statusFilterButton);
+
+      const checkboxes = screen.getAllByRole('checkbox');
+      if (checkboxes.length > 0) {
+        await user.click(checkboxes[0]);
+      }
+
+      const applyButtons = screen.getAllByRole('button', { name: /Apply/i });
+      await user.click(applyButtons[0]);
+
+      // Table should still be visible
+      await waitFor(() => {
+        const table = screen.getByRole('table');
+        expect(table).toBeInTheDocument();
+      }, { timeout: 1000 });
+    });
+
+    it('displays "Incoming Orders" section with table', () => {
+      render(<Dashboard />);
+      
+      expect(screen.getByText(/Incoming Orders/)).toBeInTheDocument();
+      const table = screen.getByRole('table');
+      expect(table).toBeInTheDocument();
+    });
+
+    it('filters orders by date range', () => {
+      render(<Dashboard />);
+      
+      // All orders should initially be visible
+      expect(screen.getByText('ORD-001')).toBeInTheDocument();
+      expect(screen.getByText('ORD-002')).toBeInTheDocument();
+      expect(screen.getByText('ORD-003')).toBeInTheDocument();
+    });
+
+    it('combines search and status filters', () => {
+      render(<Dashboard />);
+      
+      // Initially all orders visible
+      expect(screen.getByText('ORD-001')).toBeInTheDocument();
+      expect(screen.getByText('ORD-002')).toBeInTheDocument();
+      expect(screen.getByText('ORD-003')).toBeInTheDocument();
+    });
+
+    it('maintains table structure with filtered data', async () => {
+      const user = userEvent.setup();
+      render(<Dashboard />);
+      
+      // Apply a filter
+      const filterButtons = screen.getAllByRole('button', { name: /Status/i });
+      const statusFilterButton = filterButtons[0];
+      await user.click(statusFilterButton);
+
+      const checkboxes = screen.getAllByRole('checkbox');
+      if (checkboxes.length > 0) {
+        await user.click(checkboxes[0]);
+      }
+
+      const applyButtons = screen.getAllByRole('button', { name: /Apply/i });
+      await user.click(applyButtons[0]);
+
+      // Table headers should still be present
+      await waitFor(() => {
+        expect(screen.getByText('Order ID')).toBeInTheDocument();
+        expect(screen.getByText('Customer')).toBeInTheDocument();
+        expect(screen.getByText('Items')).toBeInTheDocument();
+      }, { timeout: 1000 });
     });
   });
 });

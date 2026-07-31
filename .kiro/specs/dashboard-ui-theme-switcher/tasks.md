@@ -298,7 +298,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: checkboxes toggle, apply fires callback
   - Result: Filter dropdown working
 
-- [-] 6.3 Implement date range filter
+- [x] 6.3 Implement date range filter
   - Create `src/components/DateRangeFilter.tsx`
   - Date picker UI (inputs or calendar)
   - Presets: Today, This Week, This Month, Custom
@@ -306,7 +306,8 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: date selection works, validation prevents invalid ranges
   - Result: Date range filter component
 
-- [~] 6.4 Integrate filters with table
+- [x] 6.4 Integrate filters with table
+
   - Store filter state in Dashboard
   - Apply filters to mock order data
   - Show filtered results in table
@@ -316,7 +317,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
 
 ### Phase 7: Real-Time Updates (SSE Integration)
 
-- [~] 7.1 Implement SSE client hook
+- [-] 7.1 Implement SSE client hook
   - Create `src/hooks/useSSE.ts`
   - Props: endpoint, onMessage, onError
   - Auto-reconnect with exponential backoff (1s, 2s, 4s, 8s, max 30s)
