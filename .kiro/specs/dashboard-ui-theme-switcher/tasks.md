@@ -325,7 +325,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: connection establishes, messages received
   - Result: SSE hook functional
 
-- [x] 7.2 Create order update event handler
+- [-] 7.2 Create order update event handler
   - Create `src/hooks/useOrderUpdates.ts`
   - Listens to `/api/orders/stream` SSE endpoint
   - Updates table data with new/modified orders
@@ -360,7 +360,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: HTML validator passes, accessibility audit clean
   - Result: Semantic HTML and ARIA complete
 
-- [-] 8.2 Verify keyboard navigation
+- [x] 8.2 Verify keyboard navigation
   - Tab through all interactive elements
   - Verify tab order is logical (left-to-right, top-to-bottom)
   - Test all buttons activate with Enter/Space
