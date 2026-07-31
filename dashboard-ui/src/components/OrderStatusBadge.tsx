@@ -32,19 +32,19 @@ export default function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
       label: 'New Order',
       icon: Clock,
       bgColor: 'bg-blue-50 dark:bg-blue-900/30',
-      textColor: 'text-blue-700 dark:text-blue-300',
+      textColor: 'text-status-info', // Use custom status color
     },
     PREPARING: {
       label: 'Preparing',
       icon: Flame,
       bgColor: 'bg-orange-50 dark:bg-orange-900/30',
-      textColor: 'text-orange-700 dark:text-orange-300',
+      textColor: 'text-status-warning', // Use custom status color
     },
     READY: {
       label: 'Ready for Pickup',
       icon: CheckCircle,
       bgColor: 'bg-green-50 dark:bg-green-900/30',
-      textColor: 'text-green-700 dark:text-green-300',
+      textColor: 'text-status-success', // Use custom status color
     },
     COMPLETED: {
       label: 'Completed',
@@ -56,7 +56,7 @@ export default function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
       label: 'Cancelled',
       icon: XCircle,
       bgColor: 'bg-red-50 dark:bg-red-900/30',
-      textColor: 'text-red-700 dark:text-red-300',
+      textColor: 'text-status-error', // Use custom status color
     },
   };
 

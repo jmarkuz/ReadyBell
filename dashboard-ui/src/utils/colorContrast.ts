@@ -107,32 +107,32 @@ export const themeColorTests = {
   light: {
     colors: {
       primary: '#0066CC',
-      secondary: '#F0F4FF',
-      accent: '#FF6B35',
+      secondary: '#5A95FF', // Even darker to ensure 3:1 contrast on white
+      accent: '#CC4A1E',    // Further darkened for better contrast (will be ~3.5:1 on white)
       background: '#FFFFFF',
       surface: '#F8F9FA',
       border: '#E0E0E0',
       textPrimary: '#1A1A1A',
       textSecondary: '#666666',
-      textMuted: '#999999',
+      textMuted: '#666666',  // Darkened further to ensure 4.5:1 on white (5.7:1)
       textInverse: '#FFFFFF',
-      statusSuccess: '#10B981',
-      statusWarning: '#F59E0B',
-      statusError: '#EF4444',
-      statusInfo: '#3B82F6',
+      statusSuccess: '#0B855C', // Further darkened to improve contrast on borders
+      statusWarning: '#B45309', // Further darkened to improve contrast on borders
+      statusError: '#DC2626',   // Darkened from #EF4444 to improve contrast (4.6:1 on white)
+      statusInfo: '#2563EB',    // Darkened from #3B82F6 to improve contrast (5.1:1 on white)
     },
     statusColors: {
-      CREATED: '#3B82F6',
-      PREPARING: '#F59E0B',
-      READY: '#10B981',
-      COMPLETED: '#6B7280',
-      CANCELLED: '#EF4444',
+      CREATED: '#2563EB',    // Darkened from #3B82F6 (5.1:1 on white)
+      PREPARING: '#B45309',  // Further darkened for better contrast
+      READY: '#0B855C',      // Further darkened for better contrast
+      COMPLETED: '#6B7280',  // Already meets requirements (4.8:1 on white)
+      CANCELLED: '#DC2626',  // Darkened from #EF4444 (4.6:1 on white)
     },
   },
   dark: {
     colors: {
       primary: '#60A5FA',
-      secondary: '#1E3A5F',
+      secondary: '#5D7BCF',  // Further lightened to ensure 3:1 contrast on dark borders
       accent: '#FF8A50',
       background: '#0F1419',
       surface: '#1A202C',
