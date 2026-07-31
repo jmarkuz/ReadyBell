@@ -41,7 +41,7 @@ These tasks build on the existing dashboard-ui-theme-switcher implementation (co
 - [x] 1.1.3: Add response interceptor to handle 401 responses
 - [x] 1.1.4: Implement token refresh logic with retry
 - [x] 1.1.5: Create useAuth hook for components to access auth state
-- [-] 1.1.6: Add token validation on app initialization
+- [x] 1.1.6: Add token validation on app initialization
 - [~] 1.1.7: Test bearer token flow end-to-end with real backend
 
 **Owner**: Frontend Team  
