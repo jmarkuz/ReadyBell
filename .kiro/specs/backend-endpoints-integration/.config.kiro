@@ -1,0 +1,8 @@
+{
+  "specType": "feature",
+  "workflowType": "design-first",
+  "featureName": "backend-endpoints-integration",
+  "createdAt": "2024-07-31",
+  "version": "1.0.0",
+  "description": "Implement UI pages for all 22 backend API endpoints across 4 phases: Order Management (Phase 1), Staff Admin (Phase 2), Platform Admin (Phase 3), and Customer PWA infrastructure (Phase 4)"
+}

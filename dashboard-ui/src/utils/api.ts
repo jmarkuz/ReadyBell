@@ -12,6 +12,7 @@
  */
 
 import { ErrorResponse, DisplayError, PaginatedResponse, OrderRow } from '@/types';
+import { tokenManager } from './TokenManager';
 
 /**
  * User profile from authentication
@@ -27,6 +28,32 @@ export interface UserProfile {
 }
 
 /**
+ * Request interceptor type definition
+ */
+export type RequestInterceptor = (config: RequestConfig) => RequestConfig | Promise<RequestConfig>;
+
+/**
+ * Response interceptor type definition
+ */
+export type ResponseInterceptor = (response: Response) => Response | Promise<Response>;
+
+/**
+ * Error interceptor type definition
+ */
+export type ErrorInterceptor = (error: Error) => Error | Promise<Error>;
+
+/**
+ * Request configuration for interceptors
+ */
+export interface RequestConfig {
+  method: string;
+  endpoint: string;
+  body?: unknown;
+  headers: HeadersInit;
+  url?: string;
+}
+
+/**
  * API Client Class
  * Implements restaurant-notification-platform endpoint specification
  */
@@ -34,6 +61,9 @@ export class ApiClient {
   private baseURL: string;
   private defaultHeaders: HeadersInit;
   private userProfile: UserProfile | null = null;
+  private requestInterceptors: RequestInterceptor[] = [];
+  private responseInterceptors: ResponseInterceptor[] = [];
+  private errorInterceptors: ErrorInterceptor[] = [];
 
   constructor(baseURL?: string) {
     this.baseURL = baseURL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -41,13 +71,82 @@ export class ApiClient {
       'Content-Type': 'application/json',
     };
     this.loadUserProfile();
+    this.setupDefaultRequestInterceptor();
   }
 
   /**
-   * Load user profile from localStorage
+   * Setup default request interceptor to inject Bearer token
+   * This interceptor:
+   * - Retrieves the stored bearer token from TokenManager
+   * - Injects Authorization: Bearer {token} header
+   * - Skips token injection if no token available (graceful fallback)
+   * - Logs warning if token is missing (but allows request to proceed)
+   */
+  private setupDefaultRequestInterceptor(): void {
+    this.addRequestInterceptor((config: RequestConfig) => {
+      const token = tokenManager.get();
+      
+      if (token) {
+        // Token available: inject it into Authorization header
+        (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+        console.debug(`[API] Request interceptor: Bearer token injected for ${config.method} ${config.endpoint}`);
+      } else {
+        // No token available: log warning but allow request to proceed
+        console.warn(
+          `[API] Request interceptor: No bearer token available for ${config.method} ${config.endpoint}. ` +
+          `Request will proceed without authentication. This may result in 401 Unauthorized response.`
+        );
+      }
+      
+      return config;
+    });
+  }
+
+  /**
+   * Add a request interceptor
+   * Interceptors are called in order before the request is sent
+   */
+  public addRequestInterceptor(interceptor: RequestInterceptor): void {
+    this.requestInterceptors.push(interceptor);
+  }
+
+  /**
+   * Add a response interceptor
+   * Interceptors are called in order after response is received
+   */
+  public addResponseInterceptor(interceptor: ResponseInterceptor): void {
+    this.responseInterceptors.push(interceptor);
+  }
+
+  /**
+   * Add an error interceptor
+   * Interceptors are called in order when an error occurs
+   */
+  public addErrorInterceptor(interceptor: ErrorInterceptor): void {
+    this.errorInterceptors.push(interceptor);
+  }
+
+  /**
+   * Load user profile from token or localStorage
+   * Priority: Token (decoded JWT) > localStorage (fallback)
    */
   private loadUserProfile(): void {
     try {
+      // Try to load from token first (more authoritative)
+      const decodedToken = tokenManager.getDecodedToken();
+      if (decodedToken) {
+        this.userProfile = {
+          id: decodedToken.sub || decodedToken.id || decodedToken.username || '',
+          username: decodedToken.username || '',
+          email: decodedToken.email || '',
+          name: decodedToken.name || decodedToken.username || '',
+          role: decodedToken.role,
+          tenantId: decodedToken.tenant_id || decodedToken.tenantId || '',
+        };
+        return;
+      }
+
+      // Fallback to localStorage
       const profileJson = localStorage.getItem('user-profile');
       if (profileJson) {
         this.userProfile = JSON.parse(profileJson);
@@ -58,27 +157,19 @@ export class ApiClient {
   }
 
   /**
-   * Get authorization token from localStorage
+   * Get authorization token from TokenManager
+   * @deprecated Use tokenManager.get() directly
    */
   private getAuthToken(): string | null {
-    try {
-      return localStorage.getItem('auth-token');
-    } catch (error) {
-      console.warn('Failed to read auth token from localStorage:', error);
-      return null;
-    }
+    return tokenManager.get();
   }
 
   /**
-   * Build request headers with auth token if available
+   * Build request headers with default headers
+   * Note: Bearer token is injected by request interceptor, not here
    */
   private getHeaders(): HeadersInit {
-    const headers = { ...this.defaultHeaders };
-    const token = this.getAuthToken();
-    if (token) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
-    }
-    return headers;
+    return { ...this.defaultHeaders };
   }
 
   /**
@@ -164,7 +255,13 @@ export class ApiClient {
   }
 
   /**
-   * Perform HTTP request with error handling
+   * Perform HTTP request with error handling and interceptors
+   * 
+   * Flow:
+   * 1. Apply request interceptors (e.g., inject Bearer token)
+   * 2. Send HTTP request
+   * 3. Apply response interceptors
+   * 4. Handle errors with error interceptors
    */
   private async request<T>(
     method: string,
@@ -174,16 +271,35 @@ export class ApiClient {
     const url = `${this.baseURL}${endpoint}`;
 
     try {
-      const options: RequestInit = {
+      // Build initial request config
+      let config: RequestConfig = {
         method,
+        endpoint,
+        body,
         headers: this.getHeaders(),
       };
 
-      if (body) {
-        options.body = JSON.stringify(body);
+      // Apply request interceptors in order
+      for (const interceptor of this.requestInterceptors) {
+        config = await interceptor(config);
       }
 
-      const response = await fetch(url, options);
+      const options: RequestInit = {
+        method: config.method,
+        headers: config.headers,
+      };
+
+      if (config.body) {
+        options.body = JSON.stringify(config.body);
+      }
+
+      // Execute request
+      let response = await fetch(url, options);
+
+      // Apply response interceptors in order
+      for (const interceptor of this.responseInterceptors) {
+        response = await interceptor(response);
+      }
 
       // Parse response body
       let data: unknown;
@@ -207,12 +323,18 @@ export class ApiClient {
 
       return data as T;
     } catch (error) {
-      // Handle network errors or propagate API errors
-      if (error instanceof ApiError) {
-        throw error;
+      // Apply error interceptors
+      let processedError = error instanceof Error ? error : new Error(String(error));
+      for (const interceptor of this.errorInterceptors) {
+        processedError = await interceptor(processedError);
       }
 
-      if (error instanceof TypeError && error.message.includes('fetch')) {
+      // Handle network errors or propagate API errors
+      if (processedError instanceof ApiError) {
+        throw processedError;
+      }
+
+      if (processedError instanceof TypeError && processedError.message.includes('fetch')) {
         const displayError: DisplayError = {
           type: 'network',
           message: 'Network error. Check your connection and try again.',
@@ -222,7 +344,7 @@ export class ApiClient {
         throw new ApiError(displayError.message, 0, displayError);
       }
 
-      throw error;
+      throw processedError;
     }
   }
 
@@ -479,16 +601,25 @@ export class ApiClient {
    * Logout (clear tokens)
    */
   logout(): void {
-    localStorage.removeItem('auth-token');
+    // Clear token via TokenManager
+    tokenManager.clear();
+    
+    // Clear user profile
     localStorage.removeItem('user-profile');
+    localStorage.removeItem('auth-token'); // Legacy fallback
     this.userProfile = null;
+    
+    console.debug('[API] User logged out, tokens cleared');
   }
 
   /**
    * Check if user is authenticated
+   * Reloads profile to ensure we have latest token data
    */
   isAuthenticated(): boolean {
-    return !!this.getAuthToken() && !!this.userProfile;
+    // Reload profile to check current token status
+    this.loadUserProfile();
+    return !!tokenManager.get() && !!this.userProfile;
   }
 
   // ============================================================================
