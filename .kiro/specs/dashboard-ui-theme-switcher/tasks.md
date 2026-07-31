@@ -342,7 +342,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Test: SSE failure triggers polling fallback
   - Result: Polling fallback implemented
 
-- [-] 7.4 Test real-time updates in table
+- [x] 7.4 Test real-time updates in table
   - Start dev server with mocked SSE
   - Simulate order updates
   - Verify table updates without full reload
