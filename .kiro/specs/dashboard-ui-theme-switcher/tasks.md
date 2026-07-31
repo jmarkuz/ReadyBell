@@ -401,7 +401,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
 
 ### Phase 9: Performance Optimization
 
-- [-] 9.1 Code splitting and lazy loading
+- [x] 9.1 Code splitting and lazy loading
   - Split main bundle into chunks (header, sidebar, pages)
   - Lazy load each page with React.lazy()
   - Use Suspense for loading fallback
@@ -409,7 +409,7 @@ This implementation plan builds the ReadyBell restaurant dashboard with light/da
   - Target: main < 150KB gzipped
   - Result: Code splitting implemented
 
-- [ ] 9.2 Component memoization
+- [-] 9.2 Component memoization
   - Use React.memo on components that don't need frequent updates
   - Use useMemo for expensive computations
   - Use useCallback for stable function references

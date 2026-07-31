@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   Home,
@@ -44,7 +44,7 @@ interface MenuItem {
  * - Tablet (768px-1023px): Collapsed to icon-only (with hover expand)
  * - Mobile: Drawer overlay or hamburger menu
  */
-export default function Sidebar({
+export default memo(function Sidebar({
   onNavigate,
   userProfile,
 }: SidebarProps) {
@@ -175,4 +175,4 @@ export default function Sidebar({
       </section>
     </div>
   );
-}
+});

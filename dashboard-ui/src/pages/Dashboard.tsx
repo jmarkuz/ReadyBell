@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import OrderMetricsGrid from '@/components/OrderMetricsGrid';
 import IncomingOrdersTable from '@/components/IncomingOrdersTable';
 import StatusFilter from '@/components/StatusFilter';
@@ -209,23 +209,23 @@ export default function Dashboard() {
   const activeFilterCount = (selectedStatuses.length > 0 ? 1 : 0) + (dateRangeStart && dateRangeEnd ? 1 : 0);
 
   // Handle status filter apply
-  const handleStatusFilterApply = (statuses: OrderStatus[]) => {
+  const handleStatusFilterApply = useCallback((statuses: OrderStatus[]) => {
     setSelectedStatuses(statuses);
-  };
+  }, []);
 
   // Handle date range filter apply
-  const handleDateRangeApply = (startDate: Date, endDate: Date) => {
+  const handleDateRangeApply = useCallback((startDate: Date, endDate: Date) => {
     setDateRangeStart(startDate);
     setDateRangeEnd(endDate);
-  };
+  }, []);
 
   // Handle clear all filters
-  const handleClearAllFilters = () => {
+  const handleClearAllFilters = useCallback(() => {
     setSelectedStatuses([]);
     setDateRangeStart(null);
     setDateRangeEnd(null);
     setShowDateFilter(false);
-  };;
+  }, []);
 
   return (
     <div className="space-y-8">

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, memo } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import {
   Menu,
@@ -33,7 +33,7 @@ interface HeaderProps {
  * - Tablet: Compact spacing, hide some text labels
  * - Mobile: Search in dropdown, compact icons
  */
-export default function Header({
+export default memo(function Header({
   onMenuToggle,
   onSearch,
   notificationCount = 0,
@@ -244,4 +244,4 @@ export default function Header({
       )}
     </nav>
   );
-}
+});

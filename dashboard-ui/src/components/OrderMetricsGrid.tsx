@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import OrderSummaryCard from './OrderSummaryCard';
 import { OrderMetrics } from '@/types';
 import { ShoppingCart, Clock, Zap, CheckCircle } from 'lucide-react';
@@ -22,7 +23,7 @@ interface OrderMetricsGridProps {
  * - Tablet (768px-1023px): 2 columns
  * - Mobile (<768px): 1 column (stacked)
  */
-export default function OrderMetricsGrid({
+export default memo(function OrderMetricsGrid({
   metrics,
   isLoading = false,
   onCardClick,
@@ -73,4 +74,4 @@ export default function OrderMetricsGrid({
       ))}
     </div>
   );
-}
+});

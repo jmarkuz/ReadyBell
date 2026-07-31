@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { OrderStatus } from '@/types';
 import { Clock, Flame, CheckCircle, Archive, XCircle } from 'lucide-react';
 
@@ -21,7 +21,7 @@ interface OrderStatusBadgeProps {
  * - COMPLETED: gray (Completed) with Archive icon
  * - CANCELLED: red (Cancelled) with XCircle icon
  */
-export default function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
+export default memo(function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
   const statusConfig: Record<OrderStatus, {
     label: string;
     icon: React.ComponentType<{ className?: string }>;
@@ -73,4 +73,4 @@ export default function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
       <span>{config.label}</span>
     </span>
   );
-}
+});

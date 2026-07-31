@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Trend } from '@/types';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -27,7 +27,7 @@ interface OrderSummaryCardProps {
  * - aria-label with full context
  * - Keyboard accessible (Tab, Enter)
  */
-export default function OrderSummaryCard({
+export default memo(function OrderSummaryCard({
   title,
   value,
   icon: Icon,
@@ -96,4 +96,4 @@ export default function OrderSummaryCard({
       )}
     </button>
   );
-}
+});

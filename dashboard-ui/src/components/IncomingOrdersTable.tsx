@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { OrderRow } from '@/types';
 import OrderStatusBadge from './OrderStatusBadge';
 import { ChevronUp, ChevronDown, Eye, Edit2 } from 'lucide-react';
@@ -38,8 +38,13 @@ type SortField = 'id' | 'customerName' | 'itemsOrdered' | 'deliveryETA' | 'statu
  * - Semantic <table> with proper headers
  * - aria-sort on sortable headers
  * - aria-label on buttons
+ * 
+ * Performance:
+ * - Memoized with React.memo to prevent unnecessary re-renders
+ * - useMemo for sorted/paginated order lists
+ * - useCallback for handlers to maintain stable references
  */
-export default function IncomingOrdersTable({
+export default memo(function IncomingOrdersTable({
   orders = [],
   isLoading = false,
   pageSize = 10,
@@ -52,7 +57,21 @@ export default function IncomingOrdersTable({
   const [sortField, setSortField] = useState<SortField>('deliveryETA');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(initialSortOrder);
 
-  // Sorting logic
+  // Handle column sort with useCallback for stable reference
+  const handleSort = useCallback((field: SortField) => {
+    setSortField((prevField) => {
+      setSortOrder((prevOrder) => {
+        if (prevField === field) {
+          return prevOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+          return 'asc';
+        }
+      });
+      return prevField === field ? prevField : field;
+    });
+  }, []);
+
+  // Sorting logic - memoized for performance
   const sortedOrders = useMemo(() => {
     const sorted = [...orders].sort((a, b) => {
       let compareA: any = a[sortField];
@@ -84,29 +103,19 @@ export default function IncomingOrdersTable({
 
   // Pagination logic
   const totalPages = Math.ceil(sortedOrders.length / pageSize);
-  const paginatedOrders = sortedOrders.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
+  const paginatedOrders = useMemo(
+    () => sortedOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [sortedOrders, currentPage, pageSize]
   );
 
-  // Handle column sort
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-  };
-
-  const SortIndicator = ({ field }: { field: SortField }) => {
+  const SortIndicator = memo(({ field }: { field: SortField }) => {
     if (sortField !== field) return <span className="text-slate-300">⋅</span>;
     return sortOrder === 'asc' ? (
       <ChevronUp className="w-4 h-4 inline" />
     ) : (
       <ChevronDown className="w-4 h-4 inline" />
     );
-  };
+  });
 
   if (isLoading) {
     return (
@@ -336,4 +345,4 @@ export default function IncomingOrdersTable({
       )}
     </div>
   );
-}
+});
