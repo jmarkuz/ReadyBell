@@ -75,7 +75,7 @@ Phase 5: Testing & Verification
 
 ### Phase 1: API Client Enhancement & Bearer Token Integration
 
-- [ ] 1.1 Implement Bearer Token Authentication in API Client
+- [-] 1.1 Implement Bearer Token Authentication in API Client
 
 **Description**: Enhance `src/utils/api.ts` to handle bearer token lifecycle including storage, request injection, token refresh, and logout.
 
@@ -102,7 +102,7 @@ Phase 5: Testing & Verification
 
 ---
 
-- [ ] 1.2 Implement RFC 7807 Error Handling in API Client
+- [~] 1.2 Implement RFC 7807 Error Handling in API Client
 
 **Description**: Enhance error handling to parse and process Problem Detail responses consistently across all endpoints.
 
@@ -128,7 +128,7 @@ Phase 5: Testing & Verification
 
 ---
 
-- [ ] 1.3 Implement SSE (Server-Sent Events) Real-Time Updates
+- [~] 1.3 Implement SSE (Server-Sent Events) Real-Time Updates
 
 **Description**: Create `useSSE` hook to establish persistent SSE connection for real-time order updates with auto-reconnect.
 
@@ -155,7 +155,7 @@ Phase 5: Testing & Verification
 
 ---
 
-- [ ] 1.4 Implement Polling Fallback for Real-Time Updates
+- [~] 1.4 Implement Polling Fallback for Real-Time Updates
 
 **Description**: Create `useOrderPolling` hook as fallback when SSE is unavailable, using ETag-based conditional requests.
 
@@ -181,7 +181,7 @@ Phase 5: Testing & Verification
 
 ---
 
-- [ ] 1.5 Enhance Order List with Pagination, Filtering, and Sorting
+- [~] 1.5 Enhance Order List with Pagination, Filtering, and Sorting
 
 **Description**: Extend IncomingOrdersTable component to support backend query parameters for pagination, filtering, sorting.
 
@@ -208,7 +208,7 @@ Phase 5: Testing & Verification
 
 ---
 
-- [ ] 1.6 Implement Order Status Transitions with Conflict Detection
+- [~] 1.6 Implement Order Status Transitions with Conflict Detection
 
 **Description**: Enhance order status update logic to validate transitions, detect concurrent modifications (409 Conflict), and resolve conflicts.
 
@@ -235,7 +235,7 @@ Phase 5: Testing & Verification
 
 ---
 
-- [ ] 1.7 Implement Multi-Tenant Data Isolation Validation
+- [~] 1.7 Implement Multi-Tenant Data Isolation Validation
 
 **Description**: Add client-side tenant context validation to prevent accidental cross-tenant access and enforce authorization checks.
 
@@ -263,7 +263,7 @@ Phase 5: Testing & Verification
 
 ### Phase 2: Restaurant Staff Admin Pages
 
-- [ ] 2.1 Create Staff Admin Navigation and Page Structure
+- [~] 2.1 Create Staff Admin Navigation and Page Structure
 
 **Description**: Add Staff Admin section to navigation menu and create main Staff Admin page with two sections: Staff Accounts and Restaurant Settings.
 
@@ -288,7 +288,7 @@ Phase 5: Testing & Verification
 
 ---
 
-- [ ] 2.2 Implement Staff Accounts Management UI
+- [~] 2.2 Implement Staff Accounts Management UI
 
 **Description**: Create Staff Accounts section with table listing staff members and modal for creating new accounts.
 
@@ -318,7 +318,7 @@ Phase 5: Testing & Verification
 
 ---
 
-- [ ] 2.3 Implement Restaurant Settings Management UI
+- [~] 2.3 Implement Restaurant Settings Management UI
 
 **Description**: Create Restaurant Settings section with form to view and update restaurant configuration.
 
@@ -349,7 +349,7 @@ Phase 5: Testing & Verification
 
 ### Phase 3: Platform Admin Pages
 
-- [ ] 3.1 Create Platform Admin Navigation and Page Structure
+- [~] 3.1 Create Platform Admin Navigation and Page Structure
 
 **Description**: Add Platform Admin section to navigation menu and create main Platform Admin page with Restaurant Management section.
 
@@ -372,7 +372,7 @@ Phase 5: Testing & Verification
 
 ---
 
-- [ ] 3.2 Implement Restaurant Tenant Management UI
+- [~] 3.2 Implement Restaurant Tenant Management UI
 
 **Description**: Create Restaurant Management section with table listing all restaurants and modals for creating/editing restaurants.
 
@@ -408,7 +408,7 @@ Phase 5: Testing & Verification
 
 ### Phase 4: Customer PWA Infrastructure (Preparation Only)
 
-- [ ] 4.1 Prepare Customer Session API Client Methods
+- [~] 4.1 Prepare Customer Session API Client Methods
 
 **Description**: Implement API client methods for customer session management (no UI, infrastructure only).
 
@@ -431,7 +431,7 @@ Phase 5: Testing & Verification
 
 ---
 
-- [ ] 4.2 Prepare Web Push Subscription API Client Methods
+- [~] 4.2 Prepare Web Push Subscription API Client Methods
 
 **Description**: Implement API client methods for push subscription management (no UI, infrastructure only).
 
@@ -455,7 +455,7 @@ Phase 5: Testing & Verification
 
 ### Phase 5: Testing & Verification
 
-- [ ] 5.1 Integration Test Suite for API Client
+- [~] 5.1 Integration Test Suite for API Client
 
 **Description**: Write integration tests for all API client methods with real backend mocked responses.
 
@@ -482,7 +482,7 @@ Phase 5: Testing & Verification
 
 ---
 
-- [ ] 5.2 End-to-End Testing with Real Backend
+- [~] 5.2 End-to-End Testing with Real Backend
 
 **Description**: Test all implemented features with the real backend running locally.
 
@@ -516,7 +516,7 @@ Phase 5: Testing & Verification
 
 ---
 
-- [ ] 5.3 Performance Verification
+- [~] 5.3 Performance Verification
 
 **Description**: Verify performance targets are met for real-time updates and API response times.
 

@@ -726,8 +726,14 @@ export class ApiClient {
 
     const startSSE = async () => {
       try {
+        // Prepare headers with Bearer token for SSE connection
+        const headers = {
+          ...this.getHeaders(),
+          'Authorization': `Bearer ${token}`,
+        } as HeadersInit;
+
         const response = await fetch(`${this.baseURL}/api/orders/stream`, {
-          headers: this.getHeaders(),
+          headers,
           signal: controller.signal,
         });
 

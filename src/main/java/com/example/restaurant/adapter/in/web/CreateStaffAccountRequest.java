@@ -1,0 +1,12 @@
+package com.example.restaurant.adapter.in.web;
+
+import com.example.restaurant.domain.Role;
+
+/**
+ * Request body for {@code POST /api/admin/staff} (Req 8.3, 8.4).
+ *
+ * @param username the desired username, unique within the tenant (Req 8.4)
+ * @param role     the role string; must be a valid {@link Role}
+ *                 name (e.g. {@code "STAFF"} or {@code "RESTAURANT_ADMIN"})
+ */
+public record CreateStaffAccountRequest(String username, String role) {}
