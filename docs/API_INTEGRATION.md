@@ -46,6 +46,15 @@ Order lifecycle: `CREATED → IN_PROGRESS → READY → COMPLETED`; `CANCELLED` 
   - token stored by `TokenManager` in sessionStorage (cleared on browser close), falling back to localStorage if unavailable;
     `login()` also writes `auth-token` / `user-profile` to localStorage.
 
+## Users and tenants
+- Sign-in takes only a username, so usernames are **unique across the platform**, case-insensitive, stored lower-case (3–64 chars: `a-z 0-9 . _ @ -`).
+- `POST /api/platform/restaurants` accepts optional `adminUsername` + `adminPassword` (≥ 8 chars; both or neither) and then creates the restaurant
+  together with its first `RESTAURANT_ADMIN` in one transaction; the response carries `adminUsername`.
+- `POST /api/admin/staff` (RESTAURANT_ADMIN only) takes `{username, role, password}`; passwords are BCrypt-hashed and never returned.
+- Sign-in is refused for deactivated accounts, accounts without a password, and users of deactivated restaurants (the same 401 as a wrong password).
+  Already-issued tokens stay valid until they expire (1 h) but cannot be refreshed.
+- Users from `readybell.security.users` (platform admins, dev users) win over database accounts of the same name; a password there may be pre-hashed as `{bcrypt}$2a$…`.
+
 ## Real backend order API
 - `GET /api/orders` → `{items: OrderRow[], totalCount, pageCount, currentPage}`; `OrderRow` = `{id, orderId ("#1A2B3C4D"), customerName, itemsOrdered ("2x Burger, Fries"),
   deliveryETA, status, estimatedWaitTime (min, null without ETA), itemCount, createdAt, updatedAt}`. `sortBy` is `created` (default), `eta`, `status` (alphabetical), `customerName`, `orderId`.

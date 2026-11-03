@@ -3,11 +3,16 @@ package org.readybell.platformadmin.adapter.in.web;
 import org.readybell.platformadmin.application.DuplicateRestaurantIdentifierException;
 import org.readybell.platformadmin.application.PlatformAdminUseCase;
 import org.readybell.platformadmin.application.RestaurantNotFoundException;
+import jakarta.validation.Valid;
+import org.readybell.restaurant.application.UsernamePolicy;
 import org.readybell.restaurant.domain.Restaurant;
 import org.readybell.restaurant.domain.RestaurantConfig;
 import org.readybell.shared.domain.TenantId;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,8 +43,15 @@ public class PlatformAdminController {
 
     private final PlatformAdminUseCase platformAdminUseCase;
 
-    public PlatformAdminController(PlatformAdminUseCase platformAdminUseCase) {
+    private final PasswordEncoder passwordEncoder;
+    private final TransactionTemplate transaction;
+
+    public PlatformAdminController(PlatformAdminUseCase platformAdminUseCase,
+                                   PasswordEncoder passwordEncoder,
+                                   PlatformTransactionManager transactionManager) {
         this.platformAdminUseCase = platformAdminUseCase;
+        this.passwordEncoder = passwordEncoder;
+        this.transaction = new TransactionTemplate(transactionManager);
     }
 
     // -------------------------------------------------------------------------
@@ -54,10 +66,20 @@ public class PlatformAdminController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public RestaurantResponse createRestaurant(@RequestBody CreateRestaurantRequest request) {
+    public RestaurantResponse createRestaurant(@Valid @RequestBody CreateRestaurantRequest request) {
         RestaurantConfig config = RestaurantConfig.of(request.name());
-        Restaurant restaurant = platformAdminUseCase.createRestaurant(request.identifier(), config);
-        return RestaurantResponse.from(restaurant);
+        if (!request.hasAdmin()) {
+            return RestaurantResponse.from(platformAdminUseCase.createRestaurant(request.identifier(), config));
+        }
+        if (request.adminUsername() == null || request.adminUsername().isBlank()
+                || request.adminPassword() == null || request.adminPassword().isBlank()) {
+            throw new IllegalArgumentException("adminUsername and adminPassword must be given together");
+        }
+        String hash = passwordEncoder.encode(request.adminPassword());
+        // One transaction: a failure must not leave a restaurant without its admin (or the reverse)
+        Restaurant restaurant = transaction.execute(status ->
+                platformAdminUseCase.createRestaurant(request.identifier(), config, request.adminUsername(), hash));
+        return RestaurantResponse.withAdmin(restaurant, UsernamePolicy.normalize(request.adminUsername()));
     }
 
     // -------------------------------------------------------------------------

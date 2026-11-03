@@ -32,4 +32,6 @@ public interface StaffAccountJpaRepository
      * @return the account entity, or empty if not found
      */
     Optional<StaffAccountJpaEntity> findByTenantIdAndUsername(UUID tenantId, String username);
+
+    Optional<StaffAccountJpaEntity> findByUsername(String username);
 }

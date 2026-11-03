@@ -51,19 +51,20 @@ public class RestaurantAdminService implements RestaurantAdminUseCase {
      * </ol>
      */
     @Override
-    public StaffAccount createStaffAccount(TenantId tenantId, String username, Role role) {
+    public StaffAccount createStaffAccount(TenantId tenantId, String username, Role role, String passwordHash) {
         Objects.requireNonNull(tenantId, "tenantId must not be null");
-        Objects.requireNonNull(username, "username must not be null");
         Objects.requireNonNull(role, "role must not be null");
+        Objects.requireNonNull(passwordHash, "passwordHash must not be null");
+        String name = UsernamePolicy.normalize(username);
 
-        // Check for an existing account with the same username within the tenant (Req 8.4)
-        staffRepository.findByTenantAndUsername(tenantId, username)
+        // Usernames are unique platform-wide because sign-in takes only a username (Req 8.4)
+        staffRepository.findByUsername(name)
                 .ifPresent(existing -> {
-                    throw new DuplicateUsernameException(tenantId, username);
+                    throw new DuplicateUsernameException(tenantId, name);
                 });
 
         // Create account (Req 8.3)
-        StaffAccount account = StaffAccount.create(tenantId, username, role);
+        StaffAccount account = StaffAccount.create(tenantId, name, role, passwordHash);
 
         // Persist and return
         staffRepository.save(account);

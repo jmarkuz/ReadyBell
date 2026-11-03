@@ -172,7 +172,8 @@ public class ApplicationConfig {
      * @return the application service as the {@link PlatformAdminUseCase} port
      */
     @Bean
-    public PlatformAdminUseCase platformAdminUseCase(RestaurantRepository restaurantRepository) {
-        return new PlatformAdminService(restaurantRepository);
+    public PlatformAdminUseCase platformAdminUseCase(RestaurantRepository restaurantRepository,
+                                                      StaffAccountRepository staffRepository) {
+        return new PlatformAdminService(restaurantRepository, staffRepository);
     }
 }

@@ -1,8 +1,13 @@
 package org.readybell.platformadmin.application;
 
+import org.readybell.restaurant.application.DuplicateUsernameException;
+import org.readybell.restaurant.application.UsernamePolicy;
 import org.readybell.restaurant.domain.Restaurant;
 import org.readybell.restaurant.domain.RestaurantConfig;
 import org.readybell.restaurant.domain.RestaurantRepository;
+import org.readybell.restaurant.domain.Role;
+import org.readybell.restaurant.domain.StaffAccount;
+import org.readybell.restaurant.domain.StaffAccountRepository;
 import org.readybell.shared.domain.TenantId;
 
 import java.util.UUID;
@@ -20,9 +25,28 @@ import java.util.UUID;
 public class PlatformAdminService implements PlatformAdminUseCase {
 
     private final RestaurantRepository restaurantRepository;
+    private final StaffAccountRepository staffRepository;
 
-    public PlatformAdminService(RestaurantRepository restaurantRepository) {
+    public PlatformAdminService(RestaurantRepository restaurantRepository,
+                                StaffAccountRepository staffRepository) {
         this.restaurantRepository = restaurantRepository;
+        this.staffRepository = staffRepository;
+    }
+
+    @Override
+    public Restaurant createRestaurant(String identifier, RestaurantConfig config,
+                                       String adminUsername, String adminPasswordHash) {
+        String name = UsernamePolicy.normalize(adminUsername);
+        if (adminPasswordHash == null || adminPasswordHash.isBlank()) {
+            throw new IllegalArgumentException("adminPasswordHash must not be blank");
+        }
+        // Fail before anything is written
+        if (staffRepository.findByUsername(name).isPresent()) {
+            throw new DuplicateUsernameException(null, name);
+        }
+        Restaurant restaurant = createRestaurant(identifier, config);
+        staffRepository.save(StaffAccount.create(restaurant.getTenantId(), name, Role.RESTAURANT_ADMIN, adminPasswordHash));
+        return restaurant;
     }
 
     /**

@@ -11,7 +11,12 @@ import java.util.UUID;
  * @param identifier the business identifier of the restaurant
  * @param status     the current restaurant status ({@code ACTIVE} or {@code DEACTIVATED})
  */
-public record RestaurantResponse(UUID tenantId, String identifier, String status) {
+public record RestaurantResponse(UUID tenantId, String identifier, String status, String adminUsername) {
+
+    /** Response for operations that do not create an admin account. */
+    public RestaurantResponse(UUID tenantId, String identifier, String status) {
+        this(tenantId, identifier, status, null);
+    }
 
     /**
      * Builds a {@code RestaurantResponse} from a {@link Restaurant} aggregate.
@@ -19,6 +24,11 @@ public record RestaurantResponse(UUID tenantId, String identifier, String status
      * @param restaurant the restaurant aggregate to map
      * @return a response record populated from the aggregate's current state
      */
+    public static RestaurantResponse withAdmin(Restaurant restaurant, String adminUsername) {
+        return new RestaurantResponse(restaurant.getTenantId().value(), restaurant.getIdentifier(),
+                restaurant.getStatus().name(), adminUsername);
+    }
+
     public static RestaurantResponse from(Restaurant restaurant) {
         return new RestaurantResponse(
                 restaurant.getTenantId().value(),

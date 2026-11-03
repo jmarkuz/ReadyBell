@@ -62,6 +62,13 @@ public class JpaStaffAccountRepository implements StaffAccountRepository {
                 .map(StaffAccountJpaEntity::toDomain);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<StaffAccount> findByUsername(String username) {
+        // Deliberately no tenant filter: usernames are unique platform-wide (used for sign-in)
+        return springRepo.findByUsername(username).map(StaffAccountJpaEntity::toDomain);
+    }
+
     // -------------------------------------------------------------------------
     // Tenant filter helper
     // -------------------------------------------------------------------------

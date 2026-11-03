@@ -58,4 +58,11 @@ public interface StaffAccountRepository {
      * @return the account, or empty if no account with that username exists in the tenant
      */
     Optional<StaffAccount> findByTenantAndUsername(TenantId tenantId, String username);
+
+    /**
+     * Finds an account by username across all tenants. Usernames are globally unique because
+     * sign-in takes only a username; this is used for authentication and duplicate checks, never
+     * for tenant-scoped data access.
+     */
+    Optional<StaffAccount> findByUsername(String username);
 }

@@ -14,7 +14,7 @@ public class DuplicateUsernameException extends RuntimeException {
     private final String username;
 
     public DuplicateUsernameException(TenantId tenantId, String username) {
-        super("Username '" + username + "' already exists for tenant " + tenantId.value());
+        super("Username '" + username + "' is already taken");
         this.tenantId = tenantId;
         this.username = username;
     }

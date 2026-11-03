@@ -26,6 +26,18 @@ public interface PlatformAdminUseCase {
     Restaurant createRestaurant(String identifier, RestaurantConfig config);
 
     /**
+     * Creates a restaurant together with its first {@code RESTAURANT_ADMIN} account, so that someone
+     * can sign in and manage it. The caller should run this in one transaction so that a failure
+     * leaves neither behind.
+     *
+     * @param adminUsername     username of the first admin (platform-wide unique)
+     * @param adminPasswordHash encoded password of the first admin
+     * @throws org.readybell.restaurant.application.DuplicateUsernameException if the username is taken
+     */
+    Restaurant createRestaurant(String identifier, RestaurantConfig config,
+                                String adminUsername, String adminPasswordHash);
+
+    /**
      * Updates the configuration of an existing Restaurant (Req 8.6).
      *
      * @param tenantId the unique tenant identifier

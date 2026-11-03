@@ -89,7 +89,8 @@ public class AuthController {
     private TenantUser lookup(String username) {
         try {
             UserDetails details = users.loadUserByUsername(username);
-            return details instanceof TenantUser tu ? tu : null;
+            // Disabled = deactivated account/restaurant or no password set: indistinguishable from "unknown"
+            return details instanceof TenantUser tu && tu.isEnabled() ? tu : null;
         } catch (UsernameNotFoundException e) {
             return null;
         }

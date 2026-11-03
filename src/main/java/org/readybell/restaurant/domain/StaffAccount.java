@@ -22,13 +22,16 @@ public class StaffAccount {
     private final String username;
     private final Role role;
     private AccountStatus status;
+    private final String passwordHash;
 
-    private StaffAccount(StaffAccountId id, TenantId tenantId, String username, Role role, AccountStatus status) {
+    private StaffAccount(StaffAccountId id, TenantId tenantId, String username, Role role, AccountStatus status,
+                         String passwordHash) {
         this.id = id;
         this.tenantId = tenantId;
         this.username = username;
         this.role = role;
         this.status = status;
+        this.passwordHash = passwordHash;
     }
 
     /**
@@ -39,14 +42,25 @@ public class StaffAccount {
      * @param role     the role assigned to this account
      * @return a new {@code StaffAccount} with status {@link AccountStatus#ACTIVE}
      */
+    /** Creates an account that cannot sign in yet (no password set). */
     public static StaffAccount create(TenantId tenantId, String username, Role role) {
+        return create(tenantId, username, role, null);
+    }
+
+    /**
+     * Creates an active account.
+     *
+     * @param passwordHash encoded (e.g. BCrypt) password; the raw password never reaches the domain.
+     *                     May be {@code null}, in which case the account cannot sign in.
+     */
+    public static StaffAccount create(TenantId tenantId, String username, Role role, String passwordHash) {
         Objects.requireNonNull(tenantId, "tenantId must not be null");
         Objects.requireNonNull(username, "username must not be null");
         Objects.requireNonNull(role, "role must not be null");
         if (username.isBlank()) {
             throw new IllegalArgumentException("username must not be blank");
         }
-        return new StaffAccount(StaffAccountId.newId(), tenantId, username, role, AccountStatus.ACTIVE);
+        return new StaffAccount(StaffAccountId.newId(), tenantId, username, role, AccountStatus.ACTIVE, passwordHash);
     }
 
     /**
@@ -61,6 +75,16 @@ public class StaffAccount {
     /** Returns {@code true} if this account's status is {@link AccountStatus#ACTIVE}. */
     public boolean isActive() {
         return this.status == AccountStatus.ACTIVE;
+    }
+
+    /** True when the account is active and has a password, i.e. may sign in. */
+    public boolean canSignIn() {
+        return isActive() && passwordHash != null && !passwordHash.isBlank();
+    }
+
+    /** Encoded password, or {@code null}. Never expose this outside authentication. */
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
     public StaffAccountId getId() {
@@ -106,6 +130,15 @@ public class StaffAccount {
                                             String username,
                                             Role role,
                                             AccountStatus status) {
-        return new StaffAccount(id, tenantId, username, role, status);
+        return reconstitute(id, tenantId, username, role, status, null);
+    }
+
+    public static StaffAccount reconstitute(StaffAccountId id,
+                                            TenantId tenantId,
+                                            String username,
+                                            Role role,
+                                            AccountStatus status,
+                                            String passwordHash) {
+        return new StaffAccount(id, tenantId, username, role, status, passwordHash);
     }
 }

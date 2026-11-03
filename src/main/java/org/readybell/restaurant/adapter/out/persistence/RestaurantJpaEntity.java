@@ -2,12 +2,16 @@ package org.readybell.restaurant.adapter.out.persistence;
 
 import org.readybell.shared.domain.jpa.TenantScopedEntity;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.readybell.restaurant.domain.Restaurant;
 import org.readybell.restaurant.domain.RestaurantConfig;
 import org.readybell.restaurant.domain.RestaurantStatus;
 import org.readybell.shared.domain.TenantId;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -44,8 +48,10 @@ public class RestaurantJpaEntity {
     private RestaurantStatus status;
 
     /** Stores the JSON-serialised {@link RestaurantConfig} (kept simple as text). */
-    @Column(name = "config_json", columnDefinition = "jsonb")
-    private String configJson;
+    /** Stored as a real JSON document ({@code {"name": "..."}}): jsonb on PostgreSQL, json on H2. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "config_json")
+    private Map<String, String> config;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -63,7 +69,7 @@ public class RestaurantJpaEntity {
         entity.tenantId   = restaurant.getTenantId().value();
         entity.identifier = restaurant.getIdentifier();
         entity.status     = restaurant.getStatus();
-        entity.configJson = restaurant.getConfig().name(); // simple text serialisation
+        entity.config = new HashMap<>(Map.of("name", restaurant.getConfig().name()));
         entity.createdAt  = Instant.now();
         return entity;
     }
@@ -74,7 +80,7 @@ public class RestaurantJpaEntity {
                 new TenantId(tenantId),
                 identifier,
                 status,
-                RestaurantConfig.of(configJson));
+                RestaurantConfig.of(config == null ? null : config.get("name")));
     }
 
     // -------------------------------------------------------------------------
@@ -90,8 +96,8 @@ public class RestaurantJpaEntity {
     public RestaurantStatus getStatus() { return status; }
     public void setStatus(RestaurantStatus status) { this.status = status; }
 
-    public String getConfigJson() { return configJson; }
-    public void setConfigJson(String configJson) { this.configJson = configJson; }
+    public Map<String, String> getConfig() { return config; }
+    public void setConfig(Map<String, String> config) { this.config = config; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

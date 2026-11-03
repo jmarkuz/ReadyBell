@@ -6,6 +6,9 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.readybell.restaurant.domain.Restaurant;
+import org.readybell.restaurant.domain.RestaurantRepository;
+import org.readybell.restaurant.domain.StaffAccountRepository;
 import org.readybell.shared.domain.TenantId;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.readybell.platform.auth.JwtProperties;
@@ -25,6 +28,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 import java.time.Clock;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -34,8 +39,8 @@ import java.util.stream.Collectors;
  * <h2>Access rules</h2>
  * <ul>
  *   <li>{@code /api/sessions/**} and {@code /actuator/**} — public (no authentication)</li>
- *   <li>{@code /api/admin/**} and {@code /api/orders/**} — require authentication (Req 8.1,
- *       7.1); tenant scoping is enforced downstream by the tenant-resolution filter and the
+ *   <li>{@code /api/admin/**} — requires {@code RESTAURANT_ADMIN} (Req 8.1); {@code /api/orders/**} —
+ *       requires authentication (Req 7.1); tenant scoping is enforced downstream by the tenant-resolution filter and the
  *       repository query layer.</li>
  *   <li>{@code /api/platform/**} — require {@code PLATFORM_ADMIN} role (Req 9.1, 9.4).</li>
  * </ul>
@@ -79,7 +84,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/platform/**").hasRole("PLATFORM_ADMIN")
 
                 // Restaurant admin and order management: require authentication (Req 7.1, 8.1)
-                .requestMatchers("/api/admin/**").authenticated()
+                .requestMatchers("/api/admin/**").hasRole("RESTAURANT_ADMIN")
                 .requestMatchers("/api/orders/**").authenticated()
 
                 // All other requests require authentication by default
@@ -144,26 +149,46 @@ public class SecurityConfig {
      * full auth wiring is done (task 21).
      */
     @Bean
-    public UserDetailsService userDetailsService(PasswordEncoder encoder, SecurityProperties props) {
+    public UserDetailsService userDetailsService(PasswordEncoder encoder, SecurityProperties props,
+                                                 StaffAccountRepository staffAccounts,
+                                                 RestaurantRepository restaurants) {
         // InMemoryUserDetailsManager would return a plain User and drop the tenant, so keep our own map.
-        Map<String, TenantUser> users = props.getUsers().stream()
+        // Configured users (platform admins, dev users) win over database accounts of the same name.
+        Map<String, TenantUser> configured = props.getUsers().stream()
                 .collect(Collectors.toUnmodifiableMap(
-                        SecurityProperties.User::getUsername,
+                        u -> u.getUsername().toLowerCase(Locale.ROOT),
                         u -> new TenantUser(
                                 u.getUsername(),
-                                encoder.encode(u.getPassword()),
+                                passwordHash(encoder, u.getPassword()),
                                 u.getRoles().stream()
                                         .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
                                         .toList(),
                                 u.getTenantId() == null ? null : new TenantId(u.getTenantId()))));
         return username -> {
-            TenantUser user = users.get(username);
-            if (user == null) {
-                throw new UsernameNotFoundException(username);
+            String key = username == null ? "" : username.strip().toLowerCase(Locale.ROOT);
+            TenantUser user = configured.get(key);
+            if (user != null) {
+                // Fresh instance per lookup: Spring Security erases credentials on the returned object.
+                return new TenantUser(user.getUsername(), user.getPassword(), user.getAuthorities(), user.getTenantId());
             }
-            // Fresh instance per lookup: Spring Security erases credentials on the returned object.
-            return new TenantUser(user.getUsername(), user.getPassword(), user.getAuthorities(), user.getTenantId());
+            return staffAccounts.findByUsername(key)
+                    .map(account -> {
+                        boolean restaurantActive = restaurants.findByTenantId(account.getTenantId())
+                                .map(Restaurant::isActive).orElse(false);
+                        return new TenantUser(
+                                account.getUsername(),
+                                account.getPasswordHash() == null ? "" : account.getPasswordHash(),
+                                account.canSignIn() && restaurantActive,
+                                List.of(new SimpleGrantedAuthority("ROLE_" + account.getRole().name())),
+                                account.getTenantId());
+                    })
+                    .orElseThrow(() -> new UsernameNotFoundException(key));
         };
+    }
+
+    /** Configured passwords are plain text (dev) or pre-hashed with the {@code {bcrypt}} prefix (production). */
+    private static String passwordHash(PasswordEncoder encoder, String configured) {
+        return configured.startsWith("{bcrypt}") ? configured.substring("{bcrypt}".length()) : encoder.encode(configured);
     }
 
     /**

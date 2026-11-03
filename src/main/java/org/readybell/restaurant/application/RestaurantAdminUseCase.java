@@ -23,12 +23,13 @@ public interface RestaurantAdminUseCase {
      * a duplicate throws {@link DuplicateUsernameException}.
      *
      * @param tenantId the tenant scope for this operation (must not be null)
-     * @param username the desired username, unique within the tenant (must not be null or blank)
+     * @param username the desired username; normalised (lower-case) and unique across the platform because sign-in takes only a username
      * @param role     the role assigned to the new account (must not be null)
+     * @param passwordHash encoded password (the raw password must never reach this layer)
      * @return the newly created, active {@link StaffAccount}
      * @throws DuplicateUsernameException if {@code username} already exists in the tenant (Req 8.4)
      */
-    StaffAccount createStaffAccount(TenantId tenantId, String username, Role role);
+    StaffAccount createStaffAccount(TenantId tenantId, String username, Role role, String passwordHash);
 
     /**
      * Deactivates a staff account within the admin's tenant (Req 8.5).

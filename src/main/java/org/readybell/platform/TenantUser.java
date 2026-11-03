@@ -22,7 +22,16 @@ public class TenantUser extends User {
                       String password,
                       Collection<? extends GrantedAuthority> authorities,
                       TenantId tenantId) {
-        super(username, password, authorities);
+        this(username, password, true, authorities, tenantId);
+    }
+
+    /** @param enabled {@code false} for accounts that exist but must not sign in (deactivated, no password) */
+    public TenantUser(String username,
+                      String password,
+                      boolean enabled,
+                      Collection<? extends GrantedAuthority> authorities,
+                      TenantId tenantId) {
+        super(username, password, enabled, true, true, true, authorities);
         this.tenantId = tenantId;
     }
 

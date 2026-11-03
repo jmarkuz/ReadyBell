@@ -15,6 +15,7 @@ import org.readybell.restaurant.domain.StaffAccountId;
 import org.readybell.shared.domain.TenantId;
 import org.readybell.shared.tenancy.TenantContextHolder;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -48,8 +49,11 @@ public class RestaurantAdminController {
 
     private final RestaurantAdminUseCase adminUseCase;
 
-    public RestaurantAdminController(RestaurantAdminUseCase adminUseCase) {
+    private final PasswordEncoder passwordEncoder;
+
+    public RestaurantAdminController(RestaurantAdminUseCase adminUseCase, PasswordEncoder passwordEncoder) {
         this.adminUseCase = adminUseCase;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -67,7 +71,8 @@ public class RestaurantAdminController {
     public StaffAccountResponse createStaffAccount(@Valid @RequestBody CreateStaffAccountRequest request) {
         TenantId tenantId = TenantContextHolder.require();
         Role role = Role.valueOf(request.role());
-        StaffAccount account = adminUseCase.createStaffAccount(tenantId, request.username(), role);
+        StaffAccount account = adminUseCase.createStaffAccount(
+                tenantId, request.username(), role, passwordEncoder.encode(request.password()));
         return StaffAccountResponse.from(account);
     }
 

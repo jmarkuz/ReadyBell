@@ -25,9 +25,10 @@ import java.util.UUID;
 @Table(
         name = "staff_account",
         uniqueConstraints = {
+                // Sign-in takes only a username, so it must identify one account platform-wide (Req 8.4)
                 @UniqueConstraint(
-                        name = "uq_staff_account_tenant_username",
-                        columnNames = {"tenant_id", "username"})       // Req 8.4
+                        name = "uq_staff_account_username",
+                        columnNames = {"username"})
         },
         indexes = {
                 @Index(name = "idx_staff_account_tenant_id", columnList = "tenant_id")
@@ -50,6 +51,10 @@ public class StaffAccountJpaEntity extends TenantScopedEntity {
     @Column(name = "status", nullable = false)
     private AccountStatus status;
 
+    /** Encoded password; null for accounts created before sign-in existed (they cannot sign in). */
+    @Column(name = "password_hash", length = 100)
+    private String passwordHash;
+
     /** Required by JPA. */
     protected StaffAccountJpaEntity() {}
 
@@ -65,6 +70,7 @@ public class StaffAccountJpaEntity extends TenantScopedEntity {
         entity.username = account.getUsername();
         entity.role     = account.getRole();
         entity.status   = account.getStatus();
+        entity.passwordHash = account.getPasswordHash();
         return entity;
     }
 
@@ -75,7 +81,8 @@ public class StaffAccountJpaEntity extends TenantScopedEntity {
                 new TenantId(tenantId),
                 username,
                 role,
-                status);
+                status,
+                passwordHash);
     }
 
     /** Returns the typed domain identity. */
@@ -97,5 +104,7 @@ public class StaffAccountJpaEntity extends TenantScopedEntity {
     public void setRole(Role role) { this.role = role; }
 
     public AccountStatus getStatus() { return status; }
+
+    public String getPasswordHash() { return passwordHash; }
     public void setStatus(AccountStatus status) { this.status = status; }
 }
