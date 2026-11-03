@@ -104,8 +104,10 @@ Customer-facing endpoints are unauthenticated but scoped to a session; staff, ad
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/api/orders` | Create an order for a customer session |
-| `GET` | `/api/orders` | List all orders for the authenticated tenant |
+| `POST` | `/api/login`, `/api/auth/refresh` | Public: exchange credentials / an old token for a Bearer JWT (failed logins are throttled → 429) |
+| `POST` | `/api/orders` | Create an order for a customer session, with optional `customerName`, `items[{name,quantity}]`, `estimatedMinutes` |
+| `GET` | `/api/orders` | Paginated list: `page`, `pageSize` (≤100), `status` (repeatable/comma), `sortBy` (`created`,`eta`,`status`,`customerName`,`orderId`), `sortOrder`, `search` |
+| `GET` | `/api/orders/poll` | Polling fallback: orders changed `since` an instant, with `ETag` (304 if unchanged) |
 | `PATCH` | `/api/orders/{id}/status` | Transition an order to a new lifecycle status |
 | `GET` | `/api/orders/stream` | Server-Sent Events stream of order status updates for the tenant |
 

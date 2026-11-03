@@ -80,8 +80,15 @@ public class ApplicationConfig {
     public ManageOrderUseCase manageOrderUseCase(
             CustomerSessionRepository sessionRepository,
             OrderRepository orderRepository,
-            DomainEventPublisher eventPublisher) {
-        return new ManageOrderService(sessionRepository, orderRepository, eventPublisher, Clock.systemUTC());
+            DomainEventPublisher eventPublisher,
+            Clock clock) {
+        return new ManageOrderService(sessionRepository, orderRepository, eventPublisher, clock);
+    }
+
+    /** Application clock; a single bean so ETAs, token expiry and tests share one time source. */
+    @Bean
+    public Clock clock() {
+        return Clock.systemUTC();
     }
 
     // -------------------------------------------------------------------------

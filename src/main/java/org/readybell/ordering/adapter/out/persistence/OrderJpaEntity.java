@@ -2,6 +2,7 @@ package org.readybell.ordering.adapter.out.persistence;
 
 import jakarta.persistence.*;
 import org.readybell.ordering.domain.Order;
+import org.readybell.ordering.domain.OrderDetails;
 import org.readybell.ordering.domain.OrderId;
 import org.readybell.ordering.domain.OrderStatus;
 import org.readybell.session.domain.CustomerSessionId;
@@ -9,6 +10,8 @@ import org.readybell.shared.domain.TenantId;
 import org.readybell.shared.domain.jpa.TenantScopedEntity;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -54,6 +57,17 @@ public class OrderJpaEntity extends TenantScopedEntity {
      * flush whose stored version does not match, ensuring at most one concurrent
      * state transition succeeds (Req 5.8).
      */
+    @Column(name = "customer_name", length = OrderDetails.MAX_CUSTOMER_NAME)
+    private String customerName;
+
+    @Column(name = "estimated_ready_at")
+    private Instant estimatedReadyAt;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "order_item", joinColumns = @JoinColumn(name = "order_id"))
+    @OrderColumn(name = "position")
+    private List<OrderItemEmbeddable> items = new ArrayList<>();
+
     @Version
     @Column(name = "version", nullable = false)
     private long version;
@@ -73,15 +87,17 @@ public class OrderJpaEntity extends TenantScopedEntity {
 
     /** Maps the domain aggregate to a JPA entity ready for insert or merge. */
     public static OrderJpaEntity from(Order order) {
-        var now    = Instant.now();
         var entity = new OrderJpaEntity();
         entity.id        = order.getId().value();
         entity.tenantId  = order.getTenantId().value();
         entity.sessionId = order.getSessionId().value();
         entity.status    = order.getStatus();
         entity.version   = order.getVersion();
-        entity.createdAt = now;
-        entity.updatedAt = now;
+        entity.customerName     = order.getCustomerName();
+        entity.estimatedReadyAt = order.getEstimatedReadyAt();
+        entity.items = new ArrayList<>(order.getItems().stream().map(OrderItemEmbeddable::from).toList());
+        entity.createdAt = order.getCreatedAt();
+        entity.updatedAt = order.getUpdatedAt();
         return entity;
     }
 
@@ -92,7 +108,12 @@ public class OrderJpaEntity extends TenantScopedEntity {
                 new TenantId(tenantId),
                 new CustomerSessionId(sessionId),
                 status,
-                version);
+                version,
+                new OrderDetails(customerName,
+                        items.stream().map(OrderItemEmbeddable::toDomain).toList(),
+                        estimatedReadyAt),
+                createdAt,
+                updatedAt);
     }
 
     // -------------------------------------------------------------------------
@@ -107,6 +128,10 @@ public class OrderJpaEntity extends TenantScopedEntity {
 
     public OrderStatus getStatus() { return status; }
     public void setStatus(OrderStatus status) { this.status = status; }
+
+    public String getCustomerName() { return customerName; }
+
+    public Instant getEstimatedReadyAt() { return estimatedReadyAt; }
 
     public long getVersion() { return version; }
     public void setVersion(long version) { this.version = version; }

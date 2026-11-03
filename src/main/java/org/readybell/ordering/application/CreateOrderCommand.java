@@ -1,5 +1,6 @@
 package org.readybell.ordering.application;
 
+import org.readybell.ordering.domain.OrderDetails;
 import org.readybell.session.domain.CustomerSessionId;
 import org.readybell.shared.domain.TenantId;
 
@@ -17,9 +18,16 @@ import java.util.Objects;
  */
 public record CreateOrderCommand(
         TenantId tenantId,
-        CustomerSessionId sessionId
+        CustomerSessionId sessionId,
+        OrderDetails details
 ) {
+    /** Command without customer name, items or ETA. */
+    public CreateOrderCommand(TenantId tenantId, CustomerSessionId sessionId) {
+        this(tenantId, sessionId, OrderDetails.NONE);
+    }
+
     public CreateOrderCommand {
+        Objects.requireNonNull(details,    "details must not be null");
         Objects.requireNonNull(tenantId,   "tenantId must not be null");
         Objects.requireNonNull(sessionId,  "sessionId must not be null");
     }

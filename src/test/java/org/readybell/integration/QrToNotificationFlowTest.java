@@ -159,7 +159,7 @@ class QrToNotificationFlowTest {
         
         OrderResponse order = orderResponse.getBody();
         assertThat(order).isNotNull();
-        UUID orderId = order.orderId();
+        UUID orderId = order.id();
         assertThat(orderId).isNotNull();
         assertThat(order.status()).isEqualTo(OrderStatus.CREATED.name());
         

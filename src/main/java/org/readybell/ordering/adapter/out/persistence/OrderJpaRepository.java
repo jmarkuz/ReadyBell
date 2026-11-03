@@ -1,6 +1,7 @@
 package org.readybell.ordering.adapter.out.persistence;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,7 +14,7 @@ import java.util.UUID;
  * ({@link JpaOrderRepository}) before any query, so these derived-query methods
  * automatically return only rows that pass the tenant condition (Req 10.2, 10.4).
  */
-public interface OrderJpaRepository extends JpaRepository<OrderJpaEntity, UUID> {
+public interface OrderJpaRepository extends JpaRepository<OrderJpaEntity, UUID>, JpaSpecificationExecutor<OrderJpaEntity> {
 
     /**
      * Finds an order by identity constrained to the given tenant.

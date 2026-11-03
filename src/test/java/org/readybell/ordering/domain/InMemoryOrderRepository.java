@@ -55,6 +55,25 @@ public class InMemoryOrderRepository implements OrderRepository {
     }
 
     /** Convenience helper — returns the total number of stored orders. */
+    @Override
+    public OrderPage findPage(TenantId tenantId, OrderQuery query) {
+        var all = findAllByTenant(tenantId).stream()
+                .filter(o -> query.statuses().isEmpty() || query.statuses().contains(o.getStatus()))
+                .sorted((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()))
+                .toList();
+        int from = Math.min((query.page() - 1) * query.pageSize(), all.size());
+        int to = Math.min(from + query.pageSize(), all.size());
+        return new OrderPage(all.subList(from, to), all.size(), query.page(), query.pageSize());
+    }
+
+    @Override
+    public List<Order> findUpdatedSince(TenantId tenantId, java.time.Instant since, int limit) {
+        return findAllByTenant(tenantId).stream()
+                .filter(o -> since == null || !o.getUpdatedAt().isBefore(since))
+                .limit(limit)
+                .toList();
+    }
+
     public int size() {
         return store.size();
     }

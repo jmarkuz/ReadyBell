@@ -90,7 +90,7 @@ public class ManageOrderService implements ManageOrderUseCase {
         }
 
         // Step 4 — create the order (Req 4.1, 4.2, 4.4)
-        var order = Order.create(command.tenantId(), command.sessionId(), clock);
+        var order = Order.create(command.tenantId(), command.sessionId(), clock, command.details());
 
         // Step 5 — persist
         orderRepository.save(order);

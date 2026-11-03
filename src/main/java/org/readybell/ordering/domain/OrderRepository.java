@@ -71,4 +71,16 @@ public interface OrderRepository {
      * @return immutable list of all orders for the tenant, possibly empty
      */
     List<Order> findAllByTenant(TenantId tenantId);
+
+    /**
+     * Returns one page of the tenant's orders matching {@code query}.
+     * Tenant isolation applies exactly as for the other finders.
+     */
+    OrderPage findPage(TenantId tenantId, OrderQuery query);
+
+    /**
+     * Returns the tenant's orders created or updated at or after {@code since}, newest update first,
+     * capped at {@code limit}. A {@code null} {@code since} returns the most recently updated orders.
+     */
+    List<Order> findUpdatedSince(TenantId tenantId, java.time.Instant since, int limit);
 }

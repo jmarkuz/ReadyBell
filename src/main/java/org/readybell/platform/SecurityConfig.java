@@ -10,6 +10,7 @@ import org.readybell.shared.domain.TenantId;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.readybell.platform.auth.JwtProperties;
 import org.readybell.platform.auth.JwtService;
+import org.readybell.platform.auth.LoginAttemptLimiter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -113,8 +114,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtService jwtService(JwtProperties props) {
-        return new JwtService(props, Clock.systemUTC());
+    public LoginAttemptLimiter loginAttemptLimiter(JwtProperties props, Clock clock) {
+        return new LoginAttemptLimiter(props.getLogin().getMaxFailures(), props.getLogin().getWindow(), clock);
+    }
+
+    @Bean
+    public JwtService jwtService(JwtProperties props, Clock clock) {
+        return new JwtService(props, clock);
     }
 
     /**

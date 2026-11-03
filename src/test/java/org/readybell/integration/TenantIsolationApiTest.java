@@ -61,7 +61,7 @@ class TenantIsolationApiTest {
                         .with(httpBasic("admin", "admin"))
                         .header("X-Tenant-Id", TENANT_A))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+                .andExpect(jsonPath("$.totalCount").value(0));
     }
 
     @Test

@@ -35,11 +35,8 @@ Order lifecycle: `CREATED → IN_PROGRESS → READY → COMPLETED`; `CANCELLED` 
 - Backend (implemented): `POST /api/login` → `{token, role, tenantId, username, expiresIn}`; `POST /api/auth/refresh` (Bearer; accepts a token
   expired up to `readybell.security.jwt.refresh-grace`, default 7 d, and re-checks the user). HS256 JWT, claims `sub`, `iat`, `exp`, `role`, `roles`,
   `tenant_id` (empty for PLATFORM_ADMIN); TTL `readybell.security.jwt.ttl` (1 h); key from `JWT_SECRET`. HTTP Basic is still accepted for curl/tests.
-- Still **not** in the real backend: paginated/sortable/searchable `GET /api/orders`, `GET /api/orders/poll` for staff, and the richer `OrderRow`
-  fields (customer name, items, ETA) — the backend returns `{orderId, sessionId, status, version}` lists. Only the mock provides those today.
-- `Authorization: Bearer <token>`; tenant is derived from the token and enforced at the query layer
-  (cross-tenant access → 403).
-- Mock credentials: `staff@restaurant.com / password` (STAFF), `admin@restaurant.com / password` (ADMIN).
+- Failed logins are throttled per username and per client address (`readybell.security.jwt.login.max-failures` = 5 per `window` = 15 m, in memory per node);
+  the 6th attempt gets 429 with `Retry-After`.
 - Client behaviour (all tested):
   - request interceptor injects the Bearer header;
   - response interceptor handles 401 with a token refresh and request retry;
@@ -48,6 +45,15 @@ Order lifecycle: `CREATED → IN_PROGRESS → READY → COMPLETED`; `CANCELLED` 
   - token validated on app initialisation (format + expiry) before rendering protected routes;
   - token stored by `TokenManager` in sessionStorage (cleared on browser close), falling back to localStorage if unavailable;
     `login()` also writes `auth-token` / `user-profile` to localStorage.
+
+## Real backend order API
+- `GET /api/orders` → `{items: OrderRow[], totalCount, pageCount, currentPage}`; `OrderRow` = `{id, orderId ("#1A2B3C4D"), customerName, itemsOrdered ("2x Burger, Fries"),
+  deliveryETA, status, estimatedWaitTime (min, null without ETA), itemCount, createdAt, updatedAt}`. `sortBy` is `created` (default), `eta`, `status` (alphabetical), `customerName`, `orderId`.
+- `POST /api/orders` accepts `sessionId` (alias `customerSessionId`), optional `customerName`, `estimatedMinutes` (0–1440), `items[{name|menuItemId, quantity 1–99}]` (≤50);
+  there is no menu yet, so `menuItemId` is stored as the item name. Response: `{id, orderId, sessionId, status, version, createdAt, updatedAt}`.
+- `GET /api/orders/poll?since=&eTag=` → `{orders, eTag}` (≤200 newest changes) or 304.
+- Status names are the backend's: `CREATED, IN_PROGRESS, READY, COMPLETED, CANCELLED` (the MSW mock still says `PREPARING` in places).
+- SSE: `GET /api/orders/stream` pushes `order-status-updated` events. Set `SSE_REDIS_ENABLED=true` to relay them through Redis pub/sub when running several replicas.
 
 ## Errors (RFC 7807)
 ```json

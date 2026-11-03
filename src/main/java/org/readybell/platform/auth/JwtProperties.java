@@ -18,6 +18,21 @@ public class JwtProperties {
     /** How long after expiry an old token may still be exchanged at {@code /api/auth/refresh}. */
     private Duration refreshGrace = Duration.ofDays(7);
 
+    /** Failed-login throttling. */
+    private final Login login = new Login();
+
+    public Login getLogin() { return login; }
+
+    public static class Login {
+        private int maxFailures = 5;
+        private Duration window = Duration.ofMinutes(15);
+
+        public int getMaxFailures() { return maxFailures; }
+        public void setMaxFailures(int maxFailures) { this.maxFailures = maxFailures; }
+        public Duration getWindow() { return window; }
+        public void setWindow(Duration window) { this.window = window; }
+    }
+
     public String getSecret() { return secret; }
     public void setSecret(String secret) { this.secret = secret; }
     public Duration getTtl() { return ttl; }

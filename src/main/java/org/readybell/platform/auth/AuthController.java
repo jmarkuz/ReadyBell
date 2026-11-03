@@ -1,9 +1,12 @@
 package org.readybell.platform.auth;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.readybell.platform.TenantUser;
 import org.springframework.http.HttpHeaders;
+
+import java.time.Duration;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -37,8 +40,11 @@ public class AuthController {
     private final UserDetailsService users;
     private final PasswordEncoder encoder;
     private final JwtService jwt;
+    private final LoginAttemptLimiter limiter;
 
-    public AuthController(UserDetailsService users, PasswordEncoder encoder, JwtService jwt) {
+    public AuthController(UserDetailsService users, PasswordEncoder encoder, JwtService jwt,
+                          LoginAttemptLimiter limiter) {
+        this.limiter = limiter;
         this.users = users;
         this.encoder = encoder;
         this.jwt = jwt;
@@ -46,12 +52,19 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public TokenResponse login(@Valid @RequestBody LoginRequest request) {
+    public TokenResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
+        String address = http.getRemoteAddr();
+        Duration wait = limiter.retryAfter(request.username(), address);
+        if (!wait.isZero()) {
+            throw new TooManyLoginAttemptsException(wait);
+        }
         TenantUser user = lookup(request.username());
         boolean ok = encoder.matches(request.password(), user != null ? user.getPassword() : dummyHash);
         if (user == null || !ok) {
+            limiter.recordFailure(request.username(), address);
             throw new InvalidCredentialsException("Invalid username or password");
         }
+        limiter.recordSuccess(request.username());
         return respond(user);
     }
 

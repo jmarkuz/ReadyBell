@@ -1,0 +1,86 @@
+package org.readybell.ordering.adapter.in.web.sse;
+
+import org.readybell.session.domain.CustomerSessionId;
+import org.readybell.shared.domain.TenantId;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+
+/**
+ * Open SSE connections of <em>this</em> node: one set per customer session and one per tenant
+ * (staff panel). Emitters remove themselves on completion, timeout or error, and are dropped
+ * when a send fails, so closed connections never leak.
+ */
+@Component
+public class SseEmitterRegistry {
+
+    private final ConcurrentHashMap<UUID, Set<SseEmitter>> customerEmitters = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Set<SseEmitter>> staffEmitters = new ConcurrentHashMap<>();
+
+    public SseEmitter registerCustomer(CustomerSessionId sessionId) {
+        return register(customerEmitters, sessionId.value());
+    }
+
+    public SseEmitter registerStaff(TenantId tenantId) {
+        return register(staffEmitters, tenantId.value());
+    }
+
+    /** Pushes {@code message} to every matching local connection. */
+    public void deliver(SseMessage message) {
+        send(customerEmitters, message.sessionId(), message);
+        send(staffEmitters, message.tenantId(), message);
+    }
+
+    /** Number of open connections (for tests and diagnostics). */
+    public int openConnections() {
+        return customerEmitters.values().stream().mapToInt(Set::size).sum()
+                + staffEmitters.values().stream().mapToInt(Set::size).sum();
+    }
+
+    /** Registers an externally created emitter for a customer session (used by tests). */
+    public SseEmitter registerCustomer(CustomerSessionId sessionId, SseEmitter emitter) {
+        return attach(customerEmitters, sessionId.value(), emitter);
+    }
+
+    private SseEmitter register(ConcurrentHashMap<UUID, Set<SseEmitter>> registry, UUID key) {
+        return attach(registry, key, new SseEmitter(0L)); // no server-side timeout
+    }
+
+    private SseEmitter attach(ConcurrentHashMap<UUID, Set<SseEmitter>> registry, UUID key, SseEmitter emitter) {
+        registry.computeIfAbsent(key, k -> new CopyOnWriteArraySet<>()).add(emitter);
+        Runnable cleanup = () -> remove(registry, key, emitter);
+        emitter.onCompletion(cleanup);
+        emitter.onTimeout(cleanup);
+        emitter.onError(ex -> cleanup.run());
+        return emitter;
+    }
+
+    private void send(ConcurrentHashMap<UUID, Set<SseEmitter>> registry, UUID key, SseMessage message) {
+        Set<SseEmitter> emitters = registry.get(key);
+        if (emitters == null) {
+            return;
+        }
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event().name("order-status-updated").data(message.payload()));
+            } catch (IOException | IllegalStateException ex) {
+                remove(registry, key, emitter);
+            }
+        }
+    }
+
+    private void remove(ConcurrentHashMap<UUID, Set<SseEmitter>> registry, UUID key, SseEmitter emitter) {
+        Set<SseEmitter> emitters = registry.get(key);
+        if (emitters != null) {
+            emitters.remove(emitter);
+            if (emitters.isEmpty()) {
+                registry.remove(key, emitters);
+            }
+        }
+    }
+}

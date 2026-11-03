@@ -5,6 +5,7 @@ import org.readybell.shared.domain.DomainEvent;
 import org.readybell.shared.domain.TenantId;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +43,11 @@ public class Order {
     private final TenantId tenantId;
     private final CustomerSessionId sessionId;
     private OrderStatus status;
+    private final String customerName;
+    private final List<OrderItem> items;
+    private final Instant estimatedReadyAt;
+    private final Instant createdAt;
+    private Instant updatedAt;
 
     /**
      * Optimistic-lock version counter.
@@ -58,7 +64,10 @@ public class Order {
     private Order(OrderId id,
                   TenantId tenantId,
                   CustomerSessionId sessionId,
-                  OrderStatus status) {
+                  OrderStatus status,
+                  OrderDetails details,
+                  Instant createdAt,
+                  Instant updatedAt) {
         Objects.requireNonNull(id,        "id must not be null");
         Objects.requireNonNull(tenantId,  "tenantId must not be null");
         Objects.requireNonNull(sessionId, "sessionId must not be null");
@@ -67,6 +76,11 @@ public class Order {
         this.tenantId  = tenantId;
         this.sessionId = sessionId;
         this.status    = status;
+        this.customerName     = details.customerName();
+        this.items            = details.items();
+        this.estimatedReadyAt = details.estimatedReadyAt();
+        this.createdAt        = createdAt;
+        this.updatedAt        = updatedAt;
         this.version   = 0L;
     }
 
@@ -83,11 +97,18 @@ public class Order {
      * @return a new CREATED order with one pending {@link OrderCreated} event
      */
     public static Order create(TenantId tenantId, CustomerSessionId sessionId, Clock clock) {
+        return create(tenantId, sessionId, clock, OrderDetails.NONE);
+    }
+
+    /** As {@link #create(TenantId, CustomerSessionId, Clock)}, with customer name, items and ETA. */
+    public static Order create(TenantId tenantId, CustomerSessionId sessionId, Clock clock, OrderDetails details) {
         Objects.requireNonNull(tenantId,  "tenantId must not be null");
         Objects.requireNonNull(sessionId, "sessionId must not be null");
         Objects.requireNonNull(clock,     "clock must not be null");
+        Objects.requireNonNull(details,   "details must not be null");
 
-        var order = new Order(OrderId.newId(), tenantId, sessionId, OrderStatus.CREATED);
+        Instant now = clock.instant();
+        var order = new Order(OrderId.newId(), tenantId, sessionId, OrderStatus.CREATED, details, now, now);
         order.record(OrderCreated.of(order.id, tenantId, sessionId, clock.instant()));
         return order;
     }
@@ -129,6 +150,7 @@ public class Order {
 
         var from = status;
         status = target;
+        updatedAt = clock.instant();
 
         record(OrderStatusUpdated.of(id, tenantId, sessionId, from, target, clock.instant())); // Req 5.5
         if (target == OrderStatus.READY) {
@@ -150,6 +172,29 @@ public class Order {
 
     public OrderStatus getStatus() {
         return status;
+    }
+
+    /** Customer display name, or {@code null} when not provided. */
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    /** Immutable list of ordered lines (possibly empty). */
+    public List<OrderItem> getItems() {
+        return items;
+    }
+
+    /** Expected ready time, or {@code null} when not provided. */
+    public Instant getEstimatedReadyAt() {
+        return estimatedReadyAt;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 
     /**
@@ -198,7 +243,20 @@ public class Order {
                                      CustomerSessionId sessionId,
                                      OrderStatus status,
                                      long version) {
-        var order = new Order(id, tenantId, sessionId, status);
+        return reconstitute(id, tenantId, sessionId, status, version, OrderDetails.NONE,
+                Instant.EPOCH, Instant.EPOCH);
+    }
+
+    /** Full reconstitution including descriptive data and timestamps (persistence adapter only). */
+    public static Order reconstitute(OrderId id,
+                                     TenantId tenantId,
+                                     CustomerSessionId sessionId,
+                                     OrderStatus status,
+                                     long version,
+                                     OrderDetails details,
+                                     Instant createdAt,
+                                     Instant updatedAt) {
+        var order = new Order(id, tenantId, sessionId, status, details, createdAt, updatedAt);
         order.version = version;
         return order;
     }

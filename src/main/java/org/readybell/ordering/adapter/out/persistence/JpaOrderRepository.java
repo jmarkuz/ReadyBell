@@ -2,16 +2,30 @@ package org.readybell.ordering.adapter.out.persistence;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.hibernate.Session;
 import org.readybell.ordering.domain.Order;
 import org.readybell.ordering.domain.OrderId;
+import org.readybell.ordering.domain.OrderPage;
+import org.readybell.ordering.domain.OrderQuery;
 import org.readybell.ordering.domain.OrderRepository;
 import org.readybell.session.domain.CustomerSessionId;
 import org.readybell.shared.domain.TenantId;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -79,6 +93,78 @@ public class JpaOrderRepository implements OrderRepository {
                 .stream()
                 .map(OrderJpaEntity::toDomain)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderPage findPage(TenantId tenantId, OrderQuery query) {
+        enableTenantFilter(tenantId);
+        Specification<OrderJpaEntity> spec = (root, cq, cb) -> {
+            List<Predicate> and = new ArrayList<>();
+            and.add(cb.equal(root.get("tenantId"), tenantId.value()));
+            if (!query.statuses().isEmpty()) {
+                and.add(root.get("status").in(query.statuses()));
+            }
+            if (query.search() != null) {
+                and.add(searchPredicate(root, cq, cb, query.search()));
+            }
+            return cb.and(and.toArray(Predicate[]::new));
+        };
+        Sort.Direction dir = query.ascending() ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort sort = Sort.by(dir, sortProperty(query.sortBy()));
+        if (!"id".equals(sortProperty(query.sortBy()))) {
+            sort = sort.and(Sort.by(Sort.Direction.ASC, "id")); // stable paging
+        }
+        var page = springRepo.findAll(spec, PageRequest.of(query.page() - 1, query.pageSize(), sort));
+        return new OrderPage(page.getContent().stream().map(OrderJpaEntity::toDomain).toList(),
+                page.getTotalElements(), query.page(), query.pageSize());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Order> findUpdatedSince(TenantId tenantId, Instant since, int limit) {
+        enableTenantFilter(tenantId);
+        Specification<OrderJpaEntity> spec = (root, cq, cb) -> since == null
+                ? cb.equal(root.get("tenantId"), tenantId.value())
+                : cb.and(cb.equal(root.get("tenantId"), tenantId.value()),
+                         cb.greaterThanOrEqualTo(root.get("updatedAt"), since));
+        var page = springRepo.findAll(spec,
+                PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "updatedAt").and(Sort.by("id"))));
+        return page.getContent().stream().map(OrderJpaEntity::toDomain).toList();
+    }
+
+    private static String sortProperty(OrderQuery.Sort sort) {
+        return switch (sort) {
+            case CREATED -> "createdAt";
+            case ETA -> "estimatedReadyAt";
+            case STATUS -> "status";
+            case CUSTOMER_NAME -> "customerName";
+            case ORDER_ID -> "id";
+        };
+    }
+
+    /** Matches the order number prefix, the customer name, or any item name (case-insensitive, literal text). */
+    private static Predicate searchPredicate(Root<OrderJpaEntity> root, CriteriaQuery<?> cq,
+                                             CriteriaBuilder cb, String search) {
+        String term = search.toLowerCase(Locale.ROOT);
+        String idPrefix = term.startsWith("#") ? term.substring(1) : term;
+        String contains = "%" + escapeLike(term) + "%";
+
+        Subquery<Integer> items = cq.subquery(Integer.class);
+        Root<OrderJpaEntity> itemRoot = items.from(OrderJpaEntity.class);
+        Join<OrderJpaEntity, OrderItemEmbeddable> item = itemRoot.join("items");
+        items.select(cb.literal(1)).where(
+                cb.equal(itemRoot.get("id"), root.get("id")),
+                cb.like(cb.lower(item.get("name")), contains, '\\'));
+
+        return cb.or(
+                cb.like(cb.lower(root.get("id").as(String.class)), escapeLike(idPrefix) + "%", '\\'),
+                cb.like(cb.lower(root.get("customerName")), contains, '\\'),
+                cb.exists(items));
+    }
+
+    private static String escapeLike(String s) {
+        return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     // -------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 package org.readybell.platform;
 
 import org.readybell.platform.auth.InvalidCredentialsException;
+import org.readybell.platform.auth.TooManyLoginAttemptsException;
 import org.readybell.restaurant.application.RestaurantNotFoundException;
 import org.readybell.ordering.application.CrossTenantAccessException;
 import org.readybell.ordering.application.InvalidSessionException;
@@ -18,6 +19,7 @@ import org.readybell.subscription.application.SubscriptionNotFoundException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -221,6 +223,18 @@ public class GlobalExceptionHandler {
         );
     }
 
+    /** Failed-login throttle tripped. */
+    @ExceptionHandler(TooManyLoginAttemptsException.class)
+    public ResponseEntity<Map<String, Object>> handleTooManyLogins(TooManyLoginAttemptsException ex) {
+        return problem(
+                HttpStatus.TOO_MANY_REQUESTS,
+                "urn:readybell:auth:too-many-attempts",
+                "Too Many Attempts",
+                ex.getMessage(),
+                Map.of(HttpHeaders.RETRY_AFTER, String.valueOf(ex.retryAfterSeconds()))
+        );
+    }
+
     /**
      * Concurrent modification of the same row (optimistic lock on {@code Order.version}).
      *
@@ -280,14 +294,21 @@ public class GlobalExceptionHandler {
                                                         String type,
                                                         String title,
                                                         String detail) {
+        return problem(status, type, title, detail, Map.of());
+    }
+
+    private ResponseEntity<Map<String, Object>> problem(HttpStatus status,
+                                                        String type,
+                                                        String title,
+                                                        String detail,
+                                                        Map<String, String> headers) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type",   type);
         body.put("title",  title);
         body.put("status", status.value());
         body.put("detail", detail);
-        return ResponseEntity
-                .status(status)
-                .contentType(PROBLEM_JSON)
-                .body(body);
+        var response = ResponseEntity.status(status).contentType(PROBLEM_JSON);
+        headers.forEach(response::header);
+        return response.body(body);
     }
 }

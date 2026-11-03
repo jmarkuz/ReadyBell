@@ -27,7 +27,7 @@ then `createdb -U postgres readybell` once.
 - PostgreSQL: the default profile uses `DB_URL` (default `jdbc:postgresql://localhost:5432/readybell`), `DB_USERNAME`, `DB_PASSWORD`
   and `ddl-auto: update`. The **`dev` profile** (`application-dev.yml`) points to port 3254 (e.g. `docker run -p 3254:5432 postgres:15`),
   recreates the schema on every start (`ddl-auto: create`) and defines the local API users — never use it against real data.
-- Redis: port 6379.
+- Redis: port 6379. Set `SSE_REDIS_ENABLED=true` when running more than one backend replica so SSE updates reach clients on every node.
 - Health check: `curl http://localhost:8080/actuator/health` → `{"status":"UP"}`.
 - API users come from `readybell.security.users` (no built-in credentials). `dev` profile: `staff:password` and `admin:admin`
   (tenant `00000000-0000-0000-0000-000000000001`), `platform:platform` (PLATFORM_ADMIN). The tenant is bound to the user on the server;
