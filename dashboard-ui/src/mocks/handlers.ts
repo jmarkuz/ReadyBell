@@ -230,8 +230,8 @@ export const handlers = [
       let aVal: any, bVal: any;
       switch (sortBy) {
         case 'eta':
-          aVal = a.deliveryETA.getTime();
-          bVal = b.deliveryETA.getTime();
+          aVal = a.deliveryETA?.getTime() ?? 0;
+          bVal = b.deliveryETA?.getTime() ?? 0;
           break;
         case 'status':
           aVal = a.status;

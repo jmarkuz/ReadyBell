@@ -57,6 +57,13 @@ public class SseEmitterRegistry {
         emitter.onCompletion(cleanup);
         emitter.onTimeout(cleanup);
         emitter.onError(ex -> cleanup.run());
+        // Commit the response headers right away: without a first write the browser's EventSource
+        // never fires `open` (nor do proxies start streaming) until the first real event.
+        try {
+            emitter.send(SseEmitter.event().comment("connected"));
+        } catch (IOException | IllegalStateException e) {
+            cleanup.run();
+        }
         return emitter;
     }
 

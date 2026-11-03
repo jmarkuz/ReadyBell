@@ -34,10 +34,12 @@ npm install -D tailwindcss postcss autoprefixer typescript eslint
 Create a `.env.local` file (optional):
 
 ```env
-VITE_API_BASE_URL=http://localhost:8080
+BACKEND_URL=http://localhost:8080   # Vite dev-proxy target for /api (default)
+VITE_USE_MOCKS=false                # true = use the MSW mock API instead of the backend
+# VITE_API_BASE_URL=                # only when the UI is served from a different origin than the API
 ```
 
-If not set, the API proxy defaults to `http://localhost:8080`.
+In dev the browser calls the Vite origin and `/api/*` is proxied to `BACKEND_URL` (no CORS). See `../docs/DEVELOPMENT.md`.
 
 ## Development
 
@@ -181,10 +183,10 @@ The dashboard uses Vite's proxy feature to route API calls:
 
 ```
 Frontend: /api/orders
-→ Backend: http://localhost:8080/orders
+→ Backend: http://localhost:8080/api/orders   (the /api prefix is kept)
 ```
 
-Configure via `VITE_API_BASE_URL` environment variable or `vite.config.ts`.
+Configure the proxy target via `BACKEND_URL` or `vite.config.ts`.
 
 ### Endpoints (Mocked for Development)
 

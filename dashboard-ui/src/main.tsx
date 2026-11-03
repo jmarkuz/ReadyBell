@@ -4,24 +4,15 @@ import App from './App.tsx'
 import './index.css'
 
 /**
- * Enable MSW for development mode
- * This provides mock API endpoints without needing a running backend
+ * Mock API (MSW) is opt-in: `VITE_USE_MOCKS=true npm run dev`.
+ * By default the app talks to the real backend through the Vite dev proxy (see vite.config.ts).
  */
-if (import.meta.env.DEV) {
-  // Initialize mock token for development using TokenManager
-  const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLXRlc3QiLCJ1c2VybmFtZSI6InRlc3QtdXNlciIsImVtYWlsIjoidGVzdEB0ZXN0LmNvbSIsIm5hbWUiOiJUZXN0IFVzZXIiLCJyb2xlIjoiU1RBRkYiLCJ0ZW5hbnRfaWQiOiJ0ZW5hbnQtMTIzIiwiZXhwIjoyNzE2MjM5MDIyfQ.7XQZ_7xWKb0O9xwK8j7G5zK5zK5zK5zK5zK5zK5z';
-  
-  // Only set mock token if no token exists
-  const { tokenManager } = await import('./utils/TokenManager');
-  if (!tokenManager.get()) {
-    tokenManager.store(mockToken);
-    console.debug('[main] Mock token initialized for development');
-  }
-
+if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCKS === 'true') {
   const { worker } = await import('./mocks/browser');
   await worker.start({
     onUnhandledRequest: 'bypass', // Allow unhandled requests to pass through
   });
+  console.info('[main] MSW mock API enabled - sign in with staff@restaurant.com / password');
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

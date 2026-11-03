@@ -12,6 +12,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.hibernate.Session;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+import org.hibernate.query.criteria.JpaExpression;
 import org.readybell.ordering.domain.Order;
 import org.readybell.ordering.domain.OrderId;
 import org.readybell.ordering.domain.OrderPage;
@@ -158,7 +160,9 @@ public class JpaOrderRepository implements OrderRepository {
                 cb.like(cb.lower(item.get("name")), contains, '\\'));
 
         return cb.or(
-                cb.like(cb.lower(root.get("id").as(String.class)), escapeLike(idPrefix) + "%", '\\'),
+                // Real SQL CAST: Expression.as() only reinterprets the Java type, and PostgreSQL has no lower(uuid)
+                cb.like(cb.lower(((HibernateCriteriaBuilder) cb).cast((JpaExpression<?>) root.get("id"), String.class)),
+                        escapeLike(idPrefix) + "%", '\\'),
                 cb.like(cb.lower(root.get("customerName")), contains, '\\'),
                 cb.exists(items));
     }

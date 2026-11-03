@@ -95,7 +95,7 @@ export function useSSE(options: UseSSEOptions): UseSSEState {
         }
       });
 
-      eventSource.addEventListener('message', (event) => {
+      const handleMessage = (event: MessageEvent) => {
         try {
           const data = JSON.parse(event.data);
           onMessage(data);
@@ -107,7 +107,11 @@ export function useSSE(options: UseSSEOptions): UseSSEState {
           }));
           onError?.(error);
         }
-      });
+      };
+
+      // Unnamed events, and the backend's named `order-status-updated` event
+      eventSource.addEventListener('message', handleMessage);
+      eventSource.addEventListener('order-status-updated', handleMessage as EventListener);
 
       eventSource.addEventListener('error', () => {
         if (!isUnmountingRef.current) {

@@ -13,9 +13,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: process.env.VITE_API_BASE_URL || 'http://localhost:8080',
+        // Dev proxy target (BACKEND_URL). Deliberately NOT VITE_API_BASE_URL: that one makes the browser call the backend directly (CORS).
+        target: process.env.BACKEND_URL || 'http://localhost:8080',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },

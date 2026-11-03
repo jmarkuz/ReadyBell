@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** Login, Bearer authentication and token refresh against the dashboard contract. */
@@ -133,6 +134,18 @@ class JwtAuthApiTest {
                 .andReturn().getResponse().getContentAsString();
         String fresh = body.replaceAll(".*\"token\":\"([^\"]+)\".*", "$1");
         mvc.perform(get("/api/orders").header("Authorization", "Bearer " + fresh)).andExpect(status().isOk());
+    }
+
+    @Test
+    void sseStreamAcceptsTokenQueryParameterButOtherEndpointsDoNot() throws Exception {
+        String token = login("admin", "admin");
+        // the stream starts (async), i.e. it is authenticated
+        mvc.perform(get("/api/orders/stream").param("token", token))
+                .andExpect(request().asyncStarted());
+        mvc.perform(get("/api/orders/stream").param("token", "garbage")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/orders/stream")).andExpect(status().isUnauthorized());
+        // query-parameter tokens must not work anywhere else
+        mvc.perform(get("/api/orders").param("token", token)).andExpect(status().isUnauthorized());
     }
 
     @Test

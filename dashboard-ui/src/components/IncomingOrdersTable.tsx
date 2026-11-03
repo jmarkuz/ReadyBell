@@ -78,8 +78,9 @@ export default memo(function IncomingOrdersTable({
       let compareB: any = b[sortField];
 
       if (sortField === 'deliveryETA') {
-        compareA = compareA.getTime();
-        compareB = compareB.getTime();
+        // Orders without an ETA sort last in ascending order
+        compareA = compareA ? compareA.getTime() : Number.MAX_SAFE_INTEGER;
+        compareB = compareB ? compareB.getTime() : Number.MAX_SAFE_INTEGER;
       } else if (sortField === 'status') {
         // Sort by status priority
         const statusPriority: Record<string, number> = {
@@ -282,7 +283,7 @@ export default memo(function IncomingOrdersTable({
                   </span>
                 </td>
                 <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                  {formatDistanceToNow(order.deliveryETA, { addSuffix: true })}
+                  {order.deliveryETA ? formatDistanceToNow(order.deliveryETA, { addSuffix: true }) : '—'}
                 </td>
                 <td className="px-6 py-4">
                   <OrderStatusBadge status={order.status} />

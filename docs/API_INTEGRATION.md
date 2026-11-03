@@ -53,7 +53,7 @@ Order lifecycle: `CREATED → IN_PROGRESS → READY → COMPLETED`; `CANCELLED` 
   there is no menu yet, so `menuItemId` is stored as the item name. Response: `{id, orderId, sessionId, status, version, createdAt, updatedAt}`.
 - `GET /api/orders/poll?since=&eTag=` → `{orders, eTag}` (≤200 newest changes) or 304.
 - Status names are the backend's: `CREATED, IN_PROGRESS, READY, COMPLETED, CANCELLED` (the MSW mock still says `PREPARING` in places).
-- SSE: `GET /api/orders/stream` pushes `order-status-updated` events. Set `SSE_REDIS_ENABLED=true` to relay them through Redis pub/sub when running several replicas.
+- SSE: `GET /api/orders/stream` pushes `order-status-updated` events `{id, orderId, status}` (browsers cannot set headers on `EventSource`, so this one endpoint also accepts `?token=<jwt>`; keep query strings out of access logs). Set `SSE_REDIS_ENABLED=true` to relay them through Redis pub/sub when running several replicas.
 
 ## Errors (RFC 7807)
 ```json
@@ -66,9 +66,8 @@ Status codes: 200, 201, 304 (poll unchanged), 400, 401, 403, 404, 409 (concurren
 - 100 generated orders per request: 20 % CREATED, 30 % IN_PROGRESS, 20 % READY, 20 % COMPLETED, 10 % CANCELLED.
 - Error triggers: `/api/orders/error/{network|401|403|500}`.
 - SSE ticks about every 3 s.
-- Env: `VITE_API_BASE_URL` (default `http://localhost:8080`, also used by the Vite dev proxy). Backend-side: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (Web Push), `SESSION_TIMEOUT_MINUTES` (30).
-- In dev, `src/main.tsx` always starts MSW (`onUnhandledRequest: 'bypass'`) and seeds a mock STAFF token if none is stored.
-  To hit the real backend, remove/guard the `worker.start()` block there. (There is no `VITE_USE_REAL_BACKEND` switch in the code — older docs claimed one.)
+- Env: `BACKEND_URL` (Vite dev-proxy target, default `http://localhost:8080`); `VITE_API_BASE_URL` (client base URL, default same origin — only for deployments on a different origin). Backend-side: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (Web Push), `SESSION_TIMEOUT_MINUTES` (30).
+- MSW is opt-in (`VITE_USE_MOCKS=true`); the default is the real backend through the dev proxy. See [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Integration checklist
 Orders list/filter/sort/status update; SSE + polling fallback; login; 401 for invalid token; 403 for cross-tenant; error messages rendered from `ProblemDetail`.

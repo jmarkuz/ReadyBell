@@ -9,35 +9,67 @@ import { render, screen, waitFor, within } from '@/test/test-utils';
 import userEvent from '@testing-library/user-event';
 import Dashboard from './Dashboard';
 import { OrderRow } from '@/types';
+import { apiClient } from '@/utils/api';
+
+// Orders now come from GET /api/orders; serve the same five sample rows the page used to hard-code.
+const minutes = (m: number) => new Date(Date.now() + m * 60000);
+const sampleRows: OrderRow[] = [
+  { id: '1', orderId: 'ORD-001', customerName: 'Customer -001', itemsOrdered: 'Burger, Fries, Drink', deliveryETA: minutes(15), status: 'PREPARING', estimatedWaitTime: 15, itemCount: 3 },
+  { id: '2', orderId: 'ORD-002', customerName: 'Customer -002', itemsOrdered: 'Pizza, Salad', deliveryETA: minutes(25), status: 'CREATED', estimatedWaitTime: 25, itemCount: 2 },
+  { id: '3', orderId: 'ORD-003', customerName: 'Customer -003', itemsOrdered: 'Sandwich, Chips', deliveryETA: minutes(5), status: 'READY', estimatedWaitTime: 5, itemCount: 2 },
+  { id: '4', orderId: 'ORD-004', customerName: 'Customer -004', itemsOrdered: 'Tacos (x3), Rice, Beans', deliveryETA: minutes(-10), status: 'COMPLETED', estimatedWaitTime: 0, itemCount: 3 },
+  { id: '5', orderId: 'ORD-005', customerName: 'Customer -005', itemsOrdered: 'Pasta, Sauce', deliveryETA: minutes(12), status: 'PREPARING', estimatedWaitTime: 12, itemCount: 2 },
+];
+
+vi.mock('@/utils/api', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/utils/api')>();
+  return { ...original, apiClient: { getOrders: vi.fn() } };
+});
+
+/** Renders the page and waits for the first load, so tests can assert synchronously afterwards. */
+async function renderDashboard() {
+  const result = render(<Dashboard />);
+  await screen.findByText('ORD-001');
+  return result;
+}
+
+beforeEach(() => {
+  vi.mocked(apiClient.getOrders).mockResolvedValue({
+    items: sampleRows,
+    totalCount: sampleRows.length,
+    pageCount: 1,
+    currentPage: 1,
+  });
+});
 
 describe('Dashboard Page', () => {
-  it('renders dashboard without errors', () => {
-    const { container } = render(<Dashboard />);
+  it('renders dashboard without errors', async () => {
+    const { container } = await renderDashboard();
     expect(container).toBeTruthy();
   });
 
-  it('displays dashboard title', () => {
-    render(<Dashboard />);
+  it('displays dashboard title', async () => {
+    await renderDashboard();
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
 
-  it('displays welcome message', () => {
-    render(<Dashboard />);
+  it('displays welcome message', async () => {
+    await renderDashboard();
     expect(screen.getByText(/Welcome to the ReadyBell restaurant dashboard/i)).toBeInTheDocument();
   });
 
-  it('displays order summary section', () => {
-    render(<Dashboard />);
+  it('displays order summary section', async () => {
+    await renderDashboard();
     expect(screen.getByText('Order Summary')).toBeInTheDocument();
   });
 
-  it('displays incoming orders section', () => {
-    render(<Dashboard />);
+  it('displays incoming orders section', async () => {
+    await renderDashboard();
     expect(screen.getByText('Incoming Orders')).toBeInTheDocument();
   });
 
-  it('renders order metrics grid', () => {
-    render(<Dashboard />);
+  it('renders order metrics grid', async () => {
+    await renderDashboard();
     
     // Check for metric card titles using more specific selectors
     expect(screen.getByText('Total Orders')).toBeInTheDocument();
@@ -52,23 +84,23 @@ describe('Dashboard Page', () => {
     expect(readyElements.length).toBeGreaterThan(0);
   });
 
-  it('displays metric values', () => {
-    render(<Dashboard />);
+  it('displays metric values', async () => {
+    await renderDashboard();
     
     // Should render metric card values (numbers)
     const cardButtons = screen.getAllByRole('button');
     expect(cardButtons.length).toBeGreaterThan(0);
   });
 
-  it('renders incoming orders table', () => {
-    render(<Dashboard />);
+  it('renders incoming orders table', async () => {
+    await renderDashboard();
     
     const table = screen.getByRole('table');
     expect(table).toBeInTheDocument();
   });
 
-  it('displays table headers', () => {
-    render(<Dashboard />);
+  it('displays table headers', async () => {
+    await renderDashboard();
     
     expect(screen.getByText('Order ID')).toBeInTheDocument();
     expect(screen.getByText('Customer')).toBeInTheDocument();
@@ -80,8 +112,8 @@ describe('Dashboard Page', () => {
     expect(statusTexts.length).toBeGreaterThan(0);
   });
 
-  it('displays mock order data', () => {
-    render(<Dashboard />);
+  it('displays mock order data', async () => {
+    await renderDashboard();
     
     // Check for mock orders
     expect(screen.getByText('ORD-001')).toBeInTheDocument();
@@ -89,40 +121,40 @@ describe('Dashboard Page', () => {
     expect(screen.getByText('ORD-003')).toBeInTheDocument();
   });
 
-  it('displays customer names', () => {
-    render(<Dashboard />);
+  it('displays customer names', async () => {
+    await renderDashboard();
     
     expect(screen.getByText('Customer -001')).toBeInTheDocument();
     expect(screen.getByText('Customer -002')).toBeInTheDocument();
     expect(screen.getByText('Customer -003')).toBeInTheDocument();
   });
 
-  it('displays order statuses', () => {
-    render(<Dashboard />);
+  it('displays order statuses', async () => {
+    await renderDashboard();
     
     // Status badges should be present - find by aria-label which is unique for status badges
     const statusBadges = screen.getAllByText(/Preparing/);
     expect(statusBadges.length).toBeGreaterThan(0);
   });
 
-  it('calculates metrics correctly from orders', () => {
-    render(<Dashboard />);
+  it('calculates metrics correctly from orders', async () => {
+    await renderDashboard();
     
     // Total orders should be 3
     const orderCards = screen.getAllByText(/^[0-9]+$/);
     expect(orderCards.length).toBeGreaterThan(0);
   });
 
-  it('has responsive layout with grid', () => {
-    const { container } = render(<Dashboard />);
+  it('has responsive layout with grid', async () => {
+    const { container } = await renderDashboard();
     
     // Check for responsive grid classes
     const gridElement = container.querySelector('[class*="grid"]');
     expect(gridElement).toBeInTheDocument();
   });
 
-  it('displays page sections in correct order', () => {
-    const { container } = render(<Dashboard />);
+  it('displays page sections in correct order', async () => {
+    const { container } = await renderDashboard();
     
     const sections = container.querySelectorAll('section');
     expect(sections.length).toBeGreaterThanOrEqual(2);
@@ -130,8 +162,8 @@ describe('Dashboard Page', () => {
 
   // Search functionality tests
   describe('Search Functionality', () => {
-    it('displays all orders when no search query is active', () => {
-      render(<Dashboard />);
+    it('displays all orders when no search query is active', async () => {
+      await renderDashboard();
       
       // All three mock orders should be visible
       expect(screen.getByText('ORD-001')).toBeInTheDocument();
@@ -139,8 +171,8 @@ describe('Dashboard Page', () => {
       expect(screen.getByText('ORD-003')).toBeInTheDocument();
     });
 
-    it('filters orders by order ID using search context', () => {
-      render(<Dashboard />);
+    it('filters orders by order ID using search context', async () => {
+      await renderDashboard();
       
       // All orders visible initially
       expect(screen.getByText('ORD-001')).toBeInTheDocument();
@@ -148,8 +180,8 @@ describe('Dashboard Page', () => {
       expect(screen.getByText('ORD-003')).toBeInTheDocument();
     });
 
-    it('filters orders by customer name', () => {
-      render(<Dashboard />);
+    it('filters orders by customer name', async () => {
+      await renderDashboard();
       
       // All customers should be visible initially
       expect(screen.getByText('Customer -001')).toBeInTheDocument();
@@ -157,8 +189,8 @@ describe('Dashboard Page', () => {
       expect(screen.getByText('Customer -003')).toBeInTheDocument();
     });
 
-    it('filters orders by item name', () => {
-      render(<Dashboard />);
+    it('filters orders by item name', async () => {
+      await renderDashboard();
       
       // All items should be visible initially
       expect(screen.getByText('Burger, Fries, Drink')).toBeInTheDocument();
@@ -166,30 +198,30 @@ describe('Dashboard Page', () => {
       expect(screen.getByText('Sandwich, Chips')).toBeInTheDocument();
     });
 
-    it('handles case-insensitive search', () => {
-      render(<Dashboard />);
+    it('handles case-insensitive search', async () => {
+      await renderDashboard();
       
       // Orders should be visible regardless of case
       expect(screen.getByText('Customer -001')).toBeInTheDocument();
       expect(screen.getByText('ORD-001')).toBeInTheDocument();
     });
 
-    it('shows search result count when search is active', () => {
-      render(<Dashboard />);
+    it('shows search result count when search is active', async () => {
+      await renderDashboard();
       
       // Without search, count badge should not appear
       expect(screen.queryByText(/Search results:/)).not.toBeInTheDocument();
     });
 
-    it('displays search info message when query matches', () => {
-      render(<Dashboard />);
+    it('displays search info message when query matches', async () => {
+      await renderDashboard();
       
       // Search info should not appear without query
       expect(screen.queryByText(/Search results:/)).not.toBeInTheDocument();
     });
 
-    it('metrics remain based on all orders even when search is active', () => {
-      render(<Dashboard />);
+    it('metrics remain based on all orders even when search is active', async () => {
+      await renderDashboard();
       
       // Metrics should be calculated from all orders
       const orderCards = screen.getAllByText(/^[0-9]+$/);
@@ -199,25 +231,25 @@ describe('Dashboard Page', () => {
 
   // Filter integration tests
   describe('Filter Integration', () => {
-    it('displays Status Filter button', () => {
-      render(<Dashboard />);
+    it('displays Status Filter button', async () => {
+      await renderDashboard();
       const buttons = screen.getAllByRole('button', { name: /Status/i });
       expect(buttons.length).toBeGreaterThan(0);
     });
 
-    it('displays Date Range filter button', () => {
-      render(<Dashboard />);
+    it('displays Date Range filter button', async () => {
+      await renderDashboard();
       expect(screen.getByRole('button', { name: /Date Range/i })).toBeInTheDocument();
     });
 
-    it('initially shows no "Clear All" button when no filters are applied', () => {
-      render(<Dashboard />);
+    it('initially shows no "Clear All" button when no filters are applied', async () => {
+      await renderDashboard();
       expect(screen.queryByRole('button', { name: /Clear All/ })).not.toBeInTheDocument();
     });
 
     it('shows filter badge when status filter is applied', async () => {
       const user = userEvent.setup();
-      render(<Dashboard />);
+      await renderDashboard();
       
       // Click on the Status filter button (the first one, not the Update Status buttons)
       const filterButtons = screen.getAllByRole('button', { name: /Status/i });
@@ -243,7 +275,7 @@ describe('Dashboard Page', () => {
 
     it('displays date range filter panel when Date Range button is clicked', async () => {
       const user = userEvent.setup();
-      render(<Dashboard />);
+      await renderDashboard();
       
       const dateRangeButton = screen.getByRole('button', { name: /Date Range/i });
       await user.click(dateRangeButton);
@@ -256,7 +288,7 @@ describe('Dashboard Page', () => {
 
     it('hides date range filter when Date Range button is clicked again', async () => {
       const user = userEvent.setup();
-      render(<Dashboard />);
+      await renderDashboard();
       
       const dateRangeButton = screen.getByRole('button', { name: /Date Range/i });
       
@@ -277,7 +309,7 @@ describe('Dashboard Page', () => {
     });
 
     it('maintains metrics based on all orders (not filtered)', async () => {
-      render(<Dashboard />);
+      await renderDashboard();
       
       // Get initial metric text
       const totalOrdersCard = screen.getByText('Total Orders');
@@ -290,7 +322,7 @@ describe('Dashboard Page', () => {
 
     it('displays status filter UI with checkboxes', async () => {
       const user = userEvent.setup();
-      render(<Dashboard />);
+      await renderDashboard();
       
       // Click on the Status filter button
       const filterButtons = screen.getAllByRole('button', { name: /Status/i });
@@ -309,7 +341,7 @@ describe('Dashboard Page', () => {
 
     it('closes status filter dropdown when Apply is clicked', async () => {
       const user = userEvent.setup();
-      render(<Dashboard />);
+      await renderDashboard();
       
       // Click on the Status filter button
       const filterButtons = screen.getAllByRole('button', { name: /Status/i });
@@ -339,7 +371,7 @@ describe('Dashboard Page', () => {
 
     it('displays active filters summary when filters are applied', async () => {
       const user = userEvent.setup();
-      render(<Dashboard />);
+      await renderDashboard();
       
       // Apply a status filter
       const filterButtons = screen.getAllByRole('button', { name: /Status/i });
@@ -362,7 +394,7 @@ describe('Dashboard Page', () => {
 
     it('shows table when filters are applied', async () => {
       const user = userEvent.setup();
-      render(<Dashboard />);
+      await renderDashboard();
       
       // Apply a filter
       const filterButtons = screen.getAllByRole('button', { name: /Status/i });
@@ -384,16 +416,16 @@ describe('Dashboard Page', () => {
       }, { timeout: 1000 });
     });
 
-    it('displays "Incoming Orders" section with table', () => {
-      render(<Dashboard />);
+    it('displays "Incoming Orders" section with table', async () => {
+      await renderDashboard();
       
       expect(screen.getByText(/Incoming Orders/)).toBeInTheDocument();
       const table = screen.getByRole('table');
       expect(table).toBeInTheDocument();
     });
 
-    it('filters orders by date range', () => {
-      render(<Dashboard />);
+    it('filters orders by date range', async () => {
+      await renderDashboard();
       
       // All orders should initially be visible
       expect(screen.getByText('ORD-001')).toBeInTheDocument();
@@ -401,8 +433,8 @@ describe('Dashboard Page', () => {
       expect(screen.getByText('ORD-003')).toBeInTheDocument();
     });
 
-    it('combines search and status filters', () => {
-      render(<Dashboard />);
+    it('combines search and status filters', async () => {
+      await renderDashboard();
       
       // Initially all orders visible
       expect(screen.getByText('ORD-001')).toBeInTheDocument();
@@ -412,7 +444,7 @@ describe('Dashboard Page', () => {
 
     it('maintains table structure with filtered data', async () => {
       const user = userEvent.setup();
-      render(<Dashboard />);
+      await renderDashboard();
       
       // Apply a filter
       const filterButtons = screen.getAllByRole('button', { name: /Status/i });
@@ -447,7 +479,7 @@ describe('Dashboard Page', () => {
      * - Updates processed and rendered within 500ms of receipt
      */
     it('receives SSE events and updates table with new order data', async () => {
-      render(<Dashboard />);
+      await renderDashboard();
 
       // Verify initial orders are rendered
       expect(screen.getByText('ORD-001')).toBeInTheDocument();
@@ -466,7 +498,7 @@ describe('Dashboard Page', () => {
      * - No duplicate orders appear in table (deduplicate by orderId)
      */
     it('adds new orders to the top of the table', async () => {
-      const { container } = render(<Dashboard />);
+      const { container } = await renderDashboard();
 
       // Get the table
       const table = screen.getByRole('table');
@@ -501,7 +533,7 @@ describe('Dashboard Page', () => {
      * - Status updates refresh their row
      */
     it('updates status for existing orders without duplicating rows', async () => {
-      render(<Dashboard />);
+      await renderDashboard();
 
       // Get initial row count
       const table = screen.getByRole('table');
@@ -530,7 +562,7 @@ describe('Dashboard Page', () => {
      */
     it('maintains sort order when table receives updates', async () => {
       const user = userEvent.setup();
-      render(<Dashboard />);
+      await renderDashboard();
 
       // Click ETA column header to sort by ETA (ascending)
       const etaHeader = screen.getByText('ETA');
@@ -560,7 +592,7 @@ describe('Dashboard Page', () => {
      */
     it('preserves pagination state after receiving SSE updates', async () => {
       const user = userEvent.setup();
-      render(<Dashboard />);
+      await renderDashboard();
 
       // Get table
       const table = screen.getByRole('table');
@@ -588,7 +620,7 @@ describe('Dashboard Page', () => {
      * - Updates processed and rendered within 500ms of receipt
      */
     it('handles multiple concurrent order updates without duplication', async () => {
-      render(<Dashboard />);
+      await renderDashboard();
 
       const table = screen.getByRole('table');
       const tbody = table.querySelector('tbody');
@@ -619,7 +651,7 @@ describe('Dashboard Page', () => {
      * - Frontend receives events: { orderId: string; status: string; updatedAt: Date }
      */
     it('gracefully handles malformed SSE events', async () => {
-      render(<Dashboard />);
+      await renderDashboard();
 
       // Verify table renders normally
       const table = screen.getByRole('table');
@@ -636,7 +668,7 @@ describe('Dashboard Page', () => {
      * - Real-time updates work alongside polling fallback (SSE takes precedence if connected)
      */
     it('uses SSE for real-time updates when available', async () => {
-      render(<Dashboard />);
+      await renderDashboard();
 
       // Verify component renders
       expect(screen.getByText('Dashboard')).toBeInTheDocument();
@@ -657,7 +689,7 @@ describe('Dashboard Page', () => {
      * - Backend publishes OrderCreated events when new orders are created
      */
     it('displays newly created orders at top with CREATED status', async () => {
-      render(<Dashboard />);
+      await renderDashboard();
 
       const table = screen.getByRole('table');
       expect(table).toBeInTheDocument();
@@ -682,7 +714,7 @@ describe('Dashboard Page', () => {
     it('renders SSE updates within 500ms', async () => {
       const startTime = performance.now();
 
-      render(<Dashboard />);
+      await renderDashboard();
 
       // Measure time to first table render
       const table = screen.getByRole('table');
@@ -704,7 +736,7 @@ describe('Dashboard Page', () => {
      */
     it('maintains sort order and pagination when status changes on current page', async () => {
       const user = userEvent.setup();
-      render(<Dashboard />);
+      await renderDashboard();
 
       // Click to sort by ETA
       const etaHeader = screen.getByText('ETA');
@@ -735,7 +767,7 @@ describe('Dashboard Page', () => {
      * - No duplicate orders appear in table (deduplicate by orderId)
      */
     it('deduplicates orders when same order ID received multiple times', async () => {
-      render(<Dashboard />);
+      await renderDashboard();
 
       const table = screen.getByRole('table');
       expect(table).toBeInTheDocument();
@@ -765,7 +797,7 @@ describe('Dashboard Page', () => {
      * - New orders added to top of table; status updates refresh their row
      */
     it('updates table without requiring full page reload', async () => {
-      const { container } = render(<Dashboard />);
+      const { container } = await renderDashboard();
 
       // Get initial dashboard DOM
       const initialDashboard = container.querySelector('[class*="space-y"]');
@@ -792,7 +824,7 @@ describe('Dashboard Page', () => {
      */
     it('adds new orders to top of table when sort is active on another column', async () => {
       const user = userEvent.setup();
-      render(<Dashboard />);
+      await renderDashboard();
 
       // Sort by Customer Name
       const customerHeader = screen.getByText('Customer');
@@ -824,7 +856,7 @@ describe('Dashboard Page', () => {
      * - Pagination state preserved (if on page N with K orders, update doesn't shift pagination)
      */
     it('maintains all orders visible with pagination when receiving concurrent updates', async () => {
-      render(<Dashboard />);
+      await renderDashboard();
 
       // Get all visible orders
       const initialOrders = [

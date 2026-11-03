@@ -97,14 +97,28 @@ public class SecurityConfig {
     }
 
     /**
-     * Skips Bearer parsing on the token endpoints so an expired token sent to
-     * {@code /api/auth/refresh} reaches the controller instead of being rejected as 401 up front.
+     * Bearer token resolution.
+     * <ul>
+     *   <li>Skipped on the token endpoints so an expired token sent to {@code /api/auth/refresh}
+     *       reaches the controller instead of being rejected as 401 up front.</li>
+     *   <li>The browser {@code EventSource} cannot set headers, so {@code GET /api/orders/stream}
+     *       (and only it) also accepts the token as a {@code token} query parameter. Such URLs can end
+     *       up in access logs, so keep proxy/server logs from recording query strings.</li>
+     * </ul>
      */
     private static BearerTokenResolver bearerTokenResolver() {
         DefaultBearerTokenResolver delegate = new DefaultBearerTokenResolver();
         return request -> {
             String path = request.getRequestURI();
-            return ("/api/auth/refresh".equals(path) || "/api/login".equals(path)) ? null : delegate.resolve(request);
+            if ("/api/auth/refresh".equals(path) || "/api/login".equals(path)) {
+                return null;
+            }
+            String token = delegate.resolve(request);
+            if (token == null && "GET".equals(request.getMethod()) && "/api/orders/stream".equals(path)) {
+                String param = request.getParameter("token");
+                return param == null || param.isBlank() ? null : param;
+            }
+            return token;
         };
     }
 

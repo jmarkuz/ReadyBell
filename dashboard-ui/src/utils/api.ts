@@ -2,7 +2,7 @@
  * API Client Configuration
  * Handles all HTTP requests to the backend with authentication, interceptors, and error handling
  * 
- * Base URL: configurable via VITE_API_BASE_URL env var or defaults to http://localhost:8080
+ * Base URL: same origin by default (Vite proxies /api to the backend); override with VITE_API_BASE_URL
  * 
  * Supports:
  * - Bearer token authentication (Authorization header)
@@ -11,7 +11,7 @@
  * - Multi-phase endpoint integration
  */
 
-import { ErrorResponse, DisplayError, PaginatedResponse, OrderRow } from '@/types';
+import { ErrorResponse, DisplayError, PaginatedResponse, OrderRow, OrderStatus } from '@/types';
 import { tokenManager } from './TokenManager';
 
 /**
@@ -54,6 +54,33 @@ export interface RequestConfig {
 }
 
 /**
+ * Order row exactly as the backend sends it: dates are ISO strings and statuses use backend names.
+ */
+export type RawOrderRow = Omit<OrderRow, 'deliveryETA' | 'status'> & {
+  deliveryETA: string | null;
+  status: string;
+};
+
+/** Backend → UI status names (the UI says PREPARING where the backend says IN_PROGRESS). */
+export function fromBackendStatus(status: string): OrderStatus {
+  return (status === 'IN_PROGRESS' ? 'PREPARING' : status) as OrderStatus;
+}
+
+/** UI → backend status names. */
+export function toBackendStatus(status: string): string {
+  return status === 'PREPARING' ? 'IN_PROGRESS' : status;
+}
+
+/** Converts a backend order row into the UI's {@link OrderRow} (Date objects, UI status names). */
+export function normalizeOrderRow(raw: RawOrderRow): OrderRow {
+  return {
+    ...raw,
+    status: fromBackendStatus(raw.status),
+    deliveryETA: raw.deliveryETA ? new Date(raw.deliveryETA) : null,
+  };
+}
+
+/**
  * API Client Class
  * Implements restaurant-notification-platform endpoint specification
  */
@@ -67,7 +94,8 @@ export class ApiClient {
   private refreshPromise: Promise<string | null> | null = null;
 
   constructor(baseURL?: string) {
-    this.baseURL = baseURL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    // Default: same origin. In dev the Vite proxy forwards /api to the backend, so no CORS is needed.
+    this.baseURL = baseURL ?? import.meta.env.VITE_API_BASE_URL ?? '';
     this.defaultHeaders = {
       'Content-Type': 'application/json',
     };
@@ -120,6 +148,17 @@ export class ApiClient {
       // Only handle 401 Unauthorized responses
       if (response.status !== 401) {
         return response;
+      }
+
+      // A 401 from the auth endpoints themselves (wrong password, unrefreshable token) is an ordinary
+      // error for the caller to show; it must not trigger refresh/logout/redirect.
+      try {
+        const path = new URL(response.url, window.location.origin).pathname;
+        if (path === '/api/login' || path === '/api/auth/refresh') {
+          return response;
+        }
+      } catch {
+        // unparsable URL: fall through to the normal handling
       }
 
       console.warn(`[API] Response interceptor: 401 Unauthorized detected for ${response.url}`);
@@ -669,7 +708,8 @@ export class ApiClient {
     const queryString = queryParams.toString();
     const endpoint = `/api/orders${queryString ? '?' + queryString : ''}`;
 
-    return this.get<PaginatedResponse<OrderRow>>(endpoint);
+    const raw = await this.get<PaginatedResponse<RawOrderRow>>(endpoint);
+    return { ...raw, items: raw.items.map(normalizeOrderRow) };
   }
 
   /**
@@ -697,7 +737,7 @@ export class ApiClient {
     orderId: string,
     status: 'IN_PROGRESS' | 'READY' | 'COMPLETED' | 'CANCELLED'
   ): Promise<{ id: string; status: string; updatedAt: string }> {
-    return this.patch(`/api/orders/${orderId}/status`, { status });
+    return this.patch(`/api/orders/${orderId}/status`, { status: toBackendStatus(status) });
   }
 
   /**
@@ -841,8 +881,9 @@ export class ApiClient {
     };
 
     if (typedResponse.token) {
-      localStorage.setItem('auth-token', typedResponse.token);
-      
+      // Same store the request interceptor and AuthProvider read from
+      tokenManager.store(typedResponse.token);
+
       const userProfile: UserProfile = {
         id: typedResponse.username || '',
         username: typedResponse.username || '',

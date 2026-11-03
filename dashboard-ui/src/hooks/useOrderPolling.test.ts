@@ -172,7 +172,8 @@ describe('useOrderPolling Hook', () => {
       expect(mockFetch).toHaveBeenCalled();
     }, { timeout: 3000 });
 
-    expect(result.current.pollCount).toBeGreaterThanOrEqual(1);
+    // The counter is React state: it is updated after fetch resolves, so wait for it instead of racing
+    await waitFor(() => expect(result.current.pollCount).toBeGreaterThanOrEqual(1));
     expect(result.current.lastPolledAt).toBeInstanceOf(Date);
   });
 

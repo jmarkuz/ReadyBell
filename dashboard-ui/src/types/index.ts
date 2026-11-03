@@ -95,9 +95,9 @@ export interface OrderRow {
   orderId: string;                      // Backend Order.orderId (display)
   customerName?: string;                // Derived from context
   itemsOrdered: string;                 // Formatted from items
-  deliveryETA: Date;                    // Backend Order.estimatedReadyAt
+  deliveryETA: Date | null;             // Backend Order.estimatedReadyAt (null when staff gave no ETA)
   status: OrderStatus;                  // Backend Order.status
-  estimatedWaitTime: number;            // Calculated: (ETA - now) in minutes
+  estimatedWaitTime: number | null;     // (ETA - now) in minutes, null without ETA
   itemCount: number;                    // items.length
 }
 
