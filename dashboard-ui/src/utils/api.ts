@@ -739,7 +739,7 @@ export class ApiClient {
    */
   async updateOrderStatus(
     orderId: string,
-    status: 'IN_PROGRESS' | 'READY' | 'COMPLETED' | 'CANCELLED'
+    status: 'IN_PROGRESS' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED'
   ): Promise<{ id: string; status: string; updatedAt: string }> {
     return this.patch(`/api/orders/${orderId}/status`, { status: toBackendStatus(status) });
   }

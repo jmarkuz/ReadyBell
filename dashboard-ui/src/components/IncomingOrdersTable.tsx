@@ -1,5 +1,7 @@
-import { useState, useMemo, useCallback, memo } from 'react';
-import { OrderRow } from '@/types';
+import { useState, useMemo, useCallback, useEffect, memo } from 'react';
+import { createPortal } from 'react-dom';
+import { OrderRow, OrderStatus } from '@/types';
+import { NEXT_STATUSES, STATUS_ACTION_LABEL } from '@/utils/orderStatus';
 import OrderStatusBadge from './OrderStatusBadge';
 import { ChevronUp, ChevronDown, Eye, Edit2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -11,7 +13,8 @@ interface IncomingOrdersTableProps {
   currentPage?: number;
   onPageChange?: (page: number) => void;
   onRowClick?: (orderId: string) => void;
-  onStatusChange?: (orderId: string, status: string) => void;
+  /** Called when staff picks a new status from the row's menu (a status the lifecycle allows next). */
+  onStatusChange?: (orderId: string, newStatus: OrderStatus) => void;
   sortBy?: 'eta' | 'status' | 'created' | 'id';
   sortOrder?: 'asc' | 'desc';
 }
@@ -55,7 +58,43 @@ export default memo(function IncomingOrdersTable({
   sortOrder: initialSortOrder = 'asc',
 }: IncomingOrdersTableProps) {
   const [sortField, setSortField] = useState<SortField>('deliveryETA');
+  // The menu is rendered in a portal with fixed coordinates so the table's scroll container cannot clip it
+  const [statusMenu, setStatusMenu] = useState<{ orderId: string; right: number; top?: number; bottom?: number } | null>(null);
+  const statusMenuFor = statusMenu?.orderId ?? null;
+  const setStatusMenuFor = useCallback((value: null) => setStatusMenu(value), []);
+
+  const toggleStatusMenu = useCallback((orderId: string, anchor: HTMLElement, itemCount: number) => {
+    setStatusMenu((open) => {
+      if (open?.orderId === orderId) return null;
+      const rect = anchor.getBoundingClientRect();
+      const menuHeight = itemCount * 36 + 8;
+      const right = Math.max(8, window.innerWidth - rect.right);
+      return window.innerHeight - rect.bottom >= menuHeight + 8
+        ? { orderId, right, top: rect.bottom + 4 }
+        : { orderId, right, bottom: window.innerHeight - rect.top + 4 };   // not enough room below: open upwards
+    });
+  }, []);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(initialSortOrder);
+
+  // Close the status menu on Escape or when clicking elsewhere
+  useEffect(() => {
+    if (!statusMenuFor) return undefined;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setStatusMenuFor(null); };
+    const onClick = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('[role="menu"], [aria-haspopup="menu"]')) setStatusMenuFor(null);
+    };
+    const close = () => setStatusMenu(null);
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onClick);
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', close, true);   // any scroll container: the anchor has moved
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onClick);
+      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [statusMenuFor]);
 
   // Handle column sort with useCallback for stable reference
   const handleSort = useCallback((field: SortField) => {
@@ -299,15 +338,20 @@ export default memo(function IncomingOrdersTable({
                     >
                       <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" aria-hidden="true" />
                     </button>
-                    <button
-                      onClick={() => onStatusChange?.(order.id, order.status)}
-                      className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
-                      aria-label={`Update status for order ${order.orderId}, currently ${order.status}`}
-                      title="Update Status"
-                      type="button"
-                    >
-                      <Edit2 className="w-4 h-4 text-slate-600 dark:text-slate-400" aria-hidden="true" />
-                    </button>
+                    <div className="relative">
+                      <button
+                        onClick={(e) => toggleStatusMenu(order.id, e.currentTarget, NEXT_STATUSES[order.status].length)}
+                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label={`Update status for order ${order.orderId}, currently ${order.status}`}
+                        aria-haspopup="menu"
+                        aria-expanded={statusMenuFor === order.id}
+                        disabled={NEXT_STATUSES[order.status].length === 0}
+                        title={NEXT_STATUSES[order.status].length === 0 ? 'No further status changes' : 'Update Status'}
+                        type="button"
+                      >
+                        <Edit2 className="w-4 h-4 text-slate-600 dark:text-slate-400" aria-hidden="true" />
+                      </button>
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -344,6 +388,34 @@ export default memo(function IncomingOrdersTable({
           </div>
         </div>
       )}
+      {statusMenu && (() => {
+        const order = sortedOrders.find((o) => o.id === statusMenu.orderId);
+        if (!order) return null;
+        return createPortal(
+          <div
+            role="menu"
+            aria-label={`Change status of order ${order.orderId}`}
+            style={{ position: 'fixed', right: statusMenu.right, top: statusMenu.top, bottom: statusMenu.bottom }}
+            className="z-50 w-52 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg py-1"
+          >
+            {NEXT_STATUSES[order.status].map((target) => (
+              <button
+                key={target}
+                role="menuitem"
+                type="button"
+                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:bg-slate-100 dark:focus:bg-slate-800"
+                onClick={() => {
+                  setStatusMenu(null);
+                  onStatusChange?.(order.id, target);
+                }}
+              >
+                {STATUS_ACTION_LABEL[target]}
+              </button>
+            ))}
+          </div>,
+          document.body
+        );
+      })()}
     </div>
   );
 });

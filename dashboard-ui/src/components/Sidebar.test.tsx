@@ -6,6 +6,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@/test/test-utils';
 import Sidebar from './Sidebar';
+import { signOut } from '@/utils/session';
+
+vi.mock('@/utils/session', () => ({ signOut: vi.fn() }));
 
 describe('Sidebar Component', () => {
   it('renders sidebar without errors', () => {
@@ -89,6 +92,12 @@ describe('Sidebar Component', () => {
     render(<Sidebar />);
     const logoutButton = screen.getByLabelText('Logout from dashboard');
     expect(logoutButton).toBeInTheDocument();
+  });
+
+  it('signs out when the logout button is clicked', () => {
+    render(<Sidebar />);
+    screen.getByLabelText('Logout from dashboard').click();
+    expect(signOut).toHaveBeenCalledTimes(1);
   });
 
   it('renders user profile section when profile provided', () => {

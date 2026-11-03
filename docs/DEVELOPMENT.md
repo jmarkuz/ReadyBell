@@ -47,6 +47,9 @@ MSW mocks are opt-in: `VITE_USE_MOCKS=true npm run dev` (sign in with `staff@res
 The dashboard lists the 100 newest orders and refreshes on SSE events (`/api/orders/stream?token=…`; the badge shows Live/Offline) and every 30 s while offline.
 The UI shows the backend's `IN_PROGRESS` as "Preparing".
 
+Staff change an order's status from the pencil menu in the orders table (only the transitions the lifecycle allows are offered; finished orders are disabled);
+the change is sent with `PATCH /api/orders/{id}/status` and the list reloads. **Logout** (sidebar and settings menu) clears the stored token and returns to `/login`.
+
 To see data locally, seed one restaurant for the dev tenant and start a customer session:
 ```sql
 insert into restaurant(created_at, tenant_id, config_json, identifier, status)

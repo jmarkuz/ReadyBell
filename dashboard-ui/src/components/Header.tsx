@@ -1,3 +1,4 @@
+import { signOut } from '@/utils/session';
 import { useCallback, useState, memo } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import {
@@ -209,7 +210,7 @@ export default memo(function Header({
                 className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm flex items-center gap-2 text-red-600 dark:text-red-400"
                 onClick={() => {
                   setSettingsOpen(false);
-                  // Logout logic will be added later
+                  signOut();
                 }}
                 role="menuitem"
                 type="button"

@@ -6,6 +6,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@/test/test-utils';
 import Header from './Header';
+import { signOut } from '@/utils/session';
+
+vi.mock('@/utils/session', () => ({ signOut: vi.fn() }));
 
 describe('Header Component', () => {
   it('renders header without errors', () => {
@@ -92,6 +95,14 @@ describe('Header Component', () => {
     render(<Header />);
     const settingsButton = screen.getByLabelText('Open settings menu');
     expect(settingsButton).toBeInTheDocument();
+  });
+
+  it('signs out from the settings menu and closes it', async () => {
+    render(<Header />);
+    fireEvent.click(screen.getByLabelText('Open settings menu'));
+    fireEvent.click(await screen.findByRole('menuitem', { name: /logout/i }));
+    expect(signOut).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
   });
 
   it('opens and closes settings menu', async () => {

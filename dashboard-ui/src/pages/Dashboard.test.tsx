@@ -23,7 +23,7 @@ const sampleRows: OrderRow[] = [
 
 vi.mock('@/utils/api', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/utils/api')>();
-  return { ...original, apiClient: { getOrders: vi.fn() } };
+  return { ...original, apiClient: { getOrders: vi.fn(), updateOrderStatus: vi.fn() } };
 });
 
 /** Renders the page and waits for the first load, so tests can assert synchronously afterwards. */
@@ -879,6 +879,35 @@ describe('Dashboard Page', () => {
       initialOrders.forEach(order => {
         expect(order).toBeInTheDocument();
       });
+    });
+  });
+
+  describe('Changing an order status', () => {
+    it('sends the change to the API and reloads the list', async () => {
+      vi.mocked(apiClient.updateOrderStatus).mockResolvedValue({ id: '1', status: 'IN_PROGRESS', updatedAt: 'now' });
+      const user = userEvent.setup();
+      await renderDashboard();
+      vi.mocked(apiClient.getOrders).mockClear();
+
+      await user.click(screen.getByRole('button', { name: /update status for order ORD-001/i }));
+      await user.click(screen.getByRole('menuitem', { name: 'Mark ready for pickup' }));
+
+      await waitFor(() => expect(apiClient.updateOrderStatus).toHaveBeenCalledWith('1', 'READY'));
+      await waitFor(() => expect(apiClient.getOrders).toHaveBeenCalledTimes(1));
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('shows the server error and resyncs when the change is rejected', async () => {
+      vi.mocked(apiClient.updateOrderStatus).mockRejectedValue(new Error('Order was modified by another request'));
+      const user = userEvent.setup();
+      await renderDashboard();
+      vi.mocked(apiClient.getOrders).mockClear();
+
+      await user.click(screen.getByRole('button', { name: /update status for order ORD-002/i }));
+      await user.click(screen.getByRole('menuitem', { name: 'Start preparing' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Order was modified by another request');
+      await waitFor(() => expect(apiClient.getOrders).toHaveBeenCalled());
     });
   });
 });

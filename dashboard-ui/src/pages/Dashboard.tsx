@@ -6,6 +6,7 @@ import { DateRangeFilter } from '@/components/DateRangeFilter';
 import { useSearch } from '@/context/SearchContext';
 import { OrderMetrics, OrderStatus } from '@/types';
 import { useDashboardOrders } from '@/hooks/useDashboardOrders';
+import { apiClient } from '@/utils/api';
 
 /**
  * Dashboard Page
@@ -43,7 +44,21 @@ export default function Dashboard() {
 
   // Mock initial orders data
   // Orders come from the backend (GET /api/orders) and are refreshed on SSE events
-  const { orders: displayOrders, isLoading, error: loadError, isConnected } = useDashboardOrders();
+  const { orders: displayOrders, isLoading, error: loadError, isConnected, reload } = useDashboardOrders();
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const handleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus) => {
+    if (newStatus === 'CREATED') return; // no transition leads back to CREATED
+    setActionError(null);
+    try {
+      await apiClient.updateOrderStatus(orderId, newStatus);
+      await reload();
+    } catch (e) {
+      // e.g. 409 (changed by someone else) or 422 (transition no longer allowed): show it and resync
+      setActionError(e instanceof Error ? e.message : 'Could not update the order status.');
+      await reload();
+    }
+  }, [reload]);
 
 
   // Filter orders based on search query, status, and date range
@@ -250,7 +265,12 @@ export default function Dashboard() {
         {isLoading ? (
           <p className="text-sm text-slate-600 dark:text-slate-400" role="status">Loading orders…</p>
         ) : (
-          <IncomingOrdersTable orders={filteredOrders} />
+          <>
+            {actionError && (
+              <p role="alert" className="mb-3 text-sm text-red-700 dark:text-red-400">{actionError}</p>
+            )}
+            <IncomingOrdersTable orders={filteredOrders} onStatusChange={handleStatusChange} />
+          </>
         )}
       </section>
     </div>
