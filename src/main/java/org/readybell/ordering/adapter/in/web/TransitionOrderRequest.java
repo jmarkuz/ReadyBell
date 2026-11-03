@@ -1,5 +1,7 @@
 package org.readybell.ordering.adapter.in.web;
 
+import jakarta.validation.constraints.NotBlank;
+
 import org.readybell.ordering.domain.OrderStatus;
 
 /**
@@ -12,4 +14,4 @@ import org.readybell.ordering.domain.OrderStatus;
  * @param status the target order status label (case-sensitive, must match an
  *               {@code OrderStatus} enum constant name)
  */
-public record TransitionOrderRequest(String status) {}
+public record TransitionOrderRequest(@NotBlank String status) {}

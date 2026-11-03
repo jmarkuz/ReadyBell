@@ -1,6 +1,5 @@
 package org.readybell.ordering.application;
 
-import org.readybell.session.application.InvalidQrCodeException;
 import org.readybell.ordering.domain.InvalidTransitionException;
 import org.readybell.ordering.domain.Order;
 import org.readybell.ordering.domain.TerminalStateException;
@@ -24,8 +23,7 @@ public interface ManageOrderUseCase {
      *
      * @param command the creation command carrying the tenant and session identity
      * @return the newly created, CREATED-state {@link Order}
-     * @throws InvalidQrCodeException or an equivalent
-     *         application exception if the session is not found or belongs to another
+     * @throws InvalidSessionException if the session is not found or belongs to another
      *         tenant (Req 4.5, 4.6)
      */
     Order createOrder(CreateOrderCommand command);

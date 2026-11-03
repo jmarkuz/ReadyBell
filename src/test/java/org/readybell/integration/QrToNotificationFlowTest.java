@@ -100,7 +100,8 @@ class QrToNotificationFlowTest {
     @BeforeEach
     void setUp() {
         // Create a test restaurant and tenant
-        tenantId = new TenantId(UUID.randomUUID());
+        // Must match the tenant of the configured 'admin' user in application-test.yml
+        tenantId = new TenantId(UUID.fromString("00000000-0000-0000-0000-0000000000a1"));
         restaurantIdentifier = "test-restaurant-" + UUID.randomUUID();
         
         Restaurant restaurant = Restaurant.create(
@@ -245,10 +246,8 @@ class QrToNotificationFlowTest {
         String url = "http://localhost:" + port + "/api/orders";
         CreateOrderRequest request = new CreateOrderRequest(sessionId);
         
-        // Add X-Tenant-Id header for tenant resolution
         // Add Basic authentication for admin user
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Tenant-Id", tenantId.value().toString());
         headers.setBasicAuth("admin", "admin");
         
         HttpEntity<CreateOrderRequest> entity = new HttpEntity<>(request, headers);
@@ -259,10 +258,8 @@ class QrToNotificationFlowTest {
         String url = "http://localhost:" + port + "/api/orders/" + orderId + "/status";
         TransitionOrderRequest request = new TransitionOrderRequest(status.name());
         
-        // Add X-Tenant-Id header for tenant resolution
         // Add Basic authentication for admin user
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Tenant-Id", tenantId.value().toString());
         headers.setBasicAuth("admin", "admin");
         
         HttpEntity<TransitionOrderRequest> entity = new HttpEntity<>(request, headers);

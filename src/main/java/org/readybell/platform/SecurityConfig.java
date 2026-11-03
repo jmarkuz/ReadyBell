@@ -6,12 +6,26 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.core.userdetails.User;
+import org.readybell.shared.domain.TenantId;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.readybell.platform.auth.JwtProperties;
+import org.readybell.platform.auth.JwtService;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+
+import java.time.Clock;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Spring Security configuration for the ReadyBell REST API (Req 7.1, 7.2, 8.1, 8.2, 9.1).
@@ -29,13 +43,14 @@ import org.springframework.security.web.SecurityFilterChain;
  * HTTP Basic auth is used for the MVP (full JWT integration is deferred to a later task).
  * CSRF is disabled because the API is stateless REST (no browser form submissions).
  *
- * <h2>In-memory user (testing only)</h2>
- * A default in-memory user {@code admin / admin} with role {@code RESTAURANT_ADMIN} is
- * registered so manual and integration testing can exercise the protected endpoints without
- * an external identity provider.
+ * <h2>Users</h2>
+ * Users come from {@code readybell.security.users} ({@link SecurityProperties}); there are no
+ * built-in credentials. Each user is bound to a tenant, which the
+ * {@link TenantResolutionFilter} uses as the only source of the tenant for authenticated calls.
  */
 @Configuration
 @EnableWebSecurity
+@EnableConfigurationProperties({SecurityProperties.class, JwtProperties.class})
 public class SecurityConfig {
 
     /**
@@ -47,7 +62,7 @@ public class SecurityConfig {
      * @return the configured {@link SecurityFilterChain} bean
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService) throws Exception {
         http
             // Disable CSRF — REST API, no browser form submissions
             .csrf(AbstractHttpConfigurer::disable)
@@ -56,6 +71,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public: customer session endpoints and health/metrics probes
                 .requestMatchers("/api/sessions/**").permitAll()
+                .requestMatchers("/api/login", "/api/auth/refresh").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
 
                 // Platform admin: require PLATFORM_ADMIN role (Req 9.1, 9.4)
@@ -69,31 +85,65 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
 
-            // HTTP Basic auth for MVP (Req 7.1, 8.1; JWT deferred to task 21)
+            // Bearer JWT for the dashboard (issued by /api/login); HTTP Basic kept for curl/tests
+            .oauth2ResourceServer(oauth -> oauth
+                    .bearerTokenResolver(bearerTokenResolver())
+                    .jwt(jwt -> jwt.decoder(jwtService::decode)
+                            .jwtAuthenticationConverter(SecurityConfig::toAuthentication)))
             .httpBasic(Customizer.withDefaults());
 
         return http.build();
     }
 
     /**
-     * In-memory user store for testing.
+     * Skips Bearer parsing on the token endpoints so an expired token sent to
+     * {@code /api/auth/refresh} reaches the controller instead of being rejected as 401 up front.
+     */
+    private static BearerTokenResolver bearerTokenResolver() {
+        DefaultBearerTokenResolver delegate = new DefaultBearerTokenResolver();
+        return request -> {
+            String path = request.getRequestURI();
+            return ("/api/auth/refresh".equals(path) || "/api/login".equals(path)) ? null : delegate.resolve(request);
+        };
+    }
+
+    private static AbstractAuthenticationToken toAuthentication(Jwt jwt) {
+        TenantUser principal = JwtService.toPrincipal(jwt);
+        return new UsernamePasswordAuthenticationToken(principal, jwt, principal.getAuthorities());
+    }
+
+    @Bean
+    public JwtService jwtService(JwtProperties props) {
+        return new JwtService(props, Clock.systemUTC());
+    }
+
+    /**
+     * In-memory user store built from {@link SecurityProperties}.
      *
-     * <p>Provides a single user {@code admin / admin} with the {@code RESTAURANT_ADMIN}
-     * role so that the protected endpoints can be exercised without a real identity provider.
-     * Replace this with a database-backed {@link UserDetailsService} and JWT authentication
-     * when full auth wiring is done in task 21.
-     *
-     * @param encoder the {@link PasswordEncoder} used to hash the test password
-     * @return an {@link InMemoryUserDetailsManager} with the test user
+     * <p>Replace with a database-backed {@link UserDetailsService} and JWT authentication when
+     * full auth wiring is done (task 21).
      */
     @Bean
-    public UserDetailsService userDetailsService(PasswordEncoder encoder) {
-        var admin = User.builder()
-                .username("admin")
-                .password(encoder.encode("admin"))
-                .roles("RESTAURANT_ADMIN")
-                .build();
-        return new InMemoryUserDetailsManager(admin);
+    public UserDetailsService userDetailsService(PasswordEncoder encoder, SecurityProperties props) {
+        // InMemoryUserDetailsManager would return a plain User and drop the tenant, so keep our own map.
+        Map<String, TenantUser> users = props.getUsers().stream()
+                .collect(Collectors.toUnmodifiableMap(
+                        SecurityProperties.User::getUsername,
+                        u -> new TenantUser(
+                                u.getUsername(),
+                                encoder.encode(u.getPassword()),
+                                u.getRoles().stream()
+                                        .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
+                                        .toList(),
+                                u.getTenantId() == null ? null : new TenantId(u.getTenantId()))));
+        return username -> {
+            TenantUser user = users.get(username);
+            if (user == null) {
+                throw new UsernameNotFoundException(username);
+            }
+            // Fresh instance per lookup: Spring Security erases credentials on the returned object.
+            return new TenantUser(user.getUsername(), user.getPassword(), user.getAuthorities(), user.getTenantId());
+        };
     }
 
     /**

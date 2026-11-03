@@ -1,5 +1,6 @@
 package org.readybell.platform;
 
+import org.readybell.platform.auth.InvalidCredentialsException;
 import org.readybell.restaurant.application.RestaurantNotFoundException;
 import org.readybell.ordering.application.CrossTenantAccessException;
 import org.readybell.ordering.application.InvalidSessionException;
@@ -14,6 +15,9 @@ import org.readybell.session.application.InvalidQrTokenException;
 import org.readybell.shared.tenancy.MissingTenantContextException;
 import org.readybell.subscription.application.SessionNotActiveException;
 import org.readybell.subscription.application.SubscriptionNotFoundException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Global exception handler that maps application exceptions to RFC 7807
@@ -202,6 +207,53 @@ public class GlobalExceptionHandler {
                 "https://readybell.org/problems/subscription-not-found",
                 "Subscription Not Found",
                 ex.getMessage()
+        );
+    }
+
+    /** Bad credentials on login, or an unrefreshable token. */
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidCredentials(InvalidCredentialsException ex) {
+        return problem(
+                HttpStatus.UNAUTHORIZED,
+                "urn:readybell:auth:invalid-credentials",
+                "Invalid Credentials",
+                ex.getMessage()
+        );
+    }
+
+    /**
+     * Concurrent modification of the same row (optimistic lock on {@code Order.version}).
+     *
+     * @return 409 Conflict so the client can reload and retry (Req 5.8)
+     */
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<Map<String, Object>> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
+        return problem(
+                HttpStatus.CONFLICT,
+                "https://readybell.org/problems/concurrent-modification",
+                "Concurrent Modification",
+                "The resource was modified by another request. Reload and retry."
+        );
+    }
+
+    /**
+     * Malformed JSON, missing body, or bean-validation failures on request bodies.
+     *
+     * @return 400 Bad Request
+     */
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentNotValidException.class})
+    public ResponseEntity<Map<String, Object>> handleBadRequestBody(Exception ex) {
+        String detail = ex instanceof MethodArgumentNotValidException invalid
+                ? invalid.getBindingResult().getFieldErrors().stream()
+                        .map(e -> e.getField() + " " + e.getDefaultMessage())
+                        .sorted()
+                        .collect(Collectors.joining("; "))
+                : "Request body is missing or malformed.";
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "https://readybell.org/problems/invalid-request",
+                "Invalid Request",
+                detail
         );
     }
 

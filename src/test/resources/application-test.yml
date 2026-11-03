@@ -16,3 +16,22 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+readybell:
+  vapid:
+    enabled: false
+  security:
+    jwt:
+      secret: test-secret-test-secret-test-secret-1234
+    users:
+      - username: admin
+        password: admin
+        roles: [RESTAURANT_ADMIN]
+        tenant-id: 00000000-0000-0000-0000-0000000000a1
+      - username: other
+        password: other
+        roles: [RESTAURANT_ADMIN]
+        tenant-id: 00000000-0000-0000-0000-0000000000b2
+      - username: platform
+        password: platform
+        roles: [PLATFORM_ADMIN]

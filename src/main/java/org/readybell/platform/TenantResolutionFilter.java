@@ -10,6 +10,8 @@ import org.readybell.session.domain.CustomerSessionRepository;
 import org.readybell.shared.domain.TenantId;
 import org.readybell.shared.tenancy.TenantContextHolder;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -25,10 +27,9 @@ import java.util.regex.Pattern;
  * <h2>Resolution strategy (phased)</h2>
  * <ol>
  *   <li><strong>Public / health endpoints</strong> — skipped entirely; no tenant required.
- *   <li><strong>{@code X-Tenant-Id} header</strong> — if present and parseable as a UUID,
- *       it is used as the tenant.  This header-based shortcut lets the system function
- *       before full Spring Security wiring is in place (task 21 will replace it with
- *       principal-based resolution).
+ *   <li><strong>Authenticated principal</strong> — a {@link TenantUser} supplies the tenant.
+ *       The {@code X-Tenant-Id} header is ignored for resolution; if it names a different
+ *       tenant than the principal's the request is rejected with 403.
  *   <li><strong>Customer session paths</strong> ({@code /api/sessions/{id}/**}) — extracts
  *       the session id from the path, looks up the session via
  *       {@link CustomerSessionRepository}, and derives the tenant from the session.
@@ -48,13 +49,15 @@ import java.util.regex.Pattern;
 @Order(1)
 public class TenantResolutionFilter extends OncePerRequestFilter {
 
-    /** Header that carries a pre-resolved tenant UUID (used before full auth wiring). */
+    /** Legacy header; only checked against the principal's tenant, never trusted. */
     static final String TENANT_ID_HEADER = "X-Tenant-Id";
 
     /** Paths that are fully public — no tenant resolution is attempted. */
     private static final String[] PUBLIC_PATH_PREFIXES = {
         "/actuator",
         "/api/platform",
+        "/api/login",
+        "/api/auth",
         "/error"
     };
 
@@ -104,6 +107,10 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         try {
+            if (isCrossTenantHeader(request)) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Tenant mismatch");
+                return;
+            }
             resolveTenant(request);
             filterChain.doFilter(request, response);
         } finally {
@@ -122,22 +129,20 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
      *
      * <p>Resolution order:
      * <ol>
-     *   <li>Explicit {@value #TENANT_ID_HEADER} header (pre-auth convenience).
+     *   <li>Authenticated {@link TenantUser} principal.
      *   <li>Customer-session sub-path — derive from the session's stored tenant.
      * </ol>
      * If neither strategy succeeds the holder is left unset; a downstream
      * {@code require()} call will raise {@code MissingTenantContextException}.
      */
     private void resolveTenant(HttpServletRequest request) {
-        // 1. Explicit header (used before full Spring Security wiring, task 21)
-        String headerValue = request.getHeader(TENANT_ID_HEADER);
-        if (headerValue != null) {
-            UUID parsed = tryParseUuid(headerValue);
-            if (parsed != null) {
-                TenantContextHolder.set(new TenantId(parsed));
-                return;
-            }
-            // Invalid UUID in the header — fall through to next strategy
+        // 1. Authenticated principal: the tenant is fixed server-side and the client-supplied
+        //    header can never override it (Req 10.2, 10.4).
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof TenantUser user
+                && user.getTenantId() != null) {
+            TenantContextHolder.set(user.getTenantId());
+            return;
         }
 
         // 2. Customer session sub-paths: /api/sessions/{id}/**
@@ -154,6 +159,21 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
 
         // If neither strategy resolved a tenant, the holder stays empty.
         // TenantContextHolder.require() will reject when any tenant-scoped access is attempted.
+    }
+
+    /**
+     * True when an authenticated tenant user sends an {@value #TENANT_ID_HEADER} that differs from
+     * their own tenant — an attempted cross-tenant access.
+     */
+    private static boolean isCrossTenantHeader(HttpServletRequest request) {
+        String header = request.getHeader(TENANT_ID_HEADER);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (header == null || auth == null || !(auth.getPrincipal() instanceof TenantUser user)
+                || user.getTenantId() == null) {
+            return false;
+        }
+        UUID parsed = tryParseUuid(header);
+        return parsed == null || !parsed.equals(user.getTenantId().value());
     }
 
     /** Returns the {@link UUID} represented by {@code raw}, or {@code null} if malformed. */

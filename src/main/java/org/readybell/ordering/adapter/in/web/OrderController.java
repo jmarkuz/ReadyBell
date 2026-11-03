@@ -1,5 +1,7 @@
 package org.readybell.ordering.adapter.in.web;
 
+import jakarta.validation.Valid;
+
 import org.readybell.ordering.application.CrossTenantAccessException;
 import org.readybell.ordering.application.InvalidSessionException;
 import org.readybell.ordering.application.OrderNotFoundException;
@@ -75,7 +77,7 @@ public class OrderController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public OrderResponse createOrder(@RequestBody CreateOrderRequest request) {
+    public OrderResponse createOrder(@Valid @RequestBody CreateOrderRequest request) {
         TenantId tenantId = TenantContextHolder.require();
         CustomerSessionId sessionId = new CustomerSessionId(request.sessionId());
         var order = manageOrderUseCase.createOrder(
@@ -119,7 +121,7 @@ public class OrderController {
      */
     @PatchMapping("/{id}/status")
     public OrderResponse transitionOrderStatus(@PathVariable("id") UUID id,
-                                               @RequestBody TransitionOrderRequest request) {
+                                               @Valid @RequestBody TransitionOrderRequest request) {
         TenantId tenantId = TenantContextHolder.require();
         OrderId orderId = new OrderId(id);
         OrderStatus targetStatus = OrderStatus.valueOf(request.status());

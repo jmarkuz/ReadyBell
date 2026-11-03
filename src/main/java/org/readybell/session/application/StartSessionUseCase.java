@@ -30,7 +30,7 @@ public interface StartSessionUseCase {
      *
      * @param qrToken the QR-code payload (restaurant identifier or parseable token)
      * @return the newly created, ACTIVE {@link CustomerSession}
-     * @throws InvalidQrCodeException          if {@code qrToken} is blank or does not
+     * @throws InvalidQrTokenException         if {@code qrToken} is blank or does not
      *                                         resolve to a known restaurant (Req 1.4, 1.7)
      * @throws DeactivatedRestaurantException  if the resolved restaurant is deactivated
      *                                         (Req 9.6)

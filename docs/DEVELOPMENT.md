@@ -15,7 +15,7 @@ Setup, running and testing ReadyBell locally (backend + `dashboard-ui`).
 
 ```bash
 ./start-dev.sh            # checks prerequisites, starts PostgreSQL + Redis
-./gradlew bootRun         # backend  → http://localhost:8080
+SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun   # backend → http://localhost:8080
 cd dashboard-ui && npm install && npm run dev   # UI → http://localhost:5173
 ./stop-dev.sh             # stop everything
 ```
@@ -24,12 +24,17 @@ Manual alternative: start PostgreSQL and Redis yourself (Docker, `brew services`
 then `createdb -U postgres readybell` once.
 
 ### Infrastructure notes
-- PostgreSQL: `application.yml` defaults to port **3254** (e.g. `docker run -p 3254:5432 postgres:15`). If you use the
-  standard 5432, change `spring.datasource.url` to `jdbc:postgresql://localhost:5432/readybell`.
+- PostgreSQL: the default profile uses `DB_URL` (default `jdbc:postgresql://localhost:5432/readybell`), `DB_USERNAME`, `DB_PASSWORD`
+  and `ddl-auto: update`. The **`dev` profile** (`application-dev.yml`) points to port 3254 (e.g. `docker run -p 3254:5432 postgres:15`),
+  recreates the schema on every start (`ddl-auto: create`) and defines the local API users — never use it against real data.
 - Redis: port 6379.
 - Health check: `curl http://localhost:8080/actuator/health` → `{"status":"UP"}`.
-- Staff Basic Auth for quick curl tests: `staff:password`
-  (`curl -H "Authorization: Basic c3RhZmY6cGFzc3dvcmQ=" http://localhost:8080/api/orders`).
+- API users come from `readybell.security.users` (no built-in credentials). `dev` profile: `staff:password` and `admin:admin`
+  (tenant `00000000-0000-0000-0000-000000000001`), `platform:platform` (PLATFORM_ADMIN). The tenant is bound to the user on the server;
+  an `X-Tenant-Id` header is never trusted (a different tenant in it → 403).
+  `curl -u staff:password http://localhost:8080/api/orders` (Basic) or log in for a Bearer token:
+  `curl -s -X POST localhost:8080/api/login -H 'Content-Type: application/json' -d '{"username":"staff","password":"password"}'`.
+- `JWT_SECRET` (≥ 32 bytes) is **required** outside the `dev`/`test` profiles; the app refuses to start without it.
 
 ### Frontend with mock vs. real backend
 In dev the UI starts MSW mocks automatically (see [API_INTEGRATION.md](API_INTEGRATION.md)); to use the real backend

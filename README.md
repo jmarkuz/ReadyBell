@@ -70,7 +70,7 @@ There is no `docker-compose.yml` in this repository yet — point the `spring.da
 ### Run the app
 
 ```bash
-./gradlew bootRun
+SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun
 ```
 
 The application reads VAPID keys from environment variables (they fall back to placeholder values if unset, which will not work with real browser push services):

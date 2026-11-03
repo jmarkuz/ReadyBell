@@ -1,5 +1,7 @@
 package org.readybell.restaurant.adapter.in.web;
 
+import jakarta.validation.Valid;
+
 import org.readybell.platform.GlobalExceptionHandler;
 import org.readybell.restaurant.application.DuplicateUsernameException;
 import org.readybell.restaurant.application.RestaurantNotFoundException;
@@ -62,7 +64,7 @@ public class RestaurantAdminController {
      */
     @PostMapping("/staff")
     @ResponseStatus(HttpStatus.CREATED)
-    public StaffAccountResponse createStaffAccount(@RequestBody CreateStaffAccountRequest request) {
+    public StaffAccountResponse createStaffAccount(@Valid @RequestBody CreateStaffAccountRequest request) {
         TenantId tenantId = TenantContextHolder.require();
         Role role = Role.valueOf(request.role());
         StaffAccount account = adminUseCase.createStaffAccount(tenantId, request.username(), role);
@@ -96,7 +98,7 @@ public class RestaurantAdminController {
      * @return 200 OK with the updated configuration
      */
     @PutMapping("/config")
-    public RestaurantConfigResponse updateConfig(@RequestBody UpdateConfigRequest request) {
+    public RestaurantConfigResponse updateConfig(@Valid @RequestBody UpdateConfigRequest request) {
         TenantId tenantId = TenantContextHolder.require();
         RestaurantConfig config = RestaurantConfig.of(request.name());
         Restaurant restaurant = adminUseCase.updateRestaurantConfig(tenantId, config);

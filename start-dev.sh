@@ -146,7 +146,7 @@ echo -e "\n${YELLOW}Next steps - Start each service in a separate terminal:${NC}
 
 echo -e "\n${BLUE}Terminal 1: Backend${NC}"
 echo -e "  cd $PROJECT_DIR"
-echo -e "  ${GREEN}./gradlew bootRun${NC}"
+echo -e "  ${GREEN}SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun${NC}"
 
 echo -e "\n${BLUE}Terminal 2: Frontend${NC}"
 echo -e "  cd $UI_DIR"

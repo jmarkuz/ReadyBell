@@ -1,5 +1,7 @@
 package org.readybell.ordering.adapter.in.web;
 
+import jakarta.validation.constraints.NotNull;
+
 import java.util.UUID;
 
 /**
@@ -11,4 +13,4 @@ import java.util.UUID;
  *
  * @param sessionId the customer session UUID this order belongs to
  */
-public record CreateOrderRequest(UUID sessionId) {}
+public record CreateOrderRequest(@NotNull UUID sessionId) {}

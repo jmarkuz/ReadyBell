@@ -225,14 +225,14 @@ export class TokenManager {
         return false;
       }
 
-      // Verify required claims exist
-      if (!decoded.role || !decoded.tenant_id) {
+      // Verify required claims exist. Platform admins are cross-tenant and carry no tenant_id.
+      if (!decoded.role || (!decoded.tenant_id && decoded.role !== 'PLATFORM_ADMIN')) {
         console.warn('Token missing required claims (role, tenant_id)');
         return false;
       }
 
-      // Verify role is one of the allowed roles
-      const validRoles = ['STAFF', 'ADMIN', 'PLATFORM_ADMIN'];
+      // Verify role is one of the allowed roles (RESTAURANT_ADMIN is what the backend issues)
+      const validRoles = ['STAFF', 'ADMIN', 'RESTAURANT_ADMIN', 'PLATFORM_ADMIN'];
       if (!validRoles.includes(decoded.role)) {
         console.warn(`Invalid role in token: ${decoded.role}`);
         return false;

@@ -1,0 +1,25 @@
+# Local development only: activate with SPRING_PROFILES_ACTIVE=dev
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:3254/readybell}
+    password: ${DB_PASSWORD:qwer1234}
+  jpa:
+    hibernate:
+      ddl-auto: create   # recreates the schema on every start
+
+readybell:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:dev-only-secret-change-me-0123456789abcdef}
+    users:
+      - username: staff
+        password: password
+        roles: [STAFF]
+        tenant-id: 00000000-0000-0000-0000-000000000001
+      - username: admin
+        password: admin
+        roles: [RESTAURANT_ADMIN]
+        tenant-id: 00000000-0000-0000-0000-000000000001
+      - username: platform
+        password: platform
+        roles: [PLATFORM_ADMIN]

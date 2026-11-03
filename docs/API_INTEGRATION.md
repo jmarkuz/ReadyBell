@@ -32,6 +32,11 @@ Order lifecycle: `CREATED → IN_PROGRESS → READY → COMPLETED`; `CANCELLED` 
 `COMPLETED` and `CANCELLED` are terminal.
 
 ## Auth & multi-tenancy
+- Backend (implemented): `POST /api/login` → `{token, role, tenantId, username, expiresIn}`; `POST /api/auth/refresh` (Bearer; accepts a token
+  expired up to `readybell.security.jwt.refresh-grace`, default 7 d, and re-checks the user). HS256 JWT, claims `sub`, `iat`, `exp`, `role`, `roles`,
+  `tenant_id` (empty for PLATFORM_ADMIN); TTL `readybell.security.jwt.ttl` (1 h); key from `JWT_SECRET`. HTTP Basic is still accepted for curl/tests.
+- Still **not** in the real backend: paginated/sortable/searchable `GET /api/orders`, `GET /api/orders/poll` for staff, and the richer `OrderRow`
+  fields (customer name, items, ETA) — the backend returns `{orderId, sessionId, status, version}` lists. Only the mock provides those today.
 - `Authorization: Bearer <token>`; tenant is derived from the token and enforced at the query layer
   (cross-tenant access → 403).
 - Mock credentials: `staff@restaurant.com / password` (STAFF), `admin@restaurant.com / password` (ADMIN).

@@ -1,5 +1,7 @@
 package org.readybell.restaurant.adapter.in.web;
 
+import jakarta.validation.constraints.NotBlank;
+
 import org.readybell.restaurant.domain.Role;
 
 /**
@@ -9,4 +11,4 @@ import org.readybell.restaurant.domain.Role;
  * @param role     the role string; must be a valid {@link Role}
  *                 name (e.g. {@code "STAFF"} or {@code "RESTAURANT_ADMIN"})
  */
-public record CreateStaffAccountRequest(String username, String role) {}
+public record CreateStaffAccountRequest(@NotBlank String username, @NotBlank String role) {}

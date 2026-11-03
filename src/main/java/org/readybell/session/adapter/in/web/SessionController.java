@@ -1,5 +1,7 @@
 package org.readybell.session.adapter.in.web;
 
+import jakarta.validation.Valid;
+
 import org.readybell.platform.GlobalExceptionHandler;
 import org.readybell.restaurant.domain.DeactivatedRestaurantException;
 import org.readybell.session.application.InvalidQrTokenException;
@@ -62,7 +64,7 @@ public class SessionController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public SessionResponse startSession(@RequestBody StartSessionRequest request) {
+    public SessionResponse startSession(@Valid @RequestBody StartSessionRequest request) {
         CustomerSession session = startSessionUseCase.startSession(request.qrToken());
         return SessionResponse.from(session);
     }
