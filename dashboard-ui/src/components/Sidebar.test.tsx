@@ -87,7 +87,7 @@ describe('Sidebar Component', () => {
 
   it('renders logout button', () => {
     render(<Sidebar />);
-    const logoutButton = screen.getByLabelText('Logout');
+    const logoutButton = screen.getByLabelText('Logout from dashboard');
     expect(logoutButton).toBeInTheDocument();
   });
 

@@ -153,7 +153,7 @@ describe('StatusFilter Component', () => {
     const button = screen.getByRole('button', { name: /status filter/i });
     fireEvent.click(button);
     
-    const selectAllButton = screen.getByRole('button', { name: 'Select All' });
+    const selectAllButton = screen.getByRole('button', { name: 'Select all statuses' });
     expect(selectAllButton).toBeInTheDocument();
   });
 
@@ -162,7 +162,7 @@ describe('StatusFilter Component', () => {
     const button = screen.getByRole('button', { name: /status filter/i });
     fireEvent.click(button);
     
-    const clearAllButton = screen.getByRole('button', { name: 'Clear All' });
+    const clearAllButton = screen.getByRole('button', { name: 'Clear all statuses' });
     expect(clearAllButton).toBeInTheDocument();
   });
 
@@ -171,7 +171,7 @@ describe('StatusFilter Component', () => {
     const button = screen.getByRole('button', { name: /status filter/i });
     fireEvent.click(button);
     
-    const selectAllButton = screen.getByRole('button', { name: 'Select All' });
+    const selectAllButton = screen.getByRole('button', { name: 'Select all statuses' });
     fireEvent.click(selectAllButton);
     
     expect(screen.getByLabelText('Filter by New Order') as HTMLInputElement).toHaveProperty('checked', true);
@@ -186,11 +186,11 @@ describe('StatusFilter Component', () => {
     fireEvent.click(button);
     
     // Select all first
-    const selectAllButton = screen.getByRole('button', { name: 'Select All' });
+    const selectAllButton = screen.getByRole('button', { name: 'Select all statuses' });
     fireEvent.click(selectAllButton);
     
     // Then clear all
-    const clearAllButton = screen.getByRole('button', { name: 'Clear All' });
+    const clearAllButton = screen.getByRole('button', { name: 'Clear all statuses' });
     fireEvent.click(clearAllButton);
     
     expect(screen.getByLabelText('Filter by New Order') as HTMLInputElement).toHaveProperty('checked', false);
@@ -204,7 +204,7 @@ describe('StatusFilter Component', () => {
     const button = screen.getByRole('button', { name: /status filter/i });
     fireEvent.click(button);
     
-    const selectAllButton = screen.getByRole('button', { name: 'Select All' });
+    const selectAllButton = screen.getByRole('button', { name: 'Select all statuses' });
     fireEvent.click(selectAllButton);
     
     expect(selectAllButton).toBeDisabled();
@@ -215,7 +215,7 @@ describe('StatusFilter Component', () => {
     const button = screen.getByRole('button', { name: /status filter/i });
     fireEvent.click(button);
     
-    const clearAllButton = screen.getByRole('button', { name: 'Clear All' });
+    const clearAllButton = screen.getByRole('button', { name: 'Clear all statuses' });
     // Should already be disabled since nothing is selected by default
     expect(clearAllButton).toBeDisabled();
   });
@@ -453,10 +453,10 @@ describe('StatusFilter Component', () => {
     fireEvent.click(button);
     
     // Select all
-    fireEvent.click(screen.getByRole('button', { name: 'Select All' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Select all statuses' }));
     
     // Clear all
-    fireEvent.click(screen.getByRole('button', { name: 'Clear All' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear all statuses' }));
     
     // Apply
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));

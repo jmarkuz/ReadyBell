@@ -61,7 +61,7 @@ describe('Layout Component', () => {
       <div>Test</div>
     </Layout>);
     
-    const menuButton = screen.getByLabelText('Toggle menu');
+    const menuButton = screen.getByLabelText('Toggle navigation menu');
     expect(menuButton).toBeInTheDocument();
   });
 });

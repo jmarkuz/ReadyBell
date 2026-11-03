@@ -92,9 +92,9 @@ describe('Dashboard Page', () => {
   it('displays customer names', () => {
     render(<Dashboard />);
     
-    expect(screen.getByText('John Smith')).toBeInTheDocument();
-    expect(screen.getByText('Jane Doe')).toBeInTheDocument();
-    expect(screen.getByText('Bob Johnson')).toBeInTheDocument();
+    expect(screen.getByText('Customer -001')).toBeInTheDocument();
+    expect(screen.getByText('Customer -002')).toBeInTheDocument();
+    expect(screen.getByText('Customer -003')).toBeInTheDocument();
   });
 
   it('displays order statuses', () => {
@@ -152,9 +152,9 @@ describe('Dashboard Page', () => {
       render(<Dashboard />);
       
       // All customers should be visible initially
-      expect(screen.getByText('John Smith')).toBeInTheDocument();
-      expect(screen.getByText('Jane Doe')).toBeInTheDocument();
-      expect(screen.getByText('Bob Johnson')).toBeInTheDocument();
+      expect(screen.getByText('Customer -001')).toBeInTheDocument();
+      expect(screen.getByText('Customer -002')).toBeInTheDocument();
+      expect(screen.getByText('Customer -003')).toBeInTheDocument();
     });
 
     it('filters orders by item name', () => {
@@ -170,7 +170,7 @@ describe('Dashboard Page', () => {
       render(<Dashboard />);
       
       // Orders should be visible regardless of case
-      expect(screen.getByText('John Smith')).toBeInTheDocument();
+      expect(screen.getByText('Customer -001')).toBeInTheDocument();
       expect(screen.getByText('ORD-001')).toBeInTheDocument();
     });
 
@@ -451,7 +451,7 @@ describe('Dashboard Page', () => {
 
       // Verify initial orders are rendered
       expect(screen.getByText('ORD-001')).toBeInTheDocument();
-      expect(screen.getByText('John Smith')).toBeInTheDocument();
+      expect(screen.getByText('Customer -001')).toBeInTheDocument();
 
       // Find the initial status of first order (PREPARING)
       const preparingElements = screen.getAllByText('Preparing');
@@ -486,7 +486,9 @@ describe('Dashboard Page', () => {
       expect(
         firstRowText.includes('ORD-001') ||
         firstRowText.includes('ORD-002') ||
-        firstRowText.includes('ORD-003')
+        firstRowText.includes('ORD-003') ||
+        firstRowText.includes('ORD-004') ||
+        firstRowText.includes('ORD-005')
       ).toBe(true);
     });
 

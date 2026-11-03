@@ -74,7 +74,7 @@ describe('Header Component', () => {
 
   it('renders theme toggle button', () => {
     render(<Header />);
-    const themeToggle = screen.getByLabelText(/toggle light\/dark theme/i);
+    const themeToggle = screen.getByLabelText(/switch to (light|dark) theme/i);
     expect(themeToggle).toBeInTheDocument();
   });
 
@@ -82,7 +82,7 @@ describe('Header Component', () => {
     const onThemeToggle = vi.fn();
     render(<Header onThemeToggle={onThemeToggle} />);
     
-    const themeToggle = screen.getByLabelText(/toggle light\/dark theme/i);
+    const themeToggle = screen.getByLabelText(/switch to (light|dark) theme/i);
     fireEvent.click(themeToggle);
     
     expect(onThemeToggle).toHaveBeenCalled();
@@ -90,13 +90,13 @@ describe('Header Component', () => {
 
   it('renders settings menu button', () => {
     render(<Header />);
-    const settingsButton = screen.getByLabelText('Settings menu');
+    const settingsButton = screen.getByLabelText('Open settings menu');
     expect(settingsButton).toBeInTheDocument();
   });
 
   it('opens and closes settings menu', async () => {
     render(<Header />);
-    const settingsButton = screen.getByLabelText('Settings menu');
+    const settingsButton = screen.getByLabelText('Open settings menu');
     
     // Open menu
     fireEvent.click(settingsButton);
@@ -111,7 +111,7 @@ describe('Header Component', () => {
 
   it('renders menu toggle for mobile', () => {
     render(<Header />);
-    const menuToggle = screen.getByLabelText('Toggle menu');
+    const menuToggle = screen.getByLabelText('Toggle navigation menu');
     expect(menuToggle).toBeInTheDocument();
   });
 
@@ -119,7 +119,7 @@ describe('Header Component', () => {
     const onMenuToggle = vi.fn();
     render(<Header onMenuToggle={onMenuToggle} />);
     
-    const menuToggle = screen.getByLabelText('Toggle menu');
+    const menuToggle = screen.getByLabelText('Toggle navigation menu');
     fireEvent.click(menuToggle);
     
     expect(onMenuToggle).toHaveBeenCalled();
