@@ -10,7 +10,7 @@ Detailed per-task reports were removed; git history keeps them.
 | 1.1 Project setup | Vite 5 + React + TypeScript (strict) + Tailwind + Vitest + ESLint; dev server on :5173 |
 | 1.2–1.7 / 2.x / 3.x / 4–5 Foundations | Types, API client + mocking, test infra; Layout (280 px sidebar desktop, 80 px tablet, drawer mobile), Header (300 ms debounced search, notification badge, theme toggle, settings), Sidebar (7 items, profile, collapse), React Router v6 (7 routes), Dashboard page (summary cards, TanStack Table v8 orders table with sort/pagination, skeleton, status badges), ThemeToggle |
 | 6.1 / 6.3 / 6.4 Search & filters | Debounced header search, `DateRangeFilter` (presets + custom), filters integrated with the table (76 + 27 + dedicated integration tests) |
-| 7.2 / 7.4 Real-time | `useOrderUpdates` over `useSSE` (dedupe by id, keeps sort/pagination); 53 integration + 22 property-based tests |
+| 7.2 / 7.4 Real-time | `useOrderUpdates` / `useOrderPolling` hooks (since removed: the dashboard now reloads from the API on SSE events via `useDashboardOrders`) |
 | 8.1 Semantic HTML & ARIA | `header[role=banner]`, `nav`, `main#main-content`, `role=search`, labelled controls, `aria-expanded/haspopup`, live regions |
 | 8.2 Keyboard navigation | 32 unit + 39 integration tests; integration suite initially 28/39 (missing Router context), fixed to 39/39 |
 | 8.3 Screen reader | 7 of 10 criteria met; **open gaps** (aria-sort, skip link, aria-current, live regions, headings) listed in [UI_QUALITY.md](UI_QUALITY.md) |

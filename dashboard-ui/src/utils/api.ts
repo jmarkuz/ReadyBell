@@ -35,7 +35,16 @@ export type RequestInterceptor = (config: RequestConfig) => RequestConfig | Prom
 /**
  * Response interceptor type definition
  */
-export type ResponseInterceptor = (response: Response) => Response | Promise<Response>;
+/** The request a response belongs to, so interceptors can replay it faithfully (method, headers, body). */
+export interface RequestContext {
+  url: string;
+  init: RequestInit;
+}
+
+export type ResponseInterceptor = (
+  response: Response,
+  context?: RequestContext,
+) => Response | Promise<Response>;
 
 /**
  * Error interceptor type definition
@@ -144,7 +153,7 @@ export class ApiClient {
    * - Handles edge cases: multiple simultaneous 401s via request queue
    */
   private setupDefaultResponseInterceptor(): void {
-    this.addResponseInterceptor(async (response: Response) => {
+    this.addResponseInterceptor(async (response: Response, context?: RequestContext) => {
       // Only handle 401 Unauthorized responses
       if (response.status !== 401) {
         return response;
@@ -211,24 +220,19 @@ export class ApiClient {
         console.debug('[API] Response interceptor: Token refresh successful, retrying original request');
         
         // Create a new request with the same URL, method, and body, but with updated Authorization header
-        const url = response.url;
-        const contentType = response.headers.get('content-type');
-        
-        // Re-construct request options from the original response
-        let retryOptions: RequestInit = {
-          method: 'GET', // Default to GET
-          headers: {
-            'Content-Type': contentType || 'application/json',
-            'Authorization': `Bearer ${newToken}`,
-          },
-        };
+        // Replay the original request (same method, headers and body) with the new token.
+        // `context` is always provided by request(); the fallback only guards against direct callers.
+        const url = context?.url ?? response.url;
+        const retryOptions: RequestInit = context
+          ? {
+              ...context.init,
+              headers: { ...(context.init.headers as Record<string, string>), Authorization: `Bearer ${newToken}` },
+            }
+          : {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${newToken}` },
+            };
 
-        // Try to infer the original method from common patterns
-        // This is a limitation of the Response API - we don't have direct access to the original request
-        // In practice, most 401s come from GET/POST requests, and we'll retry as GET
-        // For mutation endpoints that need specific methods, applications should handle retry logic at that level
-        
-        // Retry the request
         const retryResponse = await fetch(url, retryOptions);
         return retryResponse;
       } else {
@@ -593,7 +597,7 @@ export class ApiClient {
 
       // Apply response interceptors in order
       for (const interceptor of this.responseInterceptors) {
-        response = await interceptor(response);
+        response = await interceptor(response, { url, init: options });
       }
 
       // Parse response body

@@ -402,5 +402,4 @@ See `useAuth.test.ts` for examples.
 ## Related Hooks
 
 - `useSSE`: Real-time order updates via Server-Sent Events
-- `useOrderUpdates`: Reactive order state management
-- `useOrderPolling`: Polling fallback for real-time updates
+- `useDashboardOrders`: Loads orders from the API and keeps them fresh (SSE signal + polling fallback)

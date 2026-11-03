@@ -71,6 +71,36 @@ describe('API client - auth endpoints and backend mapping', () => {
     expect(page.items[1].status).toBe('CREATED');
   });
 
+  it('after a token refresh the original request is replayed with its method and body', async () => {
+    const fakeJwt = (sub: string) => {
+      const payload = btoa(JSON.stringify({ sub, role: 'STAFF', tenant_id: 't-1', exp: Math.floor(Date.now() / 1000) + 3600 }))
+        .replace(/=+$/, '');
+      return `eyJhbGciOiJIUzI1NiJ9.${payload}.sig`;
+    };
+    const oldToken = fakeJwt('old');
+    const newToken = fakeJwt('new');
+    tokenManager.store(oldToken);
+
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      calls.push({ url, init });
+      if (url.endsWith('/api/auth/refresh')) return jsonResponse(200, { token: newToken }, '/api/auth/refresh');
+      const auth = (init?.headers as Record<string, string>).Authorization;
+      return auth === `Bearer ${newToken}`
+        ? jsonResponse(200, { id: 'o1', status: 'IN_PROGRESS', updatedAt: 'now' }, '/api/orders/o1/status')
+        : jsonResponse(401, { title: 'Unauthorized' }, '/api/orders/o1/status');
+    });
+
+    const result = await new ApiClient().updateOrderStatus('o1', 'IN_PROGRESS');
+
+    expect(result.status).toBe('IN_PROGRESS');
+    const retry = calls[calls.length - 1];
+    expect(retry.url).toMatch(/\/api\/orders\/o1\/status$/);
+    expect(retry.init?.method).toBe('PATCH');                       // was always GET before
+    expect(JSON.parse(String(retry.init?.body))).toEqual({ status: 'IN_PROGRESS' });
+    expect((retry.init?.headers as Record<string, string>).Authorization).toBe(`Bearer ${newToken}`);
+  });
+
   it('status names map both ways and leave other statuses alone', () => {
     expect(fromBackendStatus('IN_PROGRESS')).toBe('PREPARING');
     expect(fromBackendStatus('READY')).toBe('READY');

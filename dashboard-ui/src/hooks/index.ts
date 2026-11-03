@@ -9,8 +9,5 @@ export type { AuthState, AuthActions, UseAuthOptions } from './useAuth';
 export { useSSE } from './useSSE';
 export type { UseSSEOptions, UseSSEState } from './useSSE';
 
-export { useOrderUpdates } from './useOrderUpdates';
-export type { UseOrderUpdatesOptions, UseOrderUpdatesState } from './useOrderUpdates';
-
-export { useOrderPolling } from './useOrderPolling';
-export type { UseOrderPollingOptions, UseOrderPollingState } from './useOrderPolling';
+export { useDashboardOrders } from './useDashboardOrders';
+export type { UseDashboardOrdersState } from './useDashboardOrders';
