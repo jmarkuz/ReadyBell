@@ -128,3 +128,11 @@ Customer-facing endpoints are unauthenticated but scoped to a session; staff, ad
 ## Testing
 
 Domain and application logic is covered by JUnit 5 unit tests co-located under `src/test/java`, alongside jqwik for property-based testing. Correctness properties are defined in the [design document](.kiro/specs/restaurant-notification-platform/design.md) and each covers a specific behavioral guarantee derived from the requirements — for example, that session start always assigns the correct tenant and produces a distinct session identity, that invalid or incomplete subscription registrations are rejected without storing partial data, that order transitions only follow the allowed lifecycle graph, and that revoked or invalid subscriptions never receive further notifications. Each property-based test is tagged with the feature name and the property it validates, and is run for a minimum of 100 iterations.
+
+## Documentation
+
+- [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — local setup, running, testing, troubleshooting
+- [docs/API_INTEGRATION.md](docs/API_INTEGRATION.md) — dashboard ↔ backend endpoints, auth, errors, mocks
+- [docs/UI_QUALITY.md](docs/UI_QUALITY.md) — accessibility, contrast, responsive and performance reference
+- [docs/PROGRESS.md](docs/PROGRESS.md) — completed tasks and results
+- `docs/architecture`, `docs/product`, `docs/brand` — design and product docs; `.kiro/specs` — feature specs

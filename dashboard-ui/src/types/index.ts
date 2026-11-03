@@ -1,6 +1,6 @@
 /**
  * Core Types and Interfaces for Dashboard UI
- * Aligned with Backend API contracts from ALIGNMENT.md
+ * Aligned with Backend API contracts from the backend spec
  */
 
 import React from 'react';
@@ -50,7 +50,7 @@ export interface ThemeContextType {
 
 /**
  * OrderStatus - Backend enum values (exactly matching backend)
- * From ALIGNMENT.md: Backend defines OrderStatus as enum
+ * From the backend spec: Backend defines OrderStatus as enum
  */
 export type OrderStatus = 'CREATED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
 
@@ -200,7 +200,7 @@ export interface PaginatedResponse<T> {
 
 /**
  * ErrorResponse - RFC 7807 Problem+JSON format (backend error format)
- * From ALIGNMENT.md: Backend returns RFC 7807 problem+json
+ * From the backend spec: Backend returns RFC 7807 problem+json
  */
 export interface ErrorResponse {
   type: string;                 // e.g., "urn:readybell:orders:invalid-transition"

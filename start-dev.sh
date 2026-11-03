@@ -166,7 +166,7 @@ echo -e "  Reset database: dropdb readybell && createdb readybell"
 echo -e "  Clear Redis: redis-cli FLUSHALL"
 
 echo -e "\n${YELLOW}Documentation:${NC}"
-echo -e "  Full setup guide: ${GREEN}BACKEND_UI_SETUP.md${NC}"
-echo -e "  UI testing guide: ${GREEN}dashboard-ui/TESTING_GUIDE.md${NC}"
+echo -e "  Full setup guide: ${GREEN}docs/DEVELOPMENT.md${NC}"
+echo -e "  UI testing guide: ${GREEN}docs/DEVELOPMENT.md${NC}"
 
 echo -e "\n${GREEN}Ready to develop!${NC}\n"
