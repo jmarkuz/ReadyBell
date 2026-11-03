@@ -18,19 +18,19 @@ covered by jqwik property-based tests (≥100 iterations, tagged with the featur
 unit test sub-tasks are marked optional with `*`.
 
 Implementation language: **Java 21** (per the design and ADR-008). All code lives under the
-`com.example` package following the modular-monolith package layout in the design.
+`org.readybell` package following the modular-monolith package layout in the design.
 
 ## Tasks
 
 - [x] 1. Bootstrap the Spring Boot + Java 21 stack into the bare Gradle project
   - [x] 1.1 Convert the Gradle Kotlin DSL build to a Spring Boot application build
-    - Edit `build.gradle.kts`: apply the Spring Boot 3.x plugin and the Spring dependency-management plugin, set Java toolchain to 21, change `group` to `com.example`
+    - Edit `build.gradle.kts`: apply the Spring Boot 3.x plugin and the Spring dependency-management plugin, set Java toolchain to 21, change `group` to `org.readybell`
     - Add dependencies: `spring-boot-starter-web`, `spring-boot-starter-validation`, `spring-boot-starter-security`, `spring-boot-starter-data-jpa`, `spring-boot-starter-data-redis`, `spring-boot-starter-actuator`, PostgreSQL driver (runtime), a Web Push/VAPID library
     - Add test dependencies: `spring-boot-starter-test`, JUnit 5 (BOM already present), and `net.jqwik:jqwik` with the jqwik JUnit 5 engine; keep `useJUnitPlatform()`
     - _Requirements: 11 (broker-swappable eventing stack), 12.1 (bootable stateless app); ADR-008_
 
   - [x] 1.2 Replace the placeholder entry point and create the modular-monolith package skeleton
-    - Delete `org.example.Main`; create `com.example.ReadyBellApplication` with `@SpringBootApplication`
+    - Delete `org.example.Main`; create `org.readybell.ReadyBellApplication` with `@SpringBootApplication`
     - Create the top-level context packages (`shared`, `session`, `ordering`, `notification`, `subscription`, `restaurant`, `platformadmin`, `platform`) each with the hexagonal sub-package shape (`domain`, `application`, `adapter.in.web`, `adapter.out.persistence`) as described in the design
     - Add a base `application.yml` for datasource, Redis, and Actuator liveness/readiness probes
     - _Requirements: 12.1, 12.4; ADR-001, ADR-008_

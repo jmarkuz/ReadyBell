@@ -184,7 +184,7 @@ export class TokenManager {
    * Check if token is expired
    * 
    * @param decodedToken - Decoded JWT payload
-   * @returns true if token is expired, false otherwise
+   * @returns true if token is expired or expires within 30 seconds, false otherwise
    */
   private isTokenExpired(decodedToken: DecodedToken): boolean {
     if (!decodedToken.exp) {
@@ -196,8 +196,9 @@ export class TokenManager {
     const expiryTime = decodedToken.exp * 1000;
     const currentTime = Date.now();
     
-    // Consider token expired if current time is >= expiry time
-    const isExpired = currentTime >= expiryTime;
+    // Consider token expired if it expires within 30 seconds (grace period)
+    const gracePeriod = 30 * 1000;
+    const isExpired = currentTime >= (expiryTime - gracePeriod);
 
     return isExpired;
   }

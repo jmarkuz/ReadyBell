@@ -82,7 +82,7 @@ Each bounded context is a top-level module package with the same internal hexago
 The shared kernel holds only cross-context primitives (`TenantId`, `DomainEvent`, base types).
 
 ```
-com.example
+org.readybell
 ├── shared                     # shared kernel: TenantId, DomainEvent, base value objects
 │   ├── domain
 │   └── tenancy                # TenantContext holder + Tenant_Context_Filter support
@@ -862,7 +862,7 @@ reject; verified by Property 16.
 existing Gradle Kotlin DSL build (currently only the `java` plugin + JUnit). **Context.** The
 requirements mandate this stack; the project is greenfield. **Consequences.** Build gains the
 Spring dependency management plugin and a bootable application; the placeholder
-`com.example.Main` is replaced by an `com.example` Spring application entry point.
+`org.readybell.Main` is replaced by an `org.readybell` Spring application entry point.
 
 ### ADR-009: API-first with SSE for live updates, Web Push for background
 
