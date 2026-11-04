@@ -113,13 +113,13 @@ export default memo(function IncomingOrdersTable({
   // Sorting logic - memoized for performance
   const sortedOrders = useMemo(() => {
     const sorted = [...orders].sort((a, b) => {
-      let compareA: any = a[sortField];
-      let compareB: any = b[sortField];
+      let compareA: string | number | Date | null | undefined = a[sortField];
+      let compareB: string | number | Date | null | undefined = b[sortField];
 
       if (sortField === 'deliveryETA') {
         // Orders without an ETA sort last in ascending order
-        compareA = compareA ? compareA.getTime() : Number.MAX_SAFE_INTEGER;
-        compareB = compareB ? compareB.getTime() : Number.MAX_SAFE_INTEGER;
+        compareA = compareA instanceof Date ? compareA.getTime() : Number.MAX_SAFE_INTEGER;
+        compareB = compareB instanceof Date ? compareB.getTime() : Number.MAX_SAFE_INTEGER;
       } else if (sortField === 'status') {
         // Sort by status priority
         const statusPriority: Record<string, number> = {
@@ -129,10 +129,11 @@ export default memo(function IncomingOrdersTable({
           COMPLETED: 4,
           CANCELLED: 5,
         };
-        compareA = statusPriority[compareA] || 99;
-        compareB = statusPriority[compareB] || 99;
+        compareA = statusPriority[String(compareA)] || 99;
+        compareB = statusPriority[String(compareB)] || 99;
       }
 
+      if (compareA == null || compareB == null) return 0;
       if (compareA < compareB) return sortOrder === 'asc' ? -1 : 1;
       if (compareA > compareB) return sortOrder === 'asc' ? 1 : -1;
       return 0;

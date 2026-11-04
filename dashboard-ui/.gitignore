@@ -34,3 +34,6 @@ pnpm-debug.log
 .cache
 .parcel-cache
 .turbo
+
+# Test coverage output
+coverage
