@@ -5,6 +5,7 @@ import org.readybell.shared.domain.TenantId;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.Instant;
 
 /**
  * Repository port for {@link Order} aggregates.
@@ -82,5 +83,5 @@ public interface OrderRepository {
      * Returns the tenant's orders created or updated at or after {@code since}, newest update first,
      * capped at {@code limit}. A {@code null} {@code since} returns the most recently updated orders.
      */
-    List<Order> findUpdatedSince(TenantId tenantId, java.time.Instant since, int limit);
+    List<Order> findUpdatedSince(TenantId tenantId, Instant since, int limit);
 }

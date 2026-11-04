@@ -1,4 +1,4 @@
-package org.readybell.session.adapter.in.web;
+package org.readybell.ordering.adapter.in.web;
 
 import org.readybell.ordering.domain.Order;
 

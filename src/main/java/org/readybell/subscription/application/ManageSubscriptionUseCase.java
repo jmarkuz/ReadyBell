@@ -1,6 +1,5 @@
 package org.readybell.subscription.application;
 
-import org.readybell.notification.domain.NotificationSender;
 import org.readybell.subscription.domain.PushEndpoint;
 import org.readybell.shared.domain.TenantId;
 import org.readybell.subscription.domain.DeviceSubscription;
@@ -59,7 +58,7 @@ public interface ManageSubscriptionUseCase {
      * (Req 3.6).
      *
      * <p>Called internally by the notification flow when the
-     * {@link NotificationSender} reports that the
+     * {@code NotificationSender} reports that the
      * endpoint is expired or invalid. Skips the tenant verification because the caller is
      * the platform itself rather than an external request.
      *

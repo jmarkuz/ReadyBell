@@ -1,8 +1,11 @@
 package org.readybell.platformadmin.application;
 
+import org.readybell.restaurant.application.RestaurantNotFoundException;
 import org.readybell.restaurant.domain.Restaurant;
 import org.readybell.restaurant.domain.RestaurantConfig;
 import org.readybell.shared.domain.TenantId;
+
+import java.util.List;
 
 /**
  * Inbound port for Platform Admin tenant-management operations.
@@ -56,4 +59,7 @@ public interface PlatformAdminUseCase {
      * @throws RestaurantNotFoundException if no restaurant exists with the given {@code tenantId}
      */
     Restaurant deactivateRestaurant(TenantId tenantId);
+
+    /** Every restaurant on the platform, ordered by identifier. */
+    List<Restaurant> listRestaurants();
 }

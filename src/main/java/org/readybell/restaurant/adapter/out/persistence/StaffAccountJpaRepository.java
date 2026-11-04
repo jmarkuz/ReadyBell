@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 
 /**
  * Spring Data JPA repository for {@link StaffAccountJpaEntity}.
@@ -35,5 +36,5 @@ public interface StaffAccountJpaRepository
 
     Optional<StaffAccountJpaEntity> findByUsername(String username);
 
-    java.util.List<StaffAccountJpaEntity> findByTenantIdOrderByUsernameAsc(UUID tenantId);
+    List<StaffAccountJpaEntity> findByTenantIdOrderByUsernameAsc(UUID tenantId);
 }

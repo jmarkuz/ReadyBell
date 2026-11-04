@@ -43,3 +43,9 @@ bin/
 .DS_Store
 # Local secrets
 .env
+
+# IDE and generated files
+.idea/
+.vscode/
+.jqwik-database
+*.tsbuildinfo

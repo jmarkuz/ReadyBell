@@ -1,8 +1,7 @@
 package org.readybell.restaurant.adapter.in.web;
 
-import org.readybell.restaurant.application.RestaurantNotFoundException;
-import org.readybell.restaurant.domain.RestaurantRepository;
-import org.readybell.shared.domain.TenantId;
+import org.readybell.restaurant.application.RestaurantAdminUseCase;
+import org.readybell.restaurant.domain.Restaurant;
 import org.readybell.shared.tenancy.TenantContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,17 +12,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/restaurant")
 public class RestaurantProfileController {
 
-    private final RestaurantRepository restaurants;
+    private final RestaurantAdminUseCase restaurants;
 
-    public RestaurantProfileController(RestaurantRepository restaurants) {
+    public RestaurantProfileController(RestaurantAdminUseCase restaurants) {
         this.restaurants = restaurants;
     }
 
     @GetMapping
     public Profile profile() {
-        TenantId tenantId = TenantContextHolder.require();
-        var restaurant = restaurants.findByTenantId(tenantId)
-                .orElseThrow(() -> new RestaurantNotFoundException(tenantId));
+        Restaurant restaurant = restaurants.getRestaurant(TenantContextHolder.require());
         return new Profile(restaurant.getConfig().name(), restaurant.getIdentifier());
     }
 

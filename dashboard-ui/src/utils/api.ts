@@ -480,14 +480,6 @@ export class ApiClient {
   }
 
   /**
-   * Get authorization token from TokenManager
-   * @deprecated Use tokenManager.get() directly
-   */
-  private getAuthToken(): string | null {
-    return tokenManager.get();
-  }
-
-  /**
    * Build request headers with default headers
    * Note: Bearer token is injected by request interceptor, not here
    */
@@ -628,11 +620,6 @@ export class ApiClient {
         response = await interceptor(response, { url, init: options });
       }
 
-      // 304 Not Modified (ETag polling): nothing changed, there is no body
-      if (response.status === 304) {
-        return null as T;
-      }
-
       // Parse response body
       let data: unknown;
       const contentType = response.headers.get('content-type');
@@ -716,7 +703,7 @@ export class ApiClient {
   }
 
   // ============================================================================
-  // PHASE 1: ORDER MANAGEMENT ENDPOINTS
+  // ORDER MANAGEMENT ENDPOINTS
   // ============================================================================
 
   /**
@@ -805,124 +792,6 @@ export class ApiClient {
     return this.delete('/api/dev/test-data');
   }
 
-  /**
-   * Setup EventSource for real-time order updates
-   * GET /api/orders/stream (Server-Sent Events)
-   * 
-   * Events:
-   * - OrderCreated
-   * - OrderStatusUpdated
-   * - OrderReady
-   */
-  setupSSE(
-    onMessage: (event: OrderUpdateEvent) => void,
-    onError: (error: Error) => void
-  ): () => void {
-    // Note: Token authentication for EventSource requires backend support for token in URL or CORS headers
-    // Use fetch-based SSE instead of EventSource API for better control
-    const token = this.getAuthToken();
-    if (!token) {
-      onError(new Error('No authentication token available'));
-      return () => {};
-    }
-
-    // Use fetch with ReadableStream for SSE with Bearer token support
-    const controller = new AbortController();
-
-    const startSSE = async () => {
-      try {
-        // Prepare headers with Bearer token for SSE connection
-        const headers = {
-          ...this.getHeaders(),
-          'Authorization': `Bearer ${token}`,
-        } as HeadersInit;
-
-        const response = await fetch(`${this.baseURL}/api/orders/stream`, {
-          headers,
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`SSE connection failed: ${response.status}`);
-        }
-
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error('Failed to get response reader');
-        }
-
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-
-          // Process complete lines
-          for (let i = 0; i < lines.length - 1; i++) {
-            const line = lines[i].trim();
-
-            if (line.startsWith('event:')) {
-              const eventType = line.slice(6).trim();
-              const dataLine = lines[i + 1];
-              if (dataLine?.startsWith('data:')) {
-                const dataStr = dataLine.slice(5).trim();
-                try {
-                  const data = JSON.parse(dataStr);
-                  onMessage({
-                    type: eventType as 'OrderCreated' | 'OrderStatusUpdated' | 'OrderReady',
-                    ...data,
-                  });
-                } catch (error) {
-                  console.error('Failed to parse SSE data:', error);
-                }
-              }
-              i++; // Skip the data line
-            }
-          }
-
-          // Keep incomplete line in buffer
-          buffer = lines[lines.length - 1];
-        }
-      } catch (error) {
-        if (error instanceof Error && error.name !== 'AbortError') {
-          onError(error);
-        }
-      }
-    };
-
-    startSSE();
-
-    // Return cleanup function
-    return () => controller.abort();
-  }
-
-  /**
-   * Polling fallback: Get orders updated since last fetch
-   * GET /api/orders/poll?since=2024-01-15T10:00:00Z&eTag=abc123
-   * 
-   * Returns 304 Not Modified if ETag matches (no change)
-   */
-  async pollOrders(params?: {
-    since?: Date;
-    eTag?: string;
-  }): Promise<{ orders: OrderRow[]; eTag: string }> {
-    const queryParams = new URLSearchParams();
-    if (params?.since) queryParams.append('since', params.since.toISOString());
-    if (params?.eTag) queryParams.append('eTag', params.eTag);
-
-    const queryString = queryParams.toString();
-    const endpoint = `/api/orders/poll${queryString ? '?' + queryString : ''}`;
-
-    const result = await this.get<{ orders: RawOrderRow[]; eTag: string } | null>(endpoint);
-    // null = 304 Not Modified: same ETag, no changes
-    if (!result) return { orders: [], eTag: params?.eTag ?? '' };
-    return { orders: result.orders.map(normalizeOrderRow), eTag: result.eTag };
-  }
-
   // ============================================================================
   // AUTHENTICATION ENDPOINTS
   // ============================================================================
@@ -994,7 +863,7 @@ export class ApiClient {
   }
 
   // ============================================================================
-  // PHASE 2: RESTAURANT STAFF ADMIN ENDPOINTS
+  // RESTAURANT STAFF ADMIN ENDPOINTS
   // ============================================================================
 
   /**
@@ -1067,17 +936,6 @@ export class ApiClient {
   }
 
   /**
-   * Rename a restaurant (PLATFORM_ADMIN only)
-   * PUT /api/platform/restaurants/{tenantId}
-   */
-  async updateRestaurant(
-    tenantId: string,
-    data: { name: string }
-  ): Promise<RestaurantInfo> {
-    return this.put(`/api/platform/restaurants/${tenantId}`, data);
-  }
-
-  /**
    * Deactivate a restaurant (PLATFORM_ADMIN only)
    * DELETE /api/platform/restaurants/{tenantId}
    */
@@ -1087,44 +945,6 @@ export class ApiClient {
     return this.delete(`/api/platform/restaurants/${tenantId}`);
   }
 
-  /**
-   * Start a customer session from a QR token (the restaurant identifier). Public endpoint.
-   * POST /api/sessions
-   */
-  async startCustomerSession(
-    qrToken: string
-  ): Promise<{ sessionId: string; status: string; startedAt: string }> {
-    return this.post('/api/sessions', { qrToken });
-  }
-
-  /**
-   * Orders of a customer session (id + status each)
-   * GET /api/sessions/{sessionId}/orders
-   */
-  async getCustomerSessionOrders(
-    sessionId: string
-  ): Promise<Array<{ orderId: string; status: string }>> {
-    return this.get(`/api/sessions/${sessionId}/orders`);
-  }
-
-  /**
-   * Register a Web Push subscription for a session
-   * POST /api/sessions/{sessionId}/subscriptions
-   */
-  async registerDeviceSubscription(
-    sessionId: string,
-    subscription: { endpointUrl: string; p256dhKey: string; authKey: string }
-  ): Promise<{ subscriptionId: string; sessionId: string }> {
-    return this.post(`/api/sessions/${sessionId}/subscriptions`, subscription);
-  }
-
-  /**
-   * Revoke a Web Push subscription
-   * DELETE /api/sessions/{sessionId}/subscriptions/{subscriptionId}
-   */
-  async revokeDeviceSubscription(sessionId: string, subscriptionId: string): Promise<void> {
-    await this.delete(`/api/sessions/${sessionId}/subscriptions/${subscriptionId}`);
-  }
 }
 
 /**
@@ -1141,19 +961,6 @@ export class ApiError extends Error {
     this.statusCode = statusCode;
     this.displayError = displayError;
   }
-}
-
-/**
- * Order Update Event from SSE stream
- */
-export interface OrderUpdateEvent {
-  type: 'OrderStatusUpdated' | 'OrderCreated' | 'OrderReady';
-  orderId?: string;
-  status?: string;
-  updatedAt?: Date | string;
-  createdAt?: Date | string;
-  customerName?: string;
-  previousStatus?: string;
 }
 
 /**

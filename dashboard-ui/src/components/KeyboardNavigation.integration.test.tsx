@@ -26,7 +26,7 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import IncomingOrdersTable from './IncomingOrdersTable';
 import Layout from './Layout';
-import { mockOrderData, generateMockOrders } from '@/mocks/mockData';
+import { mockOrderData, generateMockOrders } from '@/test/mockData';
 
 describe('4.1 Keyboard Navigation - Full Dashboard', () => {
   /**

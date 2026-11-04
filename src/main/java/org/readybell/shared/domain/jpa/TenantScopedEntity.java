@@ -1,6 +1,5 @@
 package org.readybell.shared.domain.jpa;
 
-import org.readybell.restaurant.adapter.out.persistence.RestaurantJpaEntity;
 import org.readybell.shared.domain.TenantId;
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
@@ -28,7 +27,7 @@ import java.util.UUID;
  * {@link #tenantId} with the request-scoped tenant from {@link TenantContextHolder}
  * before any new entity row is committed, so tenant-scoped records always carry the
  * correct tenant discriminator (Req 10.6). If a {@code tenantId} was already set
- * (e.g., for the {@link RestaurantJpaEntity}
+ * (e.g., for the {@code RestaurantJpaEntity}
  * whose PK is the {@code tenant_id}), the field is left unchanged.
  *
  * <h3>ADR-004</h3>

@@ -44,9 +44,4 @@ describe('API client - error bodies and ETag polling', () => {
       displayError: { type: 'unknown' },
     });
   });
-
-  it('pollOrders returns an empty change set on 304 Not Modified', async () => {
-    fetchMock.mockResolvedValue(response(304, null, ''));
-    await expect(new ApiClient().pollOrders({ eTag: '"abc"' })).resolves.toEqual({ orders: [], eTag: '"abc"' });
-  });
 });

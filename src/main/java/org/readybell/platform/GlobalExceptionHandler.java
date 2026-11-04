@@ -39,6 +39,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.readybell.ordering.adapter.in.web.SessionUnknownException;
 
 /**
  * Global exception handler that maps application exceptions to RFC 7807
@@ -142,9 +143,9 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(org.readybell.session.adapter.in.web.SessionUnknownException.class)
+    @ExceptionHandler(SessionUnknownException.class)
     public ResponseEntity<Map<String, Object>> handleSessionUnknown(
-            org.readybell.session.adapter.in.web.SessionUnknownException ex) {
+            SessionUnknownException ex) {
         return problem(
                 HttpStatus.NOT_FOUND,
                 "https://readybell.org/problems/session-not-found",

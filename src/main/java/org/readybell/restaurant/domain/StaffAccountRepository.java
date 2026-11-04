@@ -3,6 +3,7 @@ package org.readybell.restaurant.domain;
 import org.readybell.shared.domain.TenantId;
 
 import java.util.Optional;
+import java.util.List;
 
 /**
  * Repository port for {@link StaffAccount} aggregates.
@@ -67,5 +68,5 @@ public interface StaffAccountRepository {
     Optional<StaffAccount> findByUsername(String username);
 
     /** All accounts of the tenant, oldest username first. */
-    java.util.List<StaffAccount> findAllByTenant(TenantId tenantId);
+    List<StaffAccount> findAllByTenant(TenantId tenantId);
 }

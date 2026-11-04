@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -50,12 +51,9 @@ public class RestaurantAdminController {
     private final RestaurantAdminUseCase adminUseCase;
 
     private final PasswordEncoder passwordEncoder;
-    private final org.readybell.restaurant.domain.StaffAccountRepository staffAccounts;
 
-    public RestaurantAdminController(RestaurantAdminUseCase adminUseCase, PasswordEncoder passwordEncoder,
-                                     org.readybell.restaurant.domain.StaffAccountRepository staffAccounts) {
+    public RestaurantAdminController(RestaurantAdminUseCase adminUseCase, PasswordEncoder passwordEncoder) {
         this.adminUseCase = adminUseCase;
-        this.staffAccounts = staffAccounts;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -71,9 +69,9 @@ public class RestaurantAdminController {
      */
     /** Staff accounts of the caller's restaurant (RESTAURANT_ADMIN). */
     @GetMapping("/staff")
-    public java.util.List<StaffAccountResponse> listStaff() {
+    public List<StaffAccountResponse> listStaff() {
         TenantId tenantId = TenantContextHolder.require();
-        return staffAccounts.findAllByTenant(tenantId).stream().map(StaffAccountResponse::from).toList();
+        return adminUseCase.listStaffAccounts(tenantId).stream().map(StaffAccountResponse::from).toList();
     }
 
     @PostMapping("/staff")

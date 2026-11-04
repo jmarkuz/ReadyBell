@@ -7,6 +7,8 @@ import org.readybell.restaurant.domain.StaffAccount;
 import org.readybell.restaurant.domain.StaffAccountId;
 import org.readybell.shared.domain.TenantId;
 
+import java.util.List;
+
 /**
  * Inbound port (use case) for Restaurant Admin operations (Req 8.3–8.8).
  *
@@ -57,4 +59,10 @@ public interface RestaurantAdminUseCase {
      * @throws RestaurantNotFoundException if no restaurant exists for the given tenant (Req 8.8)
      */
     Restaurant updateRestaurantConfig(TenantId tenantId, RestaurantConfig config);
+
+    /** The tenant's own restaurant (name and identifier for the dashboard). */
+    Restaurant getRestaurant(TenantId tenantId);
+
+    /** All staff accounts of the tenant. */
+    List<StaffAccount> listStaffAccounts(TenantId tenantId);
 }

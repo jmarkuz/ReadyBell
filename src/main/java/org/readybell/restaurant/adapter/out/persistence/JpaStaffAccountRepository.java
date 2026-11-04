@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.List;
 
 /**
  * JPA adapter implementing the {@link StaffAccountRepository} port.
@@ -71,7 +72,7 @@ public class JpaStaffAccountRepository implements StaffAccountRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public java.util.List<StaffAccount> findAllByTenant(TenantId tenantId) {
+    public List<StaffAccount> findAllByTenant(TenantId tenantId) {
         enableTenantFilter(tenantId);
         return springRepo.findByTenantIdOrderByUsernameAsc(tenantId.value()).stream()
                 .map(StaffAccountJpaEntity::toDomain).toList();
