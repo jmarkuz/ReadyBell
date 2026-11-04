@@ -1,3 +1,5 @@
+import colors from 'tailwindcss/colors';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: 'class',
@@ -7,7 +9,29 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"EB Garamond"', 'Waldenburg', '"Times New Roman"', 'serif'],
+      },
+      borderRadius: {
+        lg: '1rem',
+      },
       colors: {
+        // Warm neutrals replace the cool slate scale
+        slate: colors.stone,
+        // "blue" is the old brand hue; remap it to the ink scale (no saturated CTA colour)
+        blue: {
+          50: '#f0efed',
+          100: '#e7e5e4',
+          200: '#d6d3d1',
+          300: '#a8a29e',
+          400: '#d6d3d1',
+          500: '#44403c',
+          600: '#292524',
+          700: '#0c0a09',
+          800: '#1c1917',
+          900: '#1c1917',
+        },
         primary: 'var(--color-primary)',
         secondary: 'var(--color-secondary)',
         accent: 'var(--color-accent)',

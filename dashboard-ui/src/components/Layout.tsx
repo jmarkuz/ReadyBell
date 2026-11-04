@@ -28,7 +28,7 @@ export default function Layout({ children }: LayoutProps) {
   const { setQuery } = useSearch();
 
   return (
-    <div className="flex h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50">
+    <div className="flex h-screen bg-[#f5f5f5] dark:bg-slate-950 text-slate-900 dark:text-slate-50">
       {/* Sidebar - Hidden on mobile, toggleable on tablet, always visible on desktop */}
       <aside
         className={`
@@ -63,7 +63,7 @@ export default function Layout({ children }: LayoutProps) {
         </header>
 
         {/* Main Content Area - Scrollable independently */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950" id="main-content">
+        <main className="atmosphere flex-1 overflow-y-auto bg-[#f5f5f5] dark:bg-slate-950" id="main-content">
           <div className="container mx-auto px-4 py-8 max-w-7xl">
             {/* If children provided, render them; otherwise use React Router Outlet */}
             {children || <Outlet />}

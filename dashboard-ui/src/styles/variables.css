@@ -5,18 +5,18 @@
   /* Light mode defaults */
   
   /* Primary colors (Professional blue) */
-  --color-primary: #0066CC;
-  --color-secondary: #5A95FF;    /* Even darker to ensure 3:1 contrast */
-  --color-accent: #CC4A1E;       /* Further darkened for better contrast */
+  --color-primary: #292524;
+  --color-secondary: #777169;
+  --color-accent: #292524;
   
   /* Background & Surfaces */
-  --color-bg: #FFFFFF;
-  --color-surface: #F8F9FA;
-  --color-border: #E0E0E0;
+  --color-bg: #F5F5F5;
+  --color-surface: #FFFFFF;
+  --color-border: #E7E5E4;
   
   /* Text Colors (WCAG AA compliant) */
-  --text-primary: #1A1A1A;       /* 21:1 contrast on white */
-  --text-secondary: #666666;     /* 5.7:1 contrast on white */
+  --text-primary: #0C0A09;       /* 21:1 contrast on white */
+  --text-secondary: #4E4E4E;
   --text-muted: #666666;         /* Further darkened to ensure 4.5:1 (5.7:1 contrast on white) */
   --text-inverse: #FFFFFF;       /* On dark backgrounds */
   
@@ -24,13 +24,24 @@
   --status-success: #0B855C;     /* Further darkened green for better contrast */
   --status-warning: #B45309;     /* Further darkened amber for better contrast */
   --status-error: #DC2626;       /* Darker red for better contrast (4.6:1 on white) */
-  --status-info: #2563EB;        /* Darker blue for better contrast (5.1:1 on white) */
+  --status-info: #292524;
   
   /* Shadows (for light theme) */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.04);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
   
+  /* Atmospheric gradient stops (decoration only) */
+  --gradient-mint: #A7E5D3;
+  --gradient-peach: #F4C5A8;
+  --gradient-lavender: #C8B8E0;
+  --gradient-sky: #A8C8E8;
+  --gradient-rose: #E8B8C4;
+
+  /* Typography */
+  --font-display: 'EB Garamond', 'Waldenburg', 'Times New Roman', serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
   /* Spacing Scale */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
@@ -43,26 +54,26 @@
 [data-theme="dark"],
 .dark {
   /* Primary colors (Brighter blue for dark) */
-  --color-primary: #60A5FA;
-  --color-secondary: #5D7BCF;    /* Further lightened to ensure 3:1 contrast on borders */
-  --color-accent: #FF8A50;
+  --color-primary: #F5F5F4;
+  --color-secondary: #A8A29E;
+  --color-accent: #F5F5F4;
   
   /* Background & Surfaces */
-  --color-bg: #0F1419;
-  --color-surface: #1A202C;
-  --color-border: #374151;
+  --color-bg: #0C0A09;
+  --color-surface: #1C1917;
+  --color-border: #44403C;
   
   /* Text Colors (WCAG AA compliant) */
-  --text-primary: #F3F4F6;       /* 12.5:1 contrast on #0F1419 */
-  --text-secondary: #D1D5DB;     /* 9.2:1 contrast on #0F1419 */
-  --text-muted: #9CA3AF;         /* 7:1 contrast on #0F1419 */
+  --text-primary: #FAFAF9;       /* 12.5:1 contrast on #0F1419 */
+  --text-secondary: #D6D3D1;     /* 9.2:1 contrast on #0F1419 */
+  --text-muted: #A8A29E;         /* 7:1 contrast on #0F1419 */
   --text-inverse: #1A1A1A;       /* On light backgrounds */
   
   /* Status Colors (Bright for dark background) */
   --status-success: #34D399;     /* Bright green */
   --status-warning: #FBBF24;     /* Bright amber */
   --status-error: #F87171;       /* Bright red */
-  --status-info: #60A5FA;        /* Bright blue */
+  --status-info: #E7E5E4;
   
   /* Shadows (stronger for dark theme) */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -80,9 +91,8 @@ html {
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-body);
+  letter-spacing: 0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

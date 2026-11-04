@@ -25,13 +25,13 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+    <div className="flex items-center justify-center min-h-screen bg-[#f5f5f5] atmosphere">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md p-8 bg-white rounded-lg shadow-xl space-y-4"
+        className="w-full max-w-md p-8 bg-white rounded-xl border border-slate-200 shadow-md space-y-4"
         aria-labelledby="login-heading"
       >
-        <h1 id="login-heading" className="text-2xl font-bold text-center text-slate-900 mb-4">
+        <h1 id="login-heading" className="text-3xl text-center text-slate-900 mb-4">
           ReadyBell Dashboard
         </h1>
 
@@ -75,7 +75,7 @@ export default function Login() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="w-full h-10 px-5 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 disabled:opacity-60 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>

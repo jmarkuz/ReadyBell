@@ -275,7 +275,7 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
             <button
               onClick={handleApply}
               disabled={!startDate || !endDate || !isValidDateRange}
-              className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors
+              className={`flex-1 px-3 py-2 rounded-full text-sm font-medium transition-colors
                 ${
                   startDate && endDate && isValidDateRange
                     ? 'bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 cursor-pointer'
