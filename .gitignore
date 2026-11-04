@@ -49,3 +49,7 @@ bin/
 .vscode/
 .jqwik-database
 *.tsbuildinfo
+
+### Playwright ###
+dashboard-ui/playwright-report/
+dashboard-ui/test-results/
