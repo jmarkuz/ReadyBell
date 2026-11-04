@@ -30,6 +30,31 @@ remembered per browser.
 
 ![ReadyBell staff dashboard, dark theme](docs/screenshots/dashboard-dark.png)
 
+**Entering an order.** Staff press **New order**, type the customer's name (optional), the items with their
+quantities and how many minutes until it is ready, then **Create order**. No customer session is needed up front: the
+server starts one together with the order.
+
+![New order dialog](docs/screenshots/new-order.png)
+
+**Receipt QR code.** Right after creation the dialog shows the order number and a QR code that links to the
+customer's tracking page (`/track/<session>`). Staff can print it on the receipt or copy the link; the customer scans
+it to see the live status and get a notification when the order is ready. No app and no account are needed.
+
+![Order created: receipt QR code](docs/screenshots/order-qr.png)
+
+**Customer tracking page (phone).** Opened from the receipt QR code, with no app and no sign-in. It shows the
+restaurant, the order number, the current step (received, being prepared, ready), the estimated wait and the items,
+and updates live. While the order is not ready it offers **Notify me** (Web Push); on iPhone the page first has to be
+added to the Home Screen, as the hint explains. When staff mark the order ready, the banner and the full progress bar
+appear at once.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/tracking-preparing.png" width="280" alt="Tracking page: order being prepared, with the notification opt-in"><br><sub>Being prepared</sub></td>
+    <td align="center"><img src="docs/screenshots/tracking-ready.png" width="280" alt="Tracking page: order ready for pickup"><br><sub>Ready for pickup</sub></td>
+  </tr>
+</table>
+
 ## Architecture
 
 ReadyBell is built domain-first using Domain-Driven Design and Clean/Hexagonal (Ports & Adapters) architecture, packaged as a single deployable **modular monolith**. The domain layer has no framework dependencies; application services orchestrate use cases against ports; adapters (REST controllers, JPA repositories, Redis, Web Push, Spring's event publisher) implement those ports and are wired by Spring configuration. Dependencies point inward — nothing in the domain depends on an adapter.
