@@ -102,8 +102,8 @@ export interface OrderRow {
 }
 
 /**
- * OrderMetrics - Aggregated order statistics
- * Calculated by frontend from order list (not fetched endpoint)
+ * OrderMetrics - Aggregated order statistics for the dashboard cards.
+ * Real totals for the whole restaurant from GET /api/orders/metrics, independent of table filters and paging.
  */
 export interface OrderMetrics {
   totalOrders: number;          // Sum of all orders

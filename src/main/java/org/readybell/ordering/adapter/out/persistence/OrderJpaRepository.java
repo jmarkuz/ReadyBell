@@ -1,6 +1,8 @@
 package org.readybell.ordering.adapter.out.persistence;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
@@ -41,4 +43,13 @@ public interface OrderJpaRepository extends JpaRepository<OrderJpaEntity, UUID>,
      * @return list of all order entities for the tenant, possibly empty
      */
     List<OrderJpaEntity> findByTenantId(UUID tenantId);
+
+    /**
+     * Counts the tenant's orders per status in a single grouped query.
+     *
+     * @param tenantId the tenant discriminator
+     * @return one {@code [OrderStatus, Long]} row per status that has orders
+     */
+    @Query("select o.status, count(o) from OrderJpaEntity o where o.tenantId = :tenantId group by o.status")
+    List<Object[]> countGroupedByStatus(@Param("tenantId") UUID tenantId);
 }

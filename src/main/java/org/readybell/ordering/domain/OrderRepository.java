@@ -80,6 +80,14 @@ public interface OrderRepository {
     OrderPage findPage(TenantId tenantId, OrderQuery query);
 
     /**
+     * Counts the tenant's orders per status with one aggregate query (Req 10.2, 10.4).
+     *
+     * @param tenantId the tenant scope (must not be null)
+     * @return the counts; every status is present, zero when it has no orders
+     */
+    OrderStatusCounts countByStatus(TenantId tenantId);
+
+    /**
      * Returns the tenant's orders created or updated at or after {@code since}, newest update first,
      * capped at {@code limit}. A {@code null} {@code since} returns the most recently updated orders.
      */

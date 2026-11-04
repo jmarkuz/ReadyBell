@@ -28,6 +28,7 @@ The session id in the URL is the credential for the customer endpoints; the tena
 |--------|------|------|-------|
 | GET | `/api/restaurant` | any | `{name, identifier}` of the user's restaurant |
 | GET | `/api/orders` | any | `page`, `pageSize` (≤100), `status` (repeatable), `sortBy` (`created`, `eta`, `status`, `customerName`, `orderId`), `sortOrder`, `search` → `{items, totalCount, pageCount, currentPage}` |
+| GET | `/api/orders/metrics` | any | → `{totalOrders, created, inProgress, ready, completed, cancelled}`: real per-status totals for the tenant, independent of list filters and paging |
 | POST | `/api/orders` | any | `{sessionId?, customerName?, estimatedMinutes?, items?[{name, quantity}]}`; without `sessionId` the server starts a session (the receipt QR links to `/track/{sessionId}`) |
 | PATCH | `/api/orders/{id}/status` | any | `{status}`; lifecycle `CREATED → IN_PROGRESS → READY → COMPLETED`, `CANCELLED` from any open state (422 otherwise, 409 on a concurrent change) |
 | GET | `/api/orders/stream` | any | SSE; the token may be passed as `?token=` because `EventSource` cannot set headers |

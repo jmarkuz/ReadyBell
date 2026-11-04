@@ -43,6 +43,7 @@ import java.util.UUID;
  * <ul>
  *   <li>{@code POST  /api/orders}             — creates an order for a session (Req 4.1–4.6).</li>
  *   <li>{@code GET   /api/orders}             — paginated, filterable, sortable list (Req 7.3, 7.7).</li>
+ *   <li>{@code GET   /api/orders/metrics}     — order counts per status for the dashboard cards.</li>
  *   <li>{@code GET   /api/orders/poll}        — polling fallback with ETag.</li>
  *   <li>{@code PATCH /api/orders/{id}/status} — transitions order status (Req 5.1–5.8).</li>
  * </ul>
@@ -137,6 +138,23 @@ public class OrderController {
                 result.items().stream().map(o -> OrderRowResponse.from(o, clock)).toList(),
                 result.totalCount(), result.pageCount(), result.page());
     }
+
+    /**
+     * Order counts per status for the dashboard cards: always the tenant's real totals, independent
+     * of any list filter or page.
+     *
+     * @return 200 OK with {@code {totalOrders, created, inProgress, ready, completed, cancelled}}
+     */
+    @GetMapping("/metrics")
+    public OrderMetricsResponse metrics() {
+        var counts = orderRepository.countByStatus(TenantContextHolder.require());
+        return new OrderMetricsResponse(counts.total(), counts.count(OrderStatus.CREATED),
+                counts.count(OrderStatus.IN_PROGRESS), counts.count(OrderStatus.READY),
+                counts.count(OrderStatus.COMPLETED), counts.count(OrderStatus.CANCELLED));
+    }
+
+    public record OrderMetricsResponse(long totalOrders, long created, long inProgress, long ready,
+                                       long completed, long cancelled) {}
 
     /**
      * Polling fallback for the SSE stream: orders changed since {@code since} (default: most

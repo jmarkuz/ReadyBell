@@ -11,7 +11,7 @@
  * - Multi-phase endpoint integration
  */
 
-import { ErrorResponse, DisplayError, PaginatedResponse, OrderRow, OrderStatus } from '@/types';
+import { ErrorResponse, DisplayError, PaginatedResponse, OrderRow, OrderStatus, OrderMetrics } from '@/types';
 import { tokenManager } from './TokenManager';
 
 /**
@@ -91,6 +91,16 @@ export interface TestDataOrder {
   estimatedMinutes?: number;
   status?: 'CREATED' | 'IN_PROGRESS' | 'READY' | 'COMPLETED' | 'CANCELLED';
   items?: Array<{ name: string; quantity: number }>;
+}
+
+/** Response of GET /api/orders/metrics (backend status names). */
+interface RawOrderMetrics {
+  totalOrders: number;
+  created: number;
+  inProgress: number;
+  ready: number;
+  completed: number;
+  cancelled: number;
 }
 
 /** Backend → UI status names (the UI says PREPARING where the backend says IN_PROGRESS). */
@@ -740,6 +750,22 @@ export class ApiClient {
 
     const raw = await this.get<PaginatedResponse<RawOrderRow>>(endpoint);
     return { ...raw, items: raw.items.map(normalizeOrderRow) };
+  }
+
+  /**
+   * Order counts per status for the dashboard cards (the tenant's real totals, not just one page).
+   * GET /api/orders/metrics
+   */
+  async getOrderMetrics(): Promise<OrderMetrics> {
+    const raw = await this.get<RawOrderMetrics>('/api/orders/metrics');
+    return {
+      totalOrders: raw.totalOrders,
+      newOrders: raw.created,
+      preparing: raw.inProgress,
+      readyForPickup: raw.ready,
+      completed: raw.completed,
+      cancelled: raw.cancelled,
+    };
   }
 
   /**

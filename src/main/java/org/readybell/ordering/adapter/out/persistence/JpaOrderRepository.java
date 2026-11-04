@@ -19,6 +19,8 @@ import org.readybell.ordering.domain.OrderId;
 import org.readybell.ordering.domain.OrderPage;
 import org.readybell.ordering.domain.OrderQuery;
 import org.readybell.ordering.domain.OrderRepository;
+import org.readybell.ordering.domain.OrderStatus;
+import org.readybell.ordering.domain.OrderStatusCounts;
 import org.readybell.session.domain.CustomerSessionId;
 import org.readybell.shared.domain.TenantId;
 import org.springframework.stereotype.Repository;
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -126,6 +129,17 @@ public class JpaOrderRepository implements OrderRepository {
         var page = springRepo.findAll(spec, PageRequest.of(query.page() - 1, query.pageSize(), sort));
         return new OrderPage(page.getContent().stream().map(OrderJpaEntity::toDomain).toList(),
                 page.getTotalElements(), query.page(), query.pageSize());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderStatusCounts countByStatus(TenantId tenantId) {
+        enableTenantFilter(tenantId);
+        var counts = new EnumMap<OrderStatus, Long>(OrderStatus.class);
+        for (Object[] row : springRepo.countGroupedByStatus(tenantId.value())) {
+            counts.put((OrderStatus) row[0], (Long) row[1]);
+        }
+        return new OrderStatusCounts(counts);
     }
 
     @Override

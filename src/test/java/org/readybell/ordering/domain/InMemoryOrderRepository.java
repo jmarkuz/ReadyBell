@@ -69,6 +69,12 @@ public class InMemoryOrderRepository implements OrderRepository {
     }
 
     @Override
+    public OrderStatusCounts countByStatus(TenantId tenantId) {
+        return new OrderStatusCounts(findAllByTenant(tenantId).stream()
+                .collect(java.util.stream.Collectors.groupingBy(Order::getStatus, java.util.stream.Collectors.counting())));
+    }
+
+    @Override
     public List<Order> findUpdatedSince(TenantId tenantId, java.time.Instant since, int limit) {
         return findAllByTenant(tenantId).stream()
                 .filter(o -> since == null || !o.getUpdatedAt().isBefore(since))
