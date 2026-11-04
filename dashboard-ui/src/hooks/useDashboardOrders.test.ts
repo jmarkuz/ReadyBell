@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useDashboardOrders, DEFAULT_ORDERS_QUERY, DASHBOARD_ORDER_LIMIT, type OrdersQuery } from './useDashboardOrders';
+import { useDashboardOrders, DEFAULT_ORDERS_QUERY, type OrdersQuery } from './useDashboardOrders';
 import { apiClient } from '@/utils/api';
 import * as sse from './useSSE';
 
 vi.mock('@/utils/api', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/utils/api')>();
-  return { ...original, apiClient: { getOrders: vi.fn() } };
+  return { ...original, apiClient: { getOrders: vi.fn(), getOrderMetrics: vi.fn() } };
 });
 
 const row = (id: string) => ({
@@ -15,10 +15,9 @@ const row = (id: string) => ({
 });
 const page = (...ids: string[]) => ({ items: ids.map(row), totalCount: ids.length, pageCount: 1, currentPage: 1 });
 
-/** Requests for the table page versus the "newest 100" request that feeds the metric cards. */
+/** Requests for the table page (metrics have their own endpoint). */
 const calls = () => vi.mocked(apiClient.getOrders).mock.calls.map(([params]) => params ?? {});
-const pageCalls = () => calls().filter((p) => p.pageSize !== DASHBOARD_ORDER_LIMIT);
-const recentCalls = () => calls().filter((p) => p.pageSize === DASHBOARD_ORDER_LIMIT);
+const pageCalls = () => calls();
 
 describe('useDashboardOrders', () => {
   let onMessage: (data: unknown) => void;
@@ -26,6 +25,9 @@ describe('useDashboardOrders', () => {
 
   beforeEach(() => {
     vi.mocked(apiClient.getOrders).mockReset().mockResolvedValue(page('A'));
+    vi.mocked(apiClient.getOrderMetrics).mockReset().mockResolvedValue({
+      totalOrders: 300, newOrders: 1, preparing: 2, readyForPickup: 3, completed: 290, cancelled: 4,
+    });
     connected = false;
     vi.spyOn(sse, 'useSSE').mockImplementation((options) => {
       onMessage = options.onMessage;
@@ -69,10 +71,19 @@ describe('useDashboardOrders', () => {
     expect(result.current.pageCount).toBe(25);
   });
 
-  it('loads the newest orders for the metric cards separately from the page', async () => {
+  it('loads real totals from the metrics endpoint, independent of the page filters', async () => {
     const { result } = renderHook(() => useDashboardOrders({ ...DEFAULT_ORDERS_QUERY, statuses: ['READY'] }));
-    await waitFor(() => expect(result.current.recentOrders).toHaveLength(1));
-    expect(recentCalls()).toEqual([{ page: 1, pageSize: 100, sortBy: 'created', sortOrder: 'desc' }]);
+    await waitFor(() => expect(result.current.metrics?.totalOrders).toBe(300));
+    expect(apiClient.getOrderMetrics).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the last metrics and the orders when the metrics request fails', async () => {
+    const { result } = renderHook(() => useDashboardOrders(DEFAULT_ORDERS_QUERY));
+    await waitFor(() => expect(result.current.metrics?.totalOrders).toBe(300));
+    vi.mocked(apiClient.getOrderMetrics).mockRejectedValue(new Error('boom'));
+    await act(async () => { await result.current.reload(); });
+    expect(result.current.metrics?.totalOrders).toBe(300);
+    expect(result.current.error).toBeNull();
   });
 
   it('reports a load error and keeps going', async () => {
@@ -93,6 +104,7 @@ describe('useDashboardOrders', () => {
       const { result, rerender } = renderHook((q: OrdersQuery) => useDashboardOrders(q), { initialProps: DEFAULT_ORDERS_QUERY });
       await waitFor(() => expect(result.current.isLoading).toBe(false));
       vi.mocked(apiClient.getOrders).mockClear();
+      vi.mocked(apiClient.getOrderMetrics).mockClear();
 
       let release: (value: ReturnType<typeof page>) => void = () => {};
       vi.mocked(apiClient.getOrders).mockReturnValue(new Promise((resolve) => { release = resolve; }));
@@ -100,7 +112,7 @@ describe('useDashboardOrders', () => {
 
       expect(pageCalls()).toHaveLength(1);
       expect(pageCalls()[0]).toMatchObject({ search: 'pizza', page: 1 });
-      expect(recentCalls()).toHaveLength(0);
+      expect(apiClient.getOrderMetrics).not.toHaveBeenCalled();
       expect(result.current.isLoading).toBe(false);                       // no skeleton flash
       expect(result.current.orders.map((o) => o.id)).toEqual(['A']);      // previous rows stay
 
@@ -119,10 +131,8 @@ describe('useDashboardOrders', () => {
 
     it('drops a slow response that arrives after a newer request', async () => {
       const resolvers: Array<(value: ReturnType<typeof page>) => void> = [];
-      vi.mocked(apiClient.getOrders).mockImplementation((params) =>
-        params?.pageSize === DASHBOARD_ORDER_LIMIT
-          ? Promise.resolve(page())
-          : new Promise((resolve) => { resolvers.push(resolve); }));
+      vi.mocked(apiClient.getOrders).mockImplementation(() =>
+        new Promise((resolve) => { resolvers.push(resolve); }));
 
       const { result, rerender } = renderHook((q: OrdersQuery) => useDashboardOrders(q), { initialProps: DEFAULT_ORDERS_QUERY });
       rerender({ ...DEFAULT_ORDERS_QUERY, search: 'new' });

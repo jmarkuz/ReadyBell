@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { OrderRow, OrderStatus } from '@/types';
+import { OrderMetrics, OrderRow, OrderStatus } from '@/types';
 import { apiClient } from '@/utils/api';
 import { tokenManager } from '@/utils/TokenManager';
 import { useSSE } from './useSSE';
-
-/** How many of the newest orders feed the metric cards (backend maximum page size). Goes away with T02. */
-export const DASHBOARD_ORDER_LIMIT = 100;
 
 /** Fallback refresh interval while the live connection is down. */
 const POLL_INTERVAL_MS = 30_000;
@@ -49,15 +46,15 @@ export interface UseDashboardOrdersState {
   /** Orders matching the filters across all pages. */
   totalCount: number;
   pageCount: number;
-  /** The newest orders regardless of the filters; source of the metric cards until T02. */
-  recentOrders: OrderRow[];
+  /** Real per-status totals for the restaurant, independent of filters and paging (null until loaded). */
+  metrics: OrderMetrics | null;
   /** True only until the first page has loaded; later queries keep showing the previous rows. */
   isLoading: boolean;
   /** Last load error, cleared by the next successful load. */
   error: Error | null;
   /** True while the SSE stream is open. */
   isConnected: boolean;
-  /** Reloads the current page (and the metrics source). */
+  /** Reloads the current page (and the metrics). */
   reload: () => Promise<void>;
 }
 
@@ -85,7 +82,7 @@ export function useDashboardOrders(query: OrdersQuery): UseDashboardOrdersState 
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [pageCount, setPageCount] = useState(0);
-  const [recentOrders, setRecentOrders] = useState<OrderRow[]>([]);
+  const [metrics, setMetrics] = useState<OrderMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const mounted = useRef(true);
@@ -118,23 +115,18 @@ export function useDashboardOrders(query: OrdersQuery): UseDashboardOrdersState 
     }
   }, []);
 
-  const loadRecent = useCallback(async () => {
+  const loadMetrics = useCallback(async () => {
     try {
-      const result = await apiClient.getOrders({
-        page: 1,
-        pageSize: DASHBOARD_ORDER_LIMIT,
-        sortBy: 'created',
-        sortOrder: 'desc',
-      });
-      if (mounted.current) setRecentOrders(result.items);
+      const result = await apiClient.getOrderMetrics();
+      if (mounted.current) setMetrics(result);
     } catch {
       // The table reports load errors; the metric cards just keep their last numbers
     }
   }, []);
 
   const reload = useCallback(async () => {
-    await Promise.all([loadPage(), loadRecent()]);
-  }, [loadPage, loadRecent]);
+    await Promise.all([loadPage(), loadMetrics()]);
+  }, [loadPage, loadMetrics]);
 
   useEffect(() => {
     mounted.current = true;
@@ -149,8 +141,8 @@ export function useDashboardOrders(query: OrdersQuery): UseDashboardOrdersState 
   }, [queryKey, loadPage]);
 
   useEffect(() => {
-    void loadRecent();
-  }, [loadRecent]);
+    void loadMetrics();
+  }, [loadMetrics]);
 
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onMessage = useCallback(() => {
@@ -174,5 +166,5 @@ export function useDashboardOrders(query: OrdersQuery): UseDashboardOrdersState 
     return () => clearInterval(timer);
   }, [sse.isConnected, reload]);
 
-  return { orders, totalCount, pageCount, recentOrders, isLoading, error, isConnected: sse.isConnected, reload };
+  return { orders, totalCount, pageCount, metrics, isLoading, error, isConnected: sse.isConnected, reload };
 }

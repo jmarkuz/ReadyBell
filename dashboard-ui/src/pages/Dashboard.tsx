@@ -38,7 +38,7 @@ const SORT_BY: Record<SortField, OrdersSortBy | null> = {
  *   (GET /api/orders); the table shows one page of 10 and any filter or sort change goes back to page 1
  * - Status filter: select multiple statuses (CREATED, PREPARING, READY, COMPLETED)
  * - The current page is reloaded on SSE events (polling while offline)
- * - Metrics are still calculated from the 100 newest orders (server-side metrics: T02)
+ * - Metric cards show the restaurant's real totals from GET /api/orders/metrics, independent of filters
  * - Filter badges show active filter counts
  * 
  * Responsive:
@@ -81,7 +81,7 @@ export default function Dashboard() {
 
   // Orders come from the backend (GET /api/orders, one page) and are refreshed on SSE events
   const {
-    orders: pageOrders, totalCount, pageCount, recentOrders, isLoading, error: loadError, isConnected, reload,
+    orders: pageOrders, totalCount, pageCount, metrics: serverMetrics, isLoading, error: loadError, isConnected, reload,
   } = useDashboardOrders(query);
 
   // The page vanished under us (orders deleted elsewhere): step back to the last one that exists
@@ -151,17 +151,10 @@ export default function Dashboard() {
   }, [reload]);
 
 
-  // Metrics come from the newest orders, not from the filtered page (until T02 adds a server endpoint)
-  const metrics: OrderMetrics = useMemo(() => {
-    return {
-      totalOrders: recentOrders.length,
-      newOrders: recentOrders.filter((o) => o.status === 'CREATED').length,
-      preparing: recentOrders.filter((o) => o.status === 'PREPARING').length,
-      readyForPickup: recentOrders.filter((o) => o.status === 'READY').length,
-      completed: recentOrders.filter((o) => o.status === 'COMPLETED').length,
-      cancelled: recentOrders.filter((o) => o.status === 'CANCELLED').length,
-    };
-  }, [recentOrders]);
+  // Real totals from the server; zeros until the first response
+  const metrics: OrderMetrics = useMemo(() => serverMetrics ?? {
+    totalOrders: 0, newOrders: 0, preparing: 0, readyForPickup: 0, completed: 0, cancelled: 0,
+  }, [serverMetrics]);
 
   // Count active filters
   const activeFilterCount = (selectedStatuses.length > 0 ? 1 : 0) + (dateRangeStart && dateRangeEnd ? 1 : 0);
