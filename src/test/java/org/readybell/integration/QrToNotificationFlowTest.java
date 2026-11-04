@@ -199,7 +199,7 @@ class QrToNotificationFlowTest {
         // The OrderReady event should trigger the OrderReadyHandler
         // which should send a notification via NotificationSender
         // Verify the notification sender was called at least once
-        verify(notificationSender, atLeastOnce()).send(any(), any());
+        verify(notificationSender, org.mockito.Mockito.timeout(5000).atLeastOnce()).send(any(), any());
         
         // Step 7: Verify notification events were recorded
         // The notification should be saved in the repository

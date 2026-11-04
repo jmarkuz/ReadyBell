@@ -17,7 +17,7 @@ The ordered plan for what to do next, with specifications and status, is in [IMP
 
 | ID | Task | Size | Notes |
 |----|------|------|-------|
-| R1 | Transactional outbox for `OrderReady` (and status events) | L | Today: save, then publish in-process; a crash in between loses the notification |
+| R1 (done, T05) | Transactional outbox for `OrderReady` (and status events) | L | Today: save, then publish in-process; a crash in between loses the notification |
 | S1 (done, T06) | Make tenant filtering structural: enable the filter once per request (or Hibernate `@TenantId`) instead of per repository method | M | Add a test that fails when a repository query ignores the tenant |
 | S2 (done, T07) | Replace `/api/orders/stream?token=` with a short-lived single-use ticket | S | Avoids long-lived tokens in logs |
 | S3 | Move the staff token out of `localStorage` (httpOnly cookie + CSRF) or shorten TTL/refresh | M | Decide with the threat model |

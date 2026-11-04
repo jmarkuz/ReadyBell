@@ -48,6 +48,9 @@ public class NotificationJpaEntity extends TenantScopedEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "order_id", updatable = false)
+    private UUID orderId;
+
     /** Required by JPA. */
     protected NotificationJpaEntity() {}
 
@@ -64,6 +67,7 @@ public class NotificationJpaEntity extends TenantScopedEntity {
         entity.status         = notification.status();
         entity.payload        = notification.payload();
         entity.createdAt      = Instant.now();
+        entity.orderId        = notification.orderId();
         return entity;
     }
 
@@ -74,7 +78,8 @@ public class NotificationJpaEntity extends TenantScopedEntity {
                 new TenantId(tenantId),
                 new DeviceSubscriptionId(subscriptionId),
                 status,
-                payload);
+                payload,
+                orderId);
     }
 
     // -------------------------------------------------------------------------

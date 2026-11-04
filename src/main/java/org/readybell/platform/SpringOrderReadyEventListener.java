@@ -3,7 +3,6 @@ package org.readybell.platform;
 import org.readybell.notification.application.OrderReadyHandler;
 import org.readybell.ordering.domain.OrderReady;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
@@ -36,8 +35,10 @@ public class SpringOrderReadyEventListener {
      *
      * @param event the order-ready event (must not be {@code null})
      */
-    /** Runs on the push executor so that marking an order READY never waits on push services. */
-    @Async("pushExecutor")
+    /**
+     * Called by the outbox relay on its own thread, so marking an order READY never waits on push services;
+     * synchronous on purpose, so a failure reaches the relay and the event is retried.
+     */
     @EventListener
     public void onOrderReady(OrderReady event) {
         orderReadyHandler.handle(event);

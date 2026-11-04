@@ -14,4 +14,8 @@ import java.util.UUID;
  */
 public interface NotificationJpaRepository
         extends JpaRepository<NotificationJpaEntity, UUID> {
+
+    boolean existsByTenantIdAndOrderIdAndSubscriptionIdAndStatusIn(
+            UUID tenantId, UUID orderId, UUID subscriptionId,
+            java.util.Collection<org.readybell.notification.domain.NotificationStatus> statuses);
 }

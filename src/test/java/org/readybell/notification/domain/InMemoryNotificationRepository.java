@@ -1,6 +1,7 @@
 package org.readybell.notification.domain;
 
 import org.readybell.shared.domain.TenantId;
+import org.readybell.subscription.domain.DeviceSubscriptionId;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +25,13 @@ public class InMemoryNotificationRepository implements NotificationRepository {
     @Override
     public void save(Notification notification) {
         store.put(notification.id(), notification);
+    }
+
+    @Override
+    public boolean existsSent(TenantId tenantId, java.util.UUID orderId, DeviceSubscriptionId subscriptionId) {
+        return store.values().stream().anyMatch(n -> n.tenantId().equals(tenantId)
+                && orderId.equals(n.orderId()) && n.subscriptionId().equals(subscriptionId)
+                && (n.status() == NotificationStatus.SENT || n.status() == NotificationStatus.DELIVERED));
     }
 
     @Override

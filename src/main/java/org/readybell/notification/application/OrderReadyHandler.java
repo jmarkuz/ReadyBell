@@ -114,6 +114,12 @@ public class OrderReadyHandler {
 
         // Req 6.2 — for each subscription, compose and send
         for (DeviceSubscription subscription : subscriptions) {
+            // Replayed event (relay retry after a crash): this device already got its push
+            if (notificationRepository.existsSent(event.tenantId(), event.orderId().value(), subscription.getId())) {
+                LOG.info(() -> "OrderReady " + event.orderId() + ": push to subscription "
+                        + subscription.getId() + " already sent, skipping.");
+                continue;
+            }
             processSubscription(event, subscription, payload);
         }
     }
@@ -157,7 +163,8 @@ public class OrderReadyHandler {
         Notification notification = Notification.compose(
                 event.tenantId(),
                 subscription.getId(),
-                payload.body());
+                payload.body(),
+                event.orderId().value());
         notificationRepository.save(notification);
 
         SendResult result;
