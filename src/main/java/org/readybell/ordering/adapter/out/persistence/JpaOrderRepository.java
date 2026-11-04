@@ -1,5 +1,6 @@
 package org.readybell.ordering.adapter.out.persistence;
 
+import org.readybell.shared.domain.jpa.CrossTenant;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -60,6 +61,7 @@ public class JpaOrderRepository implements OrderRepository {
     }
 
     @Override
+    @CrossTenant("the order carries its own tenant")
     public void save(Order order) {
         var entity = OrderJpaEntity.from(order);
         springRepo.save(entity);
@@ -67,6 +69,7 @@ public class JpaOrderRepository implements OrderRepository {
 
     @Override
     @Transactional(readOnly = true)
+    @CrossTenant("lookup by globally unique id (events, public tracking)")
     public Optional<Order> findById(OrderId id) {
         return springRepo.findById(id.value())
                 .map(OrderJpaEntity::toDomain);
@@ -75,7 +78,6 @@ public class JpaOrderRepository implements OrderRepository {
     @Override
     @Transactional(readOnly = true)
     public Optional<Order> findByTenantAndId(TenantId tenantId, OrderId id) {
-        enableTenantFilter(tenantId);
         return springRepo.findByIdAndTenantId(id.value(), tenantId.value())
                 .map(OrderJpaEntity::toDomain);
     }
@@ -83,7 +85,6 @@ public class JpaOrderRepository implements OrderRepository {
     @Override
     @Transactional(readOnly = true)
     public List<Order> findByTenantAndSession(TenantId tenantId, CustomerSessionId sessionId) {
-        enableTenantFilter(tenantId);
         return springRepo.findByTenantIdAndSessionId(tenantId.value(), sessionId.value())
                 .stream()
                 .map(OrderJpaEntity::toDomain)
@@ -93,7 +94,6 @@ public class JpaOrderRepository implements OrderRepository {
     @Override
     @Transactional(readOnly = true)
     public List<Order> findAllByTenant(TenantId tenantId) {
-        enableTenantFilter(tenantId);
         return springRepo.findByTenantId(tenantId.value())
                 .stream()
                 .map(OrderJpaEntity::toDomain)
@@ -103,7 +103,6 @@ public class JpaOrderRepository implements OrderRepository {
     @Override
     @Transactional(readOnly = true)
     public OrderPage findPage(TenantId tenantId, OrderQuery query) {
-        enableTenantFilter(tenantId);
         Specification<OrderJpaEntity> spec = (root, cq, cb) -> {
             List<Predicate> and = new ArrayList<>();
             and.add(cb.equal(root.get("tenantId"), tenantId.value()));
@@ -134,7 +133,6 @@ public class JpaOrderRepository implements OrderRepository {
     @Override
     @Transactional(readOnly = true)
     public OrderStatusCounts countByStatus(TenantId tenantId) {
-        enableTenantFilter(tenantId);
         var counts = new EnumMap<OrderStatus, Long>(OrderStatus.class);
         for (Object[] row : springRepo.countGroupedByStatus(tenantId.value())) {
             counts.put((OrderStatus) row[0], (Long) row[1]);
@@ -145,7 +143,6 @@ public class JpaOrderRepository implements OrderRepository {
     @Override
     @Transactional(readOnly = true)
     public List<Order> findUpdatedSince(TenantId tenantId, Instant since, int limit) {
-        enableTenantFilter(tenantId);
         Specification<OrderJpaEntity> spec = (root, cq, cb) -> since == null
                 ? cb.equal(root.get("tenantId"), tenantId.value())
                 : cb.and(cb.equal(root.get("tenantId"), tenantId.value()),
@@ -189,15 +186,5 @@ public class JpaOrderRepository implements OrderRepository {
 
     private static String escapeLike(String s) {
         return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-    }
-
-    // -------------------------------------------------------------------------
-    // Tenant filter helper
-    // -------------------------------------------------------------------------
-
-    private void enableTenantFilter(TenantId tenantId) {
-        entityManager.unwrap(Session.class)
-                .enableFilter("tenantFilter")
-                .setParameter("tenantId", tenantId.value());
     }
 }

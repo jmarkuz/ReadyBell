@@ -17,10 +17,10 @@ import java.util.UUID;
  * <h3>Filter enforcement (Req 10.2, 10.4)</h3>
  * <p>The Hibernate named filter {@code tenantFilter} with condition
  * {@code tenant_id = :tenantId} is declared here and applied to every subclass table.
- * Repository adapters must enable this filter on each {@link jakarta.persistence.EntityManager}
- * session using the resolved {@link TenantId} from
- * {@link TenantContextHolder}, so every {@code SELECT} is automatically constrained to
- * the current tenant (Req 10.2, 10.3, 10.4).
+ * The filter is bound automatically around every persistence-adapter call by
+ * {@code TenantFilterInterceptor} (tenant from the method's {@link TenantId} argument, else from
+ * {@link TenantContextHolder}); methods that must see every tenant say so with {@link CrossTenant}.
+ * Adapters never enable the filter by hand (Req 10.2, 10.3, 10.4).
  *
  * <h3>Write stamping (Req 10.1, 10.6)</h3>
  * <p>The {@link #stampTenant()} {@code @PrePersist} listener automatically stamps

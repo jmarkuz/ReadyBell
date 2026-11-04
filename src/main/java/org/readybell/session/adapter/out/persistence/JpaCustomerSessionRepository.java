@@ -1,14 +1,11 @@
 package org.readybell.session.adapter.out.persistence;
 
+import org.readybell.shared.domain.jpa.CrossTenant;
 import org.readybell.shared.domain.jpa.TenantScopedEntity;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import org.hibernate.Session;
 import org.readybell.session.domain.CustomerSession;
 import org.readybell.session.domain.CustomerSessionId;
 import org.readybell.session.domain.CustomerSessionRepository;
 import org.readybell.shared.domain.TenantId;
-import org.readybell.shared.tenancy.TenantContextHolder;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,14 +31,12 @@ public class JpaCustomerSessionRepository implements CustomerSessionRepository {
 
     private final CustomerSessionJpaRepository springRepo;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
     public JpaCustomerSessionRepository(CustomerSessionJpaRepository springRepo) {
         this.springRepo = springRepo;
     }
 
     @Override
+    @CrossTenant("the session carries its own tenant")
     public void save(CustomerSession session) {
         var entity = CustomerSessionJpaEntity.from(session);
         springRepo.save(entity);
@@ -49,6 +44,7 @@ public class JpaCustomerSessionRepository implements CustomerSessionRepository {
 
     @Override
     @Transactional(readOnly = true)
+    @CrossTenant("tenant resolution from the session id in the path")
     public Optional<CustomerSession> findById(CustomerSessionId id) {
         return springRepo.findById(id.value())
                 .map(CustomerSessionJpaEntity::toDomain);
@@ -57,23 +53,7 @@ public class JpaCustomerSessionRepository implements CustomerSessionRepository {
     @Override
     @Transactional(readOnly = true)
     public Optional<CustomerSession> findByTenantAndId(TenantId tenantId, CustomerSessionId id) {
-        enableTenantFilter(tenantId);
         return springRepo.findByIdAndTenantId(id.value(), tenantId.value())
                 .map(CustomerSessionJpaEntity::toDomain);
-    }
-
-    // -------------------------------------------------------------------------
-    // Tenant filter helper
-    // -------------------------------------------------------------------------
-
-    /**
-     * Enables the Hibernate {@code tenantFilter} on the current session and binds
-     * the given {@code tenantId} parameter, constraining all subsequent queries on
-     * this entity to that tenant (Req 10.2, 10.4).
-     */
-    private void enableTenantFilter(TenantId tenantId) {
-        entityManager.unwrap(Session.class)
-                .enableFilter("tenantFilter")
-                .setParameter("tenantId", tenantId.value());
     }
 }

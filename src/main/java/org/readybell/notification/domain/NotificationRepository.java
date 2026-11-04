@@ -1,5 +1,7 @@
 package org.readybell.notification.domain;
 
+import org.readybell.shared.domain.TenantId;
+
 import java.util.Optional;
 
 /**
@@ -24,10 +26,11 @@ public interface NotificationRepository {
     void save(Notification notification);
 
     /**
-     * Finds a notification by its identity.
+     * Finds one of the tenant's notifications by its identity.
      *
+     * @param tenantId the tenant scope (must not be null)
      * @param id the notification identity (must not be null)
      * @return the notification, or {@link Optional#empty()} if not found
      */
-    Optional<Notification> findById(NotificationId id);
+    Optional<Notification> findByTenantAndId(TenantId tenantId, NotificationId id);
 }

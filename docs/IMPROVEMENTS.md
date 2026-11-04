@@ -37,7 +37,7 @@ subset to do next, plus findings from the latest analysis (T01–T04). "Backlog"
 | ID | Task | Size | Status | Depends on | Backlog | Spec |
 |----|------|------|--------|-----------|---------|------|
 | T05 | Transactional outbox for `OrderReady` | L | Todo | – | R1 | [T05](tasks/T05-transactional-outbox.md) |
-| T06 | Structural tenant filter + guard test | M | Todo | – | S1 | [T06](tasks/T06-structural-tenant-filter.md) |
+| T06 | Structural tenant filter + guard test | M | In review | – | S1 | [T06](tasks/T06-structural-tenant-filter.md) |
 | T07 | Single-use ticket for the SSE stream | S | In review | – | S2 | [T07](tasks/T07-sse-ticket.md) |
 | T08 | Rate-limit public endpoints | S | In review | – | S4 | [T08](tasks/T08-public-rate-limits.md) |
 
@@ -63,7 +63,7 @@ Q3 remaining accessibility gaps, Q4 customer page extras, Q5 `.kiro` specs.
 | Wave | Done / total |
 |------|--------------|
 | 1 | 3 / 4 (T02 in review) |
-| 2 | 0 / 4 (T07, T08 in review) |
+| 2 | 0 / 4 (T06, T07, T08 in review) |
 | 3 | 0 / 5 |
 
 ## Log
@@ -78,3 +78,4 @@ Q3 remaining accessibility gaps, Q4 customer page extras, Q5 `.kiro` specs.
 | 2026-11-04 | T02 rebased onto the merged T01: `useDashboardOrders` returns `metrics` from `GET /api/orders/metrics` instead of the 100-newest `recentOrders`; `DASHBOARD_ORDER_LIMIT` removed. 717 UI tests pass. |
 | 2026-11-04 | T07: `POST /api/orders/stream/ticket` issues a 30 s single-use ticket (maps to the caller's JWT, so user and tenant are preserved); `GET /api/orders/stream` accepts only `?ticket=`; `?token=` removed. `useSSE` takes `getTicket` and fetches a fresh ticket on every (re)connect, retrying with backoff if that fails. Backend suite and 718 UI tests pass. Access-log masking not done: tickets are harmless after one use, and no access log is configured in the repo. |
 | 2026-11-04 | T08: `RateLimitFilter` (before Spring Security) applies per-IP sliding-window limits from `readybell.rate-limit.rules` to session start, push subscribe, track, customer poll and customer stream; 429 + `Retry-After` as problem+json, metric `ratelimit.rejected{endpoint}`. Client IP honors `X-Forwarded-For` only from `trusted-proxies` (right-most untrusted hop). Redis counters with per-node fallback. Disabled in the test profile; `RateLimitApiTest` enables it. |
+| 2026-11-04 | T06: `TenantFilterInterceptor` (Spring advisor, inside the repository transaction) binds `tenantFilter` for every `@Repository` in `adapter.out.persistence`: tenant from the `TenantId` argument, else the request context, else `MissingTenantContextException`; `@CrossTenant("reason")` methods run with the filter off. All 17 manual `enableTenantFilter` calls removed. `TenantGuardArchitectureTest` fails for an adapter method with neither a `TenantId` nor `@CrossTenant`; `TenantFilterBindingTest` checks two tenants and the session's filter state. `NotificationRepository.findById` became `findByTenantAndId(TenantId, ...)`. Background threads need no context: every call passes a tenant or is `@CrossTenant`. |

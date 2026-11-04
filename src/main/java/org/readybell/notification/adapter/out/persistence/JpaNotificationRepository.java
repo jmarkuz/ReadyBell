@@ -1,13 +1,10 @@
 package org.readybell.notification.adapter.out.persistence;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import org.hibernate.Session;
+import org.readybell.shared.domain.jpa.CrossTenant;
 import org.readybell.notification.domain.Notification;
 import org.readybell.notification.domain.NotificationId;
 import org.readybell.notification.domain.NotificationRepository;
 import org.readybell.shared.domain.TenantId;
-import org.readybell.shared.tenancy.TenantContextHolder;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,14 +24,12 @@ public class JpaNotificationRepository implements NotificationRepository {
 
     private final NotificationJpaRepository springRepo;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
     public JpaNotificationRepository(NotificationJpaRepository springRepo) {
         this.springRepo = springRepo;
     }
 
     @Override
+    @CrossTenant("the notification carries its own tenant")
     public void save(Notification notification) {
         var entity = NotificationJpaEntity.from(notification);
         springRepo.save(entity);
@@ -42,24 +37,8 @@ public class JpaNotificationRepository implements NotificationRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Notification> findById(NotificationId id) {
-        enableTenantFilter();
+    public Optional<Notification> findByTenantAndId(TenantId tenantId, NotificationId id) {
         return springRepo.findById(id.value())
                 .map(NotificationJpaEntity::toDomain);
-    }
-
-    // -------------------------------------------------------------------------
-    // Tenant filter helper
-    // -------------------------------------------------------------------------
-
-    /**
-     * Enables the Hibernate {@code tenantFilter} using the resolved tenant from
-     * {@link TenantContextHolder} (Req 10.2, 10.4).
-     */
-    private void enableTenantFilter() {
-        TenantId tenantId = TenantContextHolder.require();
-        entityManager.unwrap(Session.class)
-                .enableFilter("tenantFilter")
-                .setParameter("tenantId", tenantId.value());
     }
 }

@@ -1,5 +1,6 @@
 package org.readybell.restaurant.adapter.out.persistence;
 
+import org.readybell.shared.domain.jpa.CrossTenant;
 import org.readybell.restaurant.domain.Restaurant;
 import org.readybell.restaurant.domain.RestaurantRepository;
 import org.readybell.shared.domain.TenantId;
@@ -29,6 +30,7 @@ public class JpaRestaurantRepository implements RestaurantRepository {
     }
 
     @Override
+    @CrossTenant("the restaurant is the tenant")
     public void save(Restaurant restaurant) {
         var entity = RestaurantJpaEntity.from(restaurant);
         springRepo.save(entity);
@@ -43,6 +45,7 @@ public class JpaRestaurantRepository implements RestaurantRepository {
 
     @Override
     @Transactional(readOnly = true)
+    @CrossTenant("QR resolution: the tenant is not known yet")
     public Optional<Restaurant> findByIdentifier(String identifier) {
         return springRepo.findByIdentifier(identifier)
                 .map(RestaurantJpaEntity::toDomain);
@@ -50,6 +53,7 @@ public class JpaRestaurantRepository implements RestaurantRepository {
 
     @Override
     @Transactional(readOnly = true)
+    @CrossTenant("platform admin listing")
     public List<Restaurant> findAll() {
         return springRepo.findAll().stream().map(RestaurantJpaEntity::toDomain).toList();
     }

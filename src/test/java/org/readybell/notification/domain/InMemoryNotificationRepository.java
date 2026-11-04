@@ -1,5 +1,7 @@
 package org.readybell.notification.domain;
 
+import org.readybell.shared.domain.TenantId;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -25,8 +27,8 @@ public class InMemoryNotificationRepository implements NotificationRepository {
     }
 
     @Override
-    public Optional<Notification> findById(NotificationId id) {
-        return Optional.ofNullable(store.get(id));
+    public Optional<Notification> findByTenantAndId(TenantId tenantId, NotificationId id) {
+        return Optional.ofNullable(store.get(id)).filter(n -> n.tenantId().equals(tenantId));
     }
 
     /** Convenience helper — returns the total number of stored notifications. */

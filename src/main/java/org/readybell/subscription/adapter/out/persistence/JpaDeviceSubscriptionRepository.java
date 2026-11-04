@@ -1,8 +1,6 @@
 package org.readybell.subscription.adapter.out.persistence;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import org.hibernate.Session;
+import org.readybell.shared.domain.jpa.CrossTenant;
 import org.readybell.session.domain.CustomerSessionId;
 import org.readybell.shared.domain.TenantId;
 import org.readybell.subscription.domain.DeviceSubscription;
@@ -28,14 +26,12 @@ public class JpaDeviceSubscriptionRepository implements DeviceSubscriptionReposi
 
     private final DeviceSubscriptionJpaRepository springRepo;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
     public JpaDeviceSubscriptionRepository(DeviceSubscriptionJpaRepository springRepo) {
         this.springRepo = springRepo;
     }
 
     @Override
+    @CrossTenant("the subscription carries its own tenant")
     public void save(DeviceSubscription subscription) {
         var entity = DeviceSubscriptionJpaEntity.from(subscription);
         springRepo.save(entity);
@@ -43,6 +39,7 @@ public class JpaDeviceSubscriptionRepository implements DeviceSubscriptionReposi
 
     @Override
     @Transactional(readOnly = true)
+    @CrossTenant("lookup by globally unique id")
     public Optional<DeviceSubscription> findById(DeviceSubscriptionId id) {
         return springRepo.findById(id.value())
                 .map(DeviceSubscriptionJpaEntity::toDomain);
@@ -52,7 +49,6 @@ public class JpaDeviceSubscriptionRepository implements DeviceSubscriptionReposi
     @Transactional(readOnly = true)
     public List<DeviceSubscription> findByTenantAndSession(TenantId tenantId,
                                                            CustomerSessionId sessionId) {
-        enableTenantFilter(tenantId);
         return springRepo.findByTenantIdAndSessionId(tenantId.value(), sessionId.value())
                 .stream()
                 .map(DeviceSubscriptionJpaEntity::toDomain)
@@ -64,24 +60,14 @@ public class JpaDeviceSubscriptionRepository implements DeviceSubscriptionReposi
     public Optional<DeviceSubscription> findByTenantSessionAndEndpoint(TenantId tenantId,
                                                                         CustomerSessionId sessionId,
                                                                         String endpointUrl) {
-        enableTenantFilter(tenantId);
         return springRepo.findByTenantIdAndSessionIdAndEndpointUrl(
                         tenantId.value(), sessionId.value(), endpointUrl)
                 .map(DeviceSubscriptionJpaEntity::toDomain);
     }
 
     @Override
+    @CrossTenant("delete by globally unique id")
     public void delete(DeviceSubscriptionId id) {
         springRepo.deleteById(id.value());
-    }
-
-    // -------------------------------------------------------------------------
-    // Tenant filter helper
-    // -------------------------------------------------------------------------
-
-    private void enableTenantFilter(TenantId tenantId) {
-        entityManager.unwrap(Session.class)
-                .enableFilter("tenantFilter")
-                .setParameter("tenantId", tenantId.value());
     }
 }
