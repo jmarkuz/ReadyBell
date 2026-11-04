@@ -18,6 +18,7 @@
  * - App component updated with useAuth integration
  */
 
+import { isPublicCustomerPath } from '@/utils/publicPaths';
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageLoader } from '@/components/PageLoader';
@@ -71,6 +72,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   useEffect(() => {
     const validateTokenOnMount = async () => {
+      // Customers on a tracking page never sign in
+      if (isPublicCustomerPath(window.location.pathname)) {
+        setIsValidating(false);
+        setIsInitialized(true);
+        return;
+      }
+
       try {
         setIsValidating(true);
         setValidationError(null);
@@ -129,7 +137,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // While validating token, show loading UI only if on authenticated routes (not on login)
   // Check current pathname to avoid showing loader on login page
-  const isOnLoginPage = window.location.pathname === '/login';
+  const isOnLoginPage =
+    window.location.pathname === '/login' || isPublicCustomerPath(window.location.pathname);
   
   if (isValidating && !isOnLoginPage) {
     return (

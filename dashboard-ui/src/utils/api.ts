@@ -738,7 +738,8 @@ export class ApiClient {
    * POST /api/orders
    */
   async createOrder(data: {
-    sessionId: string;
+    /** Omit to let the server start a new customer session (the receipt QR links to it). */
+    sessionId?: string;
     customerName?: string;
     /** Minutes from now until the order should be ready (0–1440). */
     estimatedMinutes?: number;

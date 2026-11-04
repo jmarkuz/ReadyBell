@@ -8,6 +8,8 @@ import { OrderMetrics, OrderStatus } from '@/types';
 import { useDashboardOrders } from '@/hooks/useDashboardOrders';
 import { apiClient, ApiError } from '@/utils/api';
 import { parseTestDataFile } from '@/utils/testDataFile';
+import NewOrderDialog from '@/components/NewOrderDialog';
+import { Plus } from 'lucide-react';
 
 /**
  * Dashboard Page
@@ -47,6 +49,9 @@ export default function Dashboard() {
   // Orders come from the backend (GET /api/orders) and are refreshed on SSE events
   const { orders: displayOrders, isLoading, error: loadError, isConnected, reload } = useDashboardOrders();
   const [actionError, setActionError] = useState<string | null>(null);
+
+  const [newOrderOpen, setNewOrderOpen] = useState(false);
+  const closeNewOrder = useCallback(() => setNewOrderOpen(false), []);
 
   // Dev-only test data tools (the backend endpoints exist under the `dev` profile only)
   const [testDataBusy, setTestDataBusy] = useState(false);
@@ -183,6 +188,15 @@ export default function Dashboard() {
           </p>
         </div>
         
+        <button
+          type="button"
+          onClick={() => setNewOrderOpen(true)}
+          className="inline-flex items-center gap-2 h-10 px-5 whitespace-nowrap rounded-full bg-stone-800 text-white dark:bg-stone-100 dark:text-stone-900 text-sm font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          <Plus className="w-4 h-4" aria-hidden="true" />
+          New order
+        </button>
+
         {/* Real-time connection status indicator */}
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800">
           <div 
@@ -203,6 +217,8 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      <NewOrderDialog open={newOrderOpen} onClose={closeNewOrder} onCreated={reload} />
 
       {/* Dev-only: generate / remove test data */}
       {import.meta.env.DEV && (

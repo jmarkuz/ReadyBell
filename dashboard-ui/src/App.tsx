@@ -22,6 +22,7 @@ const Analytics = lazy(() => import('@/pages/Analytics'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const Support = lazy(() => import('@/pages/Support'));
 const LoginPage = lazy(() => import('@/pages/Login'));
+const TrackPage = lazy(() => import('@/pages/Track'));
 
 /**
  * App Root Component
@@ -67,6 +68,14 @@ function App() {
                 element={
                   <Suspense fallback={<PageLoader />}>
                     <LoginPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/track/:sessionId"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <TrackPage />
                   </Suspense>
                 }
               />
