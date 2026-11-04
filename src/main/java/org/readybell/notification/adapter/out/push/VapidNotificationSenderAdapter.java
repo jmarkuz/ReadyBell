@@ -92,11 +92,15 @@ class VapidNotificationSenderAdapter implements NotificationSender {
         try {
             String json = buildJson(payload);
 
-            Notification notification = new Notification(
-                    endpoint.endpointUrl(),
-                    endpoint.p256dhKey(),
-                    endpoint.authKey(),
-                    json);
+            // An "order ready" ping is useless after an hour; HIGH urgency wakes a sleeping device
+            Notification notification = Notification.builder()
+                    .endpoint(endpoint.endpointUrl())
+                    .userPublicKey(endpoint.p256dhKey())
+                    .userAuth(endpoint.authKey())
+                    .payload(json)
+                    .ttl(3600)
+                    .urgency(nl.martijndwars.webpush.Urgency.HIGH)
+                    .build();
 
             HttpResponse response = pushService.get().send(notification);
             int statusCode = response.getStatusLine().getStatusCode();
@@ -108,7 +112,7 @@ class VapidNotificationSenderAdapter implements NotificationSender {
             // delivery failure so processing can continue for other subscriptions (Req 6.7)
             log.warn("Web Push delivery failed for endpoint {}: {}",
                     endpoint.endpointUrl(), e.getMessage(), e);
-            return SendResult.REJECTED;
+            return SendResult.TRANSIENT_FAILURE;
         }
     }
 
@@ -116,7 +120,8 @@ class VapidNotificationSenderAdapter implements NotificationSender {
         // Minimal JSON — avoids pulling in a serialisation library for a two-field object
         String escapedTitle = escapeJson(payload.title());
         String escapedBody  = escapeJson(payload.body());
-        return "{\"title\":\"" + escapedTitle + "\",\"body\":\"" + escapedBody + "\"}";
+        String url = payload.url() == null ? "" : ",\"url\":\"" + escapeJson(payload.url()) + "\"";
+        return "{\"title\":\"" + escapedTitle + "\",\"body\":\"" + escapedBody + "\"" + url + "}";
     }
 
     /**
@@ -143,6 +148,10 @@ class VapidNotificationSenderAdapter implements NotificationSender {
         return switch (statusCode) {
             case 201 -> SendResult.ACCEPTED;
             case 404, 410 -> SendResult.ENDPOINT_EXPIRED;
+            case 429, 500, 502, 503, 504 -> {
+                log.warn("Push service temporarily unavailable (HTTP {})", statusCode);
+                yield SendResult.TRANSIENT_FAILURE;
+            }
             default -> {
                 log.warn("Unexpected push service HTTP status: {}", statusCode);
                 yield SendResult.REJECTED;

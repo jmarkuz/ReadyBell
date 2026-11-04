@@ -12,6 +12,8 @@ import org.readybell.subscription.domain.DeviceSubscription;
 import org.readybell.subscription.domain.DeviceSubscriptionRepository;
 
 import java.time.Clock;
+import org.readybell.restaurant.domain.RestaurantRepository;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
@@ -46,14 +48,14 @@ public class OrderReadyHandler {
     private static final Logger LOG = Logger.getLogger(OrderReadyHandler.class.getName());
 
     /** Notification payload used for every order-ready push (title + body). */
-    private static final NotificationPayload ORDER_READY_PAYLOAD =
-            new NotificationPayload("Order Ready", "Your order is ready for pickup!");
 
     private final DeviceSubscriptionRepository subscriptionRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationSender notificationSender;
     private final DomainEventPublisher eventPublisher;
     private final ManageSubscriptionUseCase subscriptionService;
+    private final RestaurantRepository restaurantRepository;
+    private final List<Duration> retryDelays;
 
     /**
      * Constructor — all dependencies are injected (no framework annotations).
@@ -68,7 +70,9 @@ public class OrderReadyHandler {
                              NotificationRepository notificationRepository,
                              NotificationSender notificationSender,
                              DomainEventPublisher eventPublisher,
-                             ManageSubscriptionUseCase subscriptionService) {
+                             ManageSubscriptionUseCase subscriptionService,
+                             RestaurantRepository restaurantRepository,
+                             List<Duration> retryDelays) {
         this.subscriptionRepository = Objects.requireNonNull(subscriptionRepository,
                 "subscriptionRepository must not be null");
         this.notificationRepository = Objects.requireNonNull(notificationRepository,
@@ -79,6 +83,9 @@ public class OrderReadyHandler {
                 "eventPublisher must not be null");
         this.subscriptionService = Objects.requireNonNull(subscriptionService,
                 "subscriptionService must not be null");
+        this.restaurantRepository = Objects.requireNonNull(restaurantRepository,
+                "restaurantRepository must not be null");
+        this.retryDelays = List.copyOf(retryDelays);
     }
 
     /**
@@ -102,9 +109,11 @@ public class OrderReadyHandler {
             return;
         }
 
+        NotificationPayload payload = payloadFor(event);
+
         // Req 6.2 — for each subscription, compose and send
         for (DeviceSubscription subscription : subscriptions) {
-            processSubscription(event, subscription);
+            processSubscription(event, subscription, payload);
         }
     }
 
@@ -112,17 +121,47 @@ public class OrderReadyHandler {
     // Private helpers
     // -------------------------------------------------------------------------
 
-    private void processSubscription(OrderReady event, DeviceSubscription subscription) {
+    /** "Café Aurora: order #AB12CD34 is ready", tapping it opens the tracking page. */
+    private NotificationPayload payloadFor(OrderReady event) {
+        String restaurant = restaurantRepository.findByTenantId(event.tenantId())
+                .map(r -> r.getConfig().name())
+                .filter(n -> !n.isBlank())
+                .orElse("Your order");
+        String number = "#" + event.orderId().value().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT);
+        return new NotificationPayload(
+                restaurant,
+                "Order " + number + " is ready for pickup!",
+                "/track/" + event.sessionId().value());
+    }
+
+    private SendResult sendWithRetry(DeviceSubscription subscription, NotificationPayload payload) {
+        SendResult result = notificationSender.send(subscription.getEndpoint(), payload);
+        for (Duration delay : retryDelays) {
+            if (result != SendResult.TRANSIENT_FAILURE) {
+                break;
+            }
+            try {
+                Thread.sleep(delay.toMillis());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            result = notificationSender.send(subscription.getEndpoint(), payload);
+        }
+        return result;
+    }
+
+    private void processSubscription(OrderReady event, DeviceSubscription subscription, NotificationPayload payload) {
         // Compose a PENDING notification for this subscription (Req 6.2)
         Notification notification = Notification.compose(
                 event.tenantId(),
                 subscription.getId(),
-                ORDER_READY_PAYLOAD.body());
+                payload.body());
         notificationRepository.save(notification);
 
         SendResult result;
         try {
-            result = notificationSender.send(subscription.getEndpoint(), ORDER_READY_PAYLOAD);
+            result = sendWithRetry(subscription, payload);
         } catch (Exception ex) {
             // Treat unexpected sender exceptions as a failure — Req 6.7
             LOG.log(Level.WARNING, "NotificationSender threw an unexpected exception for subscription "
@@ -134,7 +173,7 @@ public class OrderReadyHandler {
 
         switch (result) {
             case ACCEPTED -> handleAccepted(notification);
-            case REJECTED -> handleRejected(notification, subscription);
+            case REJECTED, TRANSIENT_FAILURE -> handleRejected(notification, subscription);
             case ENDPOINT_EXPIRED -> handleExpired(notification, subscription);
         }
     }

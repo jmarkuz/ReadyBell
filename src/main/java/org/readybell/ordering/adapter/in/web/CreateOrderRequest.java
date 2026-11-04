@@ -5,7 +5,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.readybell.ordering.domain.OrderDetails;
 import org.readybell.ordering.domain.OrderItem;
@@ -18,11 +17,11 @@ import java.util.UUID;
 /**
  * Body of {@code POST /api/orders}.
  *
- * <p>{@code sessionId} (alias {@code customerSessionId}, as sent by the dashboard) is required;
- * everything else is optional. {@code estimatedMinutes} is relative to the time of the request.
+ * <p>{@code sessionId} (alias {@code customerSessionId}) is optional: when absent, the server starts a new
+ * customer session for the order (the receipt QR code then links to it). Everything else is optional. {@code estimatedMinutes} is relative to the time of the request.
  */
 public record CreateOrderRequest(
-        @NotNull @JsonAlias("customerSessionId") UUID sessionId,
+        @JsonAlias("customerSessionId") UUID sessionId,
         @Size(max = OrderDetails.MAX_CUSTOMER_NAME) String customerName,
         @Min(0) @Max(24 * 60) Integer estimatedMinutes,
         @Size(max = OrderDetails.MAX_ITEMS) List<@Valid Item> items) {

@@ -9,7 +9,12 @@ package org.readybell.notification.domain;
  * @param title the notification title shown in the browser/OS notification center
  * @param body  the notification body text
  */
-public record NotificationPayload(String title, String body) {
+public record NotificationPayload(String title, String body, String url) {
+
+    /** Payload without a click target. */
+    public NotificationPayload(String title, String body) {
+        this(title, body, null);
+    }
 
     /**
      * Compact constructor that validates both fields.

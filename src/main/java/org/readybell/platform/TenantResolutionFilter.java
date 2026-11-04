@@ -58,6 +58,7 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         "/api/platform",
         "/api/login",
         "/api/auth",
+        "/api/push",
         "/error"
     };
 

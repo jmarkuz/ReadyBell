@@ -2,6 +2,8 @@ package org.readybell.ordering.application;
 
 import org.readybell.ordering.domain.InvalidTransitionException;
 import org.readybell.ordering.domain.Order;
+import org.readybell.ordering.domain.OrderDetails;
+import org.readybell.shared.domain.TenantId;
 import org.readybell.ordering.domain.TerminalStateException;
 
 /**
@@ -27,6 +29,13 @@ public interface ManageOrderUseCase {
      *         tenant (Req 4.5, 4.6)
      */
     Order createOrder(CreateOrderCommand command);
+
+    /**
+     * Staff-side order entry: starts a fresh customer session for the tenant and creates the order in it.
+     * The session id is what the receipt QR code points to, so the customer can track this order
+     * without any prior scan.
+     */
+    Order createOrderWithNewSession(TenantId tenantId, OrderDetails details);
 
     /**
      * Transitions an existing order to a new status.

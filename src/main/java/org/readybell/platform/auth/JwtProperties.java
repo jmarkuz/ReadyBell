@@ -26,11 +26,15 @@ public class JwtProperties {
     public static class Login {
         private int maxFailures = 5;
         private Duration window = Duration.ofMinutes(15);
+        /** Count failures in Redis so all replicas share one limit (set when running more than one node). */
+        private boolean redis = false;
 
         public int getMaxFailures() { return maxFailures; }
         public void setMaxFailures(int maxFailures) { this.maxFailures = maxFailures; }
         public Duration getWindow() { return window; }
         public void setWindow(Duration window) { this.window = window; }
+        public boolean isRedis() { return redis; }
+        public void setRedis(boolean redis) { this.redis = redis; }
     }
 
     public String getSecret() { return secret; }

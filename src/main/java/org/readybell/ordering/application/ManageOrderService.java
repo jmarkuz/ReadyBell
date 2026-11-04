@@ -6,6 +6,9 @@ import org.readybell.session.domain.CustomerSessionRepository;
 import org.readybell.shared.domain.DomainEventPublisher;
 
 import java.time.Clock;
+import org.readybell.ordering.domain.OrderDetails;
+import org.readybell.session.domain.CustomerSession;
+import org.readybell.shared.domain.TenantId;
 import java.util.Objects;
 
 /**
@@ -123,6 +126,15 @@ public class ManageOrderService implements ManageOrderUseCase {
      *   <li>Return the updated {@link Order}.</li>
      * </ol>
      */
+    @Override
+    public Order createOrderWithNewSession(TenantId tenantId, OrderDetails details) {
+        Objects.requireNonNull(tenantId, "tenantId must not be null");
+        var session = CustomerSession.start(tenantId, clock);
+        sessionRepository.save(session);
+        eventPublisher.publishAll(session.getPendingEvents());
+        return createOrder(new CreateOrderCommand(tenantId, session.getId(), details));
+    }
+
     @Override
     public Order transitionOrderStatus(TransitionOrderCommand command) {
         Objects.requireNonNull(command, "command must not be null");

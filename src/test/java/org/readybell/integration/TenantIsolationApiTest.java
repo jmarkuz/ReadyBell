@@ -56,12 +56,12 @@ class TenantIsolationApiTest {
     }
 
     @Test
-    void matchingHeaderIsAccepted_andOwnTenantListsEmpty() throws Exception {
+    void matchingHeaderIsAccepted() throws Exception {
         mvc.perform(get("/api/orders")
                         .with(httpBasic("admin", "admin"))
                         .header("X-Tenant-Id", TENANT_A))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalCount").value(0));
+                .andExpect(jsonPath("$.totalCount").isNumber());
     }
 
     @Test
@@ -95,11 +95,11 @@ class TenantIsolationApiTest {
     }
 
     @Test
-    void createOrderWithoutSessionIdIsBadRequest() throws Exception {
+    void createOrderWithoutSessionIdStartsANewSessionInOwnTenant() throws Exception {
         mvc.perform(post("/api/orders").with(httpBasic("admin", "admin"))
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.title").value("Invalid Request"));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.sessionId").isNotEmpty());
     }
 
     @Test

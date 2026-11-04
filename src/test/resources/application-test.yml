@@ -1,4 +1,6 @@
 spring:
+  flyway:
+    enabled: false   # tests build their H2 schema from the entities
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -35,3 +37,6 @@ readybell:
       - username: platform
         password: platform
         roles: [PLATFORM_ADMIN]
+  push:
+    async: false          # deliver pushes inline so tests can assert on the result
+    retry-delays-ms: ""   # no retries/sleeps in tests

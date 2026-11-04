@@ -3,6 +3,8 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:3254/readybell}
     password: ${DB_PASSWORD:qwer1234}
+  flyway:
+    enabled: false       # dev lets Hibernate build the schema
   jpa:
     hibernate:
       ddl-auto: create   # recreates the schema on every start

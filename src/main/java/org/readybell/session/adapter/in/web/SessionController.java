@@ -7,13 +7,17 @@ import org.readybell.restaurant.domain.DeactivatedRestaurantException;
 import org.readybell.session.application.InvalidQrTokenException;
 import org.readybell.ordering.domain.OrderRepository;
 import org.readybell.session.application.StartSessionUseCase;
+import org.readybell.restaurant.domain.RestaurantRepository;
 import org.readybell.session.domain.CustomerSession;
+import org.readybell.session.domain.CustomerSessionRepository;
 import org.readybell.session.domain.CustomerSessionId;
 import org.readybell.shared.domain.TenantId;
 import org.readybell.shared.tenancy.TenantContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Clock;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,11 +42,41 @@ public class SessionController {
 
     private final StartSessionUseCase startSessionUseCase;
     private final OrderRepository orderRepository;
+    private final CustomerSessionRepository sessionRepository;
+    private final RestaurantRepository restaurantRepository;
+    private final Clock clock;
 
     public SessionController(StartSessionUseCase startSessionUseCase,
-                             OrderRepository orderRepository) {
-        this.startSessionUseCase = startSessionUseCase;
-        this.orderRepository     = orderRepository;
+                             OrderRepository orderRepository,
+                             CustomerSessionRepository sessionRepository,
+                             RestaurantRepository restaurantRepository,
+                             Clock clock) {
+        this.startSessionUseCase  = startSessionUseCase;
+        this.orderRepository      = orderRepository;
+        this.sessionRepository    = sessionRepository;
+        this.restaurantRepository = restaurantRepository;
+        this.clock                = clock;
+    }
+
+    /**
+     * Data for the customer tracking page ({@code /track/{sessionId}}, reached from the receipt QR
+     * code). Public: the unguessable session id is the capability. An unknown session id yields 404.
+     */
+    @GetMapping("/{id}/track")
+    public TrackResponse track(@PathVariable("id") UUID id) {
+        // the tenant is resolved from the session id; none resolved means the link is not valid
+        TenantId tenantId = TenantContextHolder.get().orElseThrow(() -> new SessionUnknownException(id));
+        var sessionId = new CustomerSessionId(id);
+        var session = sessionRepository.findByTenantAndId(tenantId, sessionId)
+                .orElseThrow(() -> new SessionUnknownException(id));
+        String restaurantName = restaurantRepository.findByTenantId(tenantId)
+                .map(r -> r.getConfig().name())
+                .orElse("");
+        var orders = orderRepository.findByTenantAndSession(tenantId, sessionId).stream()
+                .sorted(Comparator.comparing(o -> o.getCreatedAt()))
+                .map(o -> TrackResponse.TrackedOrder.from(o, clock))
+                .toList();
+        return new TrackResponse(restaurantName, session.isActive(), orders);
     }
 
     /**

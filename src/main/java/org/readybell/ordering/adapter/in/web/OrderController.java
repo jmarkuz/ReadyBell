@@ -96,9 +96,10 @@ public class OrderController {
     @ResponseStatus(HttpStatus.CREATED)
     public OrderResponse createOrder(@Valid @RequestBody CreateOrderRequest request) {
         TenantId tenantId = TenantContextHolder.require();
-        CustomerSessionId sessionId = new CustomerSessionId(request.sessionId());
-        var order = manageOrderUseCase.createOrder(
-                new CreateOrderCommand(tenantId, sessionId, request.toDetails(clock)));
+        var order = request.sessionId() == null
+                ? manageOrderUseCase.createOrderWithNewSession(tenantId, request.toDetails(clock))
+                : manageOrderUseCase.createOrder(new CreateOrderCommand(
+                        tenantId, new CustomerSessionId(request.sessionId()), request.toDetails(clock)));
         return OrderResponse.from(order);
     }
 

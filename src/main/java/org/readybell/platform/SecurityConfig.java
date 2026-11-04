@@ -68,17 +68,38 @@ public class SecurityConfig {
      * @return the configured {@link SecurityFilterChain} bean
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
+            @org.springframework.beans.factory.annotation.Value("${readybell.cors.allowed-origins:}") List<String> corsOrigins)
+            throws Exception {
         http
             // Disable CSRF — REST API, no browser form submissions
             .csrf(AbstractHttpConfigurer::disable)
+
+            // The UI is normally served from the same origin; CORS is opt-in for a separately hosted UI
+            .cors(cors -> cors.configurationSource(request -> {
+                var config = new org.springframework.web.cors.CorsConfiguration();
+                config.setAllowedOrigins(corsOrigins.stream().filter(o -> !o.isBlank()).toList());
+                config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+                config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Tenant-Id"));
+                config.setMaxAge(3600L);
+                return config;
+            }))
+
+            // Browser hardening: the built UI loads only its own scripts, plus Google Fonts
+            .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(
+                    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                    + "font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; "
+                    + "worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'")))
 
             // Authorization rules
             .authorizeHttpRequests(auth -> auth
                 // Public: customer session endpoints and health/metrics probes
                 .requestMatchers("/api/sessions/**").permitAll()
+                .requestMatchers("/api/push/config").permitAll()
                 .requestMatchers("/api/login", "/api/auth/refresh").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
+                // Probes are public; metrics and the rest of actuator are for the platform operator
+                .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
+                .requestMatchers("/actuator/**").hasRole("PLATFORM_ADMIN")
 
                 // Platform admin: require PLATFORM_ADMIN role (Req 9.1, 9.4)
                 .requestMatchers("/api/platform/**").hasRole("PLATFORM_ADMIN")
@@ -87,7 +108,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasRole("RESTAURANT_ADMIN")
                 .requestMatchers("/api/orders/**").authenticated()
 
-                // All other requests require authentication by default
+                // The single-page UI (index.html, assets, service worker, deep links like /track/...) is public;
+                // everything under /api not matched above requires authentication
+                .requestMatchers(request -> !request.getRequestURI().startsWith("/api/")).permitAll()
                 .anyRequest().authenticated()
             )
 
@@ -133,8 +156,15 @@ public class SecurityConfig {
     }
 
     @Bean
-    public LoginAttemptLimiter loginAttemptLimiter(JwtProperties props, Clock clock) {
-        return new LoginAttemptLimiter(props.getLogin().getMaxFailures(), props.getLogin().getWindow(), clock);
+    public LoginAttemptLimiter loginAttemptLimiter(JwtProperties props, Clock clock,
+            org.springframework.beans.factory.ObjectProvider<org.springframework.data.redis.core.StringRedisTemplate> redis) {
+        var login = props.getLogin();
+        // With several replicas the failures must be counted in one place: Redis
+        var redisTemplate = login.isRedis() ? redis.getIfAvailable() : null;
+        org.readybell.platform.auth.FailureStore store = redisTemplate != null
+                ? new org.readybell.platform.auth.RedisFailureStore(redisTemplate, "readybell:login-failures:")
+                : new org.readybell.platform.auth.InMemoryFailureStore();
+        return new LoginAttemptLimiter(login.getMaxFailures(), login.getWindow(), clock, store);
     }
 
     @Bean

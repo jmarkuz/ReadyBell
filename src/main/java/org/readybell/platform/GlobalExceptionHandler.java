@@ -142,6 +142,17 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(org.readybell.session.adapter.in.web.SessionUnknownException.class)
+    public ResponseEntity<Map<String, Object>> handleSessionUnknown(
+            org.readybell.session.adapter.in.web.SessionUnknownException ex) {
+        return problem(
+                HttpStatus.NOT_FOUND,
+                "https://readybell.org/problems/session-not-found",
+                "Session Not Found",
+                "This tracking link is not valid."
+        );
+    }
+
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleOrderNotFound(OrderNotFoundException ex) {
         return problem(

@@ -49,7 +49,7 @@ public class DeviceSubscriptionJpaEntity extends TenantScopedEntity {
     @Column(name = "session_id", nullable = false, updatable = false)
     private UUID sessionId;
 
-    @Column(name = "endpoint_url", nullable = false)
+    @Column(name = "endpoint_url", nullable = false, length = 2048)
     private String endpointUrl;
 
     @Column(name = "p256dh_key", nullable = false)

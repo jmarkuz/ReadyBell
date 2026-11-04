@@ -3,11 +3,7 @@ package org.readybell.platform.auth;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Sliding-window limiter for failed logins, keyed separately by client address and by username so
@@ -18,77 +14,52 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class LoginAttemptLimiter {
 
-    private static final int MAX_TRACKED_KEYS = 10_000;
-
     private final int maxFailures;
     private final Duration window;
     private final Clock clock;
-    private final Map<String, Deque<Instant>> failures = new ConcurrentHashMap<>();
+    private final FailureStore store;
 
     public LoginAttemptLimiter(int maxFailures, Duration window, Clock clock) {
+        this(maxFailures, window, clock, new InMemoryFailureStore());
+    }
+
+    public LoginAttemptLimiter(int maxFailures, Duration window, Clock clock, FailureStore store) {
         this.maxFailures = maxFailures;
         this.window = window;
         this.clock = clock;
+        this.store = store;
     }
 
-    /** @return how long the caller must wait, or {@link Duration#ZERO} if an attempt is allowed. */
+    /**
+     * How long the caller must wait before another attempt is allowed; {@link Duration#ZERO} when
+     * not throttled. The longer of the per-username and per-address waits applies.
+     */
     public Duration retryAfter(String username, String address) {
         Duration a = retryAfterKey(key("u", username));
         Duration b = retryAfterKey(key("a", address));
         return a.compareTo(b) >= 0 ? a : b;
     }
 
+    /** Records a failed attempt against both the username and the client address. */
     public void recordFailure(String username, String address) {
-        prune();
         Instant now = clock.instant();
-        for (String k : new String[]{key("u", username), key("a", address)}) {
-            Deque<Instant> q = failures.computeIfAbsent(k, x -> new ArrayDeque<>());
-            synchronized (q) {
-                evict(q, now);
-                q.addLast(now);
-            }
-        }
+        store.add(key("u", username), now, window);
+        store.add(key("a", address), now, window);
     }
 
+    /** A successful sign-in clears the username's failures (the address keeps its history). */
     public void recordSuccess(String username) {
-        failures.remove(key("u", username));
+        store.clear(key("u", username));
     }
 
     private Duration retryAfterKey(String k) {
-        Deque<Instant> q = failures.get(k);
-        if (q == null) {
+        Instant now = clock.instant();
+        FailureStore.Window w = store.window(k, now, window);
+        if (w.count() < maxFailures || w.oldest().isEmpty()) {
             return Duration.ZERO;
         }
-        Instant now = clock.instant();
-        synchronized (q) {
-            evict(q, now);
-            if (q.size() < maxFailures) {
-                return Duration.ZERO;
-            }
-            Duration wait = Duration.between(now, q.peekFirst().plus(window));
-            return wait.isNegative() ? Duration.ZERO : wait;
-        }
-    }
-
-    private void evict(Deque<Instant> q, Instant now) {
-        Instant cutoff = now.minus(window);
-        while (!q.isEmpty() && !q.peekFirst().isAfter(cutoff)) {
-            q.pollFirst();
-        }
-    }
-
-    /** Bounds memory: drops expired keys once the map grows large. */
-    private void prune() {
-        if (failures.size() < MAX_TRACKED_KEYS) {
-            return;
-        }
-        Instant now = clock.instant();
-        failures.entrySet().removeIf(e -> {
-            synchronized (e.getValue()) {
-                evict(e.getValue(), now);
-                return e.getValue().isEmpty();
-            }
-        });
+        Duration wait = Duration.between(now, w.oldest().get().plus(window));
+        return wait.isNegative() ? Duration.ZERO : wait;
     }
 
     private static String key(String kind, String value) {

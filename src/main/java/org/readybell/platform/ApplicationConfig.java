@@ -134,13 +134,18 @@ public class ApplicationConfig {
             NotificationRepository notificationRepository,
             NotificationSender notificationSender,
             DomainEventPublisher eventPublisher,
-            ManageSubscriptionUseCase subscriptionUseCase) {
+            ManageSubscriptionUseCase subscriptionUseCase,
+            RestaurantRepository restaurantRepository,
+            @org.springframework.beans.factory.annotation.Value("${readybell.push.retry-delays-ms:500,2000,5000}")
+            java.util.List<Long> retryDelaysMs) {
         return new OrderReadyHandler(
                 subscriptionRepository,
                 notificationRepository,
                 notificationSender,
                 eventPublisher,
-                subscriptionUseCase);
+                subscriptionUseCase,
+                restaurantRepository,
+                retryDelaysMs.stream().map(java.time.Duration::ofMillis).toList());
     }
 
     // -------------------------------------------------------------------------

@@ -2,6 +2,7 @@ package org.readybell.ordering.adapter.in.web.sse;
 
 import org.readybell.session.domain.CustomerSessionId;
 import org.readybell.shared.domain.TenantId;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -37,6 +38,28 @@ public class SseEmitterRegistry {
     }
 
     /** Number of open connections (for tests and diagnostics). */
+    /**
+     * Keeps idle streams alive through proxies and load balancers (which close silent connections)
+     * and drops the ones whose client has gone away.
+     */
+    @Scheduled(fixedDelayString = "${readybell.sse.heartbeat:20s}")
+    public void heartbeat() {
+        ping(customerEmitters);
+        ping(staffEmitters);
+    }
+
+    private void ping(ConcurrentHashMap<UUID, Set<SseEmitter>> registry) {
+        registry.forEach((key, emitters) -> {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event().comment("ping"));
+                } catch (IOException | IllegalStateException ex) {
+                    remove(registry, key, emitter);
+                }
+            }
+        });
+    }
+
     public int openConnections() {
         return customerEmitters.values().stream().mapToInt(Set::size).sum()
                 + staffEmitters.values().stream().mapToInt(Set::size).sum();

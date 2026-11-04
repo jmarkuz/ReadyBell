@@ -34,5 +34,8 @@ public enum SendResult {
      * The device endpoint is no longer registered (HTTP 404 or 410).
      * Maps to: delete the {@code DeviceSubscription} (Req 3.6).
      */
+    /** Network error, 429 or 5xx from the push service: worth retrying. */
+    TRANSIENT_FAILURE,
+
     ENDPOINT_EXPIRED
 }
