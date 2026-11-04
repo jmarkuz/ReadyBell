@@ -73,4 +73,11 @@ class DevTestDataApiTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"orders\":[]}"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void devProfileAcceptsTheViteDevServerOrigin() throws Exception {
+        mvc.perform(post("/api/login").header("Origin", "http://localhost:5173")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"username\":\"admin\",\"password\":\"admin\"}"))
+                .andExpect(status().isOk());
+    }
 }

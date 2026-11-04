@@ -50,9 +50,12 @@ public class RestaurantAdminController {
     private final RestaurantAdminUseCase adminUseCase;
 
     private final PasswordEncoder passwordEncoder;
+    private final org.readybell.restaurant.domain.StaffAccountRepository staffAccounts;
 
-    public RestaurantAdminController(RestaurantAdminUseCase adminUseCase, PasswordEncoder passwordEncoder) {
+    public RestaurantAdminController(RestaurantAdminUseCase adminUseCase, PasswordEncoder passwordEncoder,
+                                     org.readybell.restaurant.domain.StaffAccountRepository staffAccounts) {
         this.adminUseCase = adminUseCase;
+        this.staffAccounts = staffAccounts;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -66,6 +69,13 @@ public class RestaurantAdminController {
      * @param request body containing {@code username} and {@code role}
      * @return 201 Created with the new account details
      */
+    /** Staff accounts of the caller's restaurant (RESTAURANT_ADMIN). */
+    @GetMapping("/staff")
+    public java.util.List<StaffAccountResponse> listStaff() {
+        TenantId tenantId = TenantContextHolder.require();
+        return staffAccounts.findAllByTenant(tenantId).stream().map(StaffAccountResponse::from).toList();
+    }
+
     @PostMapping("/staff")
     @ResponseStatus(HttpStatus.CREATED)
     public StaffAccountResponse createStaffAccount(@Valid @RequestBody CreateStaffAccountRequest request) {

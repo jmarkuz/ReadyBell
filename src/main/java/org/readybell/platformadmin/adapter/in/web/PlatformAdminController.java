@@ -45,11 +45,14 @@ public class PlatformAdminController {
 
     private final PasswordEncoder passwordEncoder;
     private final TransactionTemplate transaction;
+    private final org.readybell.restaurant.domain.RestaurantRepository restaurantRepository;
 
     public PlatformAdminController(PlatformAdminUseCase platformAdminUseCase,
                                    PasswordEncoder passwordEncoder,
-                                   PlatformTransactionManager transactionManager) {
+                                   PlatformTransactionManager transactionManager,
+                                   org.readybell.restaurant.domain.RestaurantRepository restaurantRepository) {
         this.platformAdminUseCase = platformAdminUseCase;
+        this.restaurantRepository = restaurantRepository;
         this.passwordEncoder = passwordEncoder;
         this.transaction = new TransactionTemplate(transactionManager);
     }
@@ -64,6 +67,14 @@ public class PlatformAdminController {
      * @param request body containing {@code identifier} and {@code name}
      * @return 201 Created with the new tenant details
      */
+    /** All restaurants, newest first by identifier (platform operator overview). */
+    @GetMapping
+    public java.util.List<RestaurantResponse> listRestaurants() {
+        return restaurantRepository.findAll().stream()
+                .sorted(java.util.Comparator.comparing(Restaurant::getIdentifier))
+                .map(RestaurantResponse::from).toList();
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public RestaurantResponse createRestaurant(@Valid @RequestBody CreateRestaurantRequest request) {

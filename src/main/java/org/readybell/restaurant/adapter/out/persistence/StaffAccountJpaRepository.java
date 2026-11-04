@@ -34,4 +34,6 @@ public interface StaffAccountJpaRepository
     Optional<StaffAccountJpaEntity> findByTenantIdAndUsername(UUID tenantId, String username);
 
     Optional<StaffAccountJpaEntity> findByUsername(String username);
+
+    java.util.List<StaffAccountJpaEntity> findByTenantIdOrderByUsernameAsc(UUID tenantId);
 }

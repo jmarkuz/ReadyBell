@@ -67,4 +67,15 @@ class ApiErrorHandlingTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value("Invalid Request"));
     }
+
+    @Test
+    void sameOriginBrowserRequestsAreAllowedButForeignOriginsAreNot() throws Exception {
+        String login = "{\"username\":\"admin\",\"password\":\"admin\"}";
+        mvc.perform(post("/api/login").header("Origin", "http://localhost")
+                        .contentType(MediaType.APPLICATION_JSON).content(login))
+                .andExpect(status().isOk());
+        mvc.perform(post("/api/login").header("Origin", "https://evil.example")
+                        .contentType(MediaType.APPLICATION_JSON).content(login))
+                .andExpect(status().isForbidden());
+    }
 }

@@ -65,4 +65,7 @@ public interface StaffAccountRepository {
      * for tenant-scoped data access.
      */
     Optional<StaffAccount> findByUsername(String username);
+
+    /** All accounts of the tenant, oldest username first. */
+    java.util.List<StaffAccount> findAllByTenant(TenantId tenantId);
 }

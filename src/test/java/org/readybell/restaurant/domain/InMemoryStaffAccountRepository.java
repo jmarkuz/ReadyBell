@@ -54,6 +54,12 @@ public class InMemoryStaffAccountRepository implements StaffAccountRepository {
     }
 
     /** Convenience helper — returns the total number of stored accounts. */
+    @Override
+    public java.util.List<StaffAccount> findAllByTenant(TenantId tenantId) {
+        return store.values().stream().filter(a -> a.getTenantId().equals(tenantId))
+                .sorted(java.util.Comparator.comparing(StaffAccount::getUsername)).toList();
+    }
+
     public int size() {
         return store.size();
     }

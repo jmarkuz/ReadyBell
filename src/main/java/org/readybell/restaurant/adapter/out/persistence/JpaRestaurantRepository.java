@@ -46,4 +46,10 @@ public class JpaRestaurantRepository implements RestaurantRepository {
         return springRepo.findByIdentifier(identifier)
                 .map(RestaurantJpaEntity::toDomain);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<Restaurant> findAll() {
+        return springRepo.findAll().stream().map(RestaurantJpaEntity::toDomain).toList();
+    }
 }

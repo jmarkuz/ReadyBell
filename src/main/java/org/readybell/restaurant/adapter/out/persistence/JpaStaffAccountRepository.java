@@ -69,6 +69,14 @@ public class JpaStaffAccountRepository implements StaffAccountRepository {
         return springRepo.findByUsername(username).map(StaffAccountJpaEntity::toDomain);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<StaffAccount> findAllByTenant(TenantId tenantId) {
+        enableTenantFilter(tenantId);
+        return springRepo.findByTenantIdOrderByUsernameAsc(tenantId.value()).stream()
+                .map(StaffAccountJpaEntity::toDomain).toList();
+    }
+
     // -------------------------------------------------------------------------
     // Tenant filter helper
     // -------------------------------------------------------------------------

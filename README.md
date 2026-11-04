@@ -53,7 +53,7 @@ Contexts integrate only through domain events published via the event port or th
 - PostgreSQL reachable at the connection details in `src/main/resources/application.yml` (defaults to `jdbc:postgresql://localhost:5432/readybell`)
 - Redis reachable at the connection details in `application.yml` (defaults to `localhost:6379`)
 
-There is no `docker-compose.yml` in this repository yet — point the `spring.datasource` and `spring.data.redis` settings in `application.yml` at your own PostgreSQL/Redis instances, or override them with environment-specific Spring profiles.
+A `docker-compose.yml` runs the whole stack (app + PostgreSQL + Redis): see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). For local development, point the `spring.datasource` and `spring.data.redis` settings in `application.yml` at your own PostgreSQL/Redis instances, or use the `dev` profile.
 
 ### Build
 
