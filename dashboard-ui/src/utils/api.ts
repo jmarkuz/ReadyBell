@@ -22,7 +22,7 @@ export interface UserProfile {
   username: string;
   email: string;
   name: string;
-  role: 'STAFF' | 'ADMIN' | 'PLATFORM_ADMIN';
+  role: 'STAFF' | 'RESTAURANT_ADMIN' | 'PLATFORM_ADMIN';
   tenantId: string;
   restaurantName?: string;
 }
@@ -69,6 +69,21 @@ export type RawOrderRow = Omit<OrderRow, 'deliveryETA' | 'status'> & {
   deliveryETA: string | null;
   status: string;
 };
+
+export interface StaffAccountInfo {
+  accountId: string;
+  username: string;
+  role: 'STAFF' | 'RESTAURANT_ADMIN';
+  status: 'ACTIVE' | 'DEACTIVATED';
+}
+
+export interface RestaurantInfo {
+  tenantId: string;
+  identifier: string;
+  name: string | null;
+  status: 'ACTIVE' | 'DEACTIVATED';
+  adminUsername: string | null;
+}
 
 /** One record of a test-data import file (see test-data/test-orders-50.json). */
 export interface TestDataOrder {
@@ -444,9 +459,10 @@ export class ApiClient {
       if (decodedToken) {
         this.userProfile = {
           id: decodedToken.sub || decodedToken.id || decodedToken.username || '',
-          username: decodedToken.username || '',
+          // the backend puts the username in the standard `sub` claim
+          username: decodedToken.username || decodedToken.sub || '',
           email: decodedToken.email || '',
-          name: decodedToken.name || decodedToken.username || '',
+          name: decodedToken.name || decodedToken.username || decodedToken.sub || '',
           role: decodedToken.role,
           tenantId: decodedToken.tenant_id || decodedToken.tenantId || '',
         };
@@ -982,6 +998,30 @@ export class ApiClient {
   // ============================================================================
 
   /**
+   * The signed-in user's own restaurant (any staff role)
+   * GET /api/restaurant
+   */
+  async getRestaurantProfile(): Promise<{ name: string; identifier: string }> {
+    return this.get('/api/restaurant');
+  }
+
+  /**
+   * Staff accounts of the restaurant (RESTAURANT_ADMIN only)
+   * GET /api/admin/staff
+   */
+  async listStaff(): Promise<StaffAccountInfo[]> {
+    return this.get('/api/admin/staff');
+  }
+
+  /**
+   * All restaurants (PLATFORM_ADMIN only)
+   * GET /api/platform/restaurants
+   */
+  async listRestaurants(): Promise<RestaurantInfo[]> {
+    return this.get('/api/platform/restaurants');
+  }
+
+  /**
    * Create a staff account (RESTAURANT_ADMIN only)
    * POST /api/admin/staff
    */
@@ -1022,7 +1062,7 @@ export class ApiClient {
     name: string;
     adminUsername?: string;
     adminPassword?: string;
-  }): Promise<{ tenantId: string; identifier: string; status: string; adminUsername: string | null }> {
+  }): Promise<RestaurantInfo> {
     return this.post('/api/platform/restaurants', data);
   }
 
@@ -1033,7 +1073,7 @@ export class ApiClient {
   async updateRestaurant(
     tenantId: string,
     data: { name: string }
-  ): Promise<{ tenantId: string; identifier: string; status: string; adminUsername: string | null }> {
+  ): Promise<RestaurantInfo> {
     return this.put(`/api/platform/restaurants/${tenantId}`, data);
   }
 
@@ -1043,7 +1083,7 @@ export class ApiClient {
    */
   async deactivateRestaurant(
     tenantId: string
-  ): Promise<{ tenantId: string; identifier: string; status: string; adminUsername: string | null }> {
+  ): Promise<RestaurantInfo> {
     return this.delete(`/api/platform/restaurants/${tenantId}`);
   }
 

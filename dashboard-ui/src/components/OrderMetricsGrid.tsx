@@ -34,28 +34,24 @@ export default memo(function OrderMetricsGrid({
       title: 'Total Orders',
       value: metrics.totalOrders,
       icon: ShoppingCart,
-      trend: { value: 12.5, direction: 'up' as const, label: 'vs. last hour' },
     },
     {
       id: 'new',
       title: 'New Orders',
       value: metrics.newOrders,
       icon: Clock,
-      trend: { value: 5.2, direction: 'up' as const, label: 'vs. last hour' },
     },
     {
       id: 'preparing',
       title: 'Preparing',
       value: metrics.preparing,
       icon: Zap,
-      trend: { value: 2.1, direction: 'down' as const, label: 'vs. last hour' },
     },
     {
       id: 'ready',
       title: 'Ready for Pickup',
       value: metrics.readyForPickup,
       icon: CheckCircle,
-      trend: { value: 8.3, direction: 'up' as const, label: 'vs. last hour' },
     },
   ];
 
@@ -67,7 +63,6 @@ export default memo(function OrderMetricsGrid({
           title={card.title}
           value={card.value}
           icon={card.icon}
-          trend={card.trend}
           isLoading={isLoading}
           onClick={() => onCardClick?.(card.id)}
         />

@@ -492,7 +492,7 @@ describe('Dashboard Real-Time Updates - Property-Based Tests', () => {
           updateBatches => {
             const startTime = performance.now();
 
-            let allOrders: OrderRow[] = [];
+            const allOrders: OrderRow[] = [];
             const seen = new Set<string>();
 
             // Process multiple batches

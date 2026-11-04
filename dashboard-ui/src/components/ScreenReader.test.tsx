@@ -122,12 +122,6 @@ describe('Screen Reader Accessibility (4.2)', () => {
       // Check that all key text content is present and accessible
       expect(screen.getAllByText('ReadyBell').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Orders').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Menu Management').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Payments').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Analytics').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Settings').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Support').length).toBeGreaterThan(0);
 
       // Check dashboard specific content
       expect(screen.getAllByText(/Total Orders/i).length).toBeGreaterThan(0);

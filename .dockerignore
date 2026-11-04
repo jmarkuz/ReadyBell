@@ -1,0 +1,12 @@
+.git
+.gradle
+.idea
+.kiro
+.claude
+.vscode
+build
+**/node_modules
+dashboard-ui/dist
+dashboard-ui/coverage
+docs
+*.md

@@ -246,7 +246,7 @@ describe('E2E: Bearer Token Authentication Flow (Real Backend)', () => {
 
       // Should NOT include additional spaces or prefixes
       expect(authHeader).not.toMatch(/^token /i); // Not lowercase "token"
-      expect(authHeader).not.toMatch(/^  Bearer/); // Not extra spaces
+      expect(authHeader).not.toMatch(/^ {2}Bearer/); // Not extra spaces
       expect(authHeader).toMatch(/^Bearer /); // Must start with "Bearer " (capital B)
     });
 

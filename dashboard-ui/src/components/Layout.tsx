@@ -1,8 +1,11 @@
 import React, { ReactNode } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { useSearch } from '@/context/SearchContext';
+import { RestaurantProvider } from '@/context/RestaurantProvider';
+import { useRestaurant } from '@/context/restaurantContext';
+import { apiClient } from '@/utils/api';
 
 interface LayoutProps {
   children?: ReactNode;
@@ -24,6 +27,26 @@ interface LayoutProps {
  * - Mobile (<768px): Sidebar as drawer/overlay, 1-column stacked
  */
 export default function Layout({ children }: LayoutProps) {
+  return (
+    <RestaurantProvider>
+      <LayoutFrame>{children}</LayoutFrame>
+    </RestaurantProvider>
+  );
+}
+
+function LayoutFrame({ children }: LayoutProps) {
+  const restaurant = useRestaurant();
+  const onDashboard = useLocation().pathname === '/';
+  const profile = apiClient.getUserProfile();
+  const sidebarProfile = profile
+    ? {
+        name: profile.name || profile.username || 'User',
+        email: profile.email ?? '',
+        role: (profile.role ?? '').replace('_', ' ').toLowerCase(),
+        restaurantName: profile.role === 'PLATFORM_ADMIN' ? 'ReadyBell platform' : restaurant.name,
+      }
+    : undefined;
+
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const { setQuery } = useSearch();
 
@@ -42,7 +65,11 @@ export default function Layout({ children }: LayoutProps) {
         `}
         aria-label="Main navigation"
       >
-        <Sidebar onToggleCollapse={() => setSidebarOpen(!sidebarOpen)} />
+        <Sidebar
+          role={profile?.role ?? null}
+          userProfile={sidebarProfile}
+          onToggleCollapse={() => setSidebarOpen(!sidebarOpen)}
+        />
       </aside>
 
       {/* Overlay for mobile when sidebar is open */}
@@ -59,7 +86,7 @@ export default function Layout({ children }: LayoutProps) {
       <div className="flex flex-col h-screen overflow-hidden md:ml-20 lg:ml-64">
         {/* Header - Fixed at top */}
         <header className="sticky top-0 z-20 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900" role="banner">
-          <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} onSearch={setQuery} />
+          <Header showSearch={onDashboard} onMenuToggle={() => setSidebarOpen(!sidebarOpen)} onSearch={setQuery} />
         </header>
 
         {/* Main Content Area - Scrollable independently */}

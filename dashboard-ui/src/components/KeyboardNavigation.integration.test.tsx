@@ -52,7 +52,7 @@ describe('4.1 Keyboard Navigation - Full Dashboard', () => {
       // 5. Theme toggle button
       // 6. Settings menu button
 
-      let prevTabIndex = -1;
+      const prevTabIndex = -1;
       focusableElements.forEach((element) => {
         const tabIndex = element.getAttribute('tabindex');
         if (tabIndex) {
@@ -64,13 +64,13 @@ describe('4.1 Keyboard Navigation - Full Dashboard', () => {
     });
 
     it('should have logical tab order through Sidebar navigation', () => {
-      render(<Sidebar />);
+      render(<Sidebar role="RESTAURANT_ADMIN" />);
 
       const navElement = screen.getByRole('navigation', { name: /main navigation/i });
       const navLinks = within(navElement).getAllByRole('link');
 
-      // Should have 7 navigation items
-      expect(navLinks.length).toBeGreaterThanOrEqual(7);
+      // Dashboard, Staff and Settings for a restaurant admin
+      expect(navLinks.length).toBe(3);
 
       // All navigation links should be tabbable
       navLinks.forEach((link) => {
@@ -319,11 +319,11 @@ describe('4.1 Keyboard Navigation - Full Dashboard', () => {
    */
   describe('Sidebar navigation keyboard activation', () => {
     it('should activate navigation links with Enter key', () => {
-      render(<Sidebar />);
+      render(<Sidebar role="RESTAURANT_ADMIN" />);
 
       const navLinks = screen.getAllByRole('link');
-      // Find the dashboard link (skip the logo link at top)
-      const dashboardLink = navLinks[navLinks.length - 6]; // Dashboard is usually 6th link
+      // the logo link comes first, then Dashboard, Staff, Settings
+      const dashboardLink = navLinks[navLinks.length - 3];
 
       dashboardLink.focus();
       expect(document.activeElement).toBe(dashboardLink);
@@ -336,11 +336,11 @@ describe('4.1 Keyboard Navigation - Full Dashboard', () => {
     });
 
     it('should activate navigation links with Space key', () => {
-      render(<Sidebar />);
+      render(<Sidebar role="RESTAURANT_ADMIN" />);
 
       const navLinks = screen.getAllByRole('link');
-      // Find a non-dashboard link
-      const ordersLink = navLinks[navLinks.length - 5]; // Orders link
+      // a non-dashboard link
+      const ordersLink = navLinks[navLinks.length - 2]; // Staff link
 
       ordersLink.focus();
       expect(document.activeElement).toBe(ordersLink);
@@ -501,7 +501,7 @@ describe('4.1 Keyboard Navigation - Full Dashboard', () => {
       );
 
       // Try to tab through all elements
-      let trapped = false;
+      const trapped = false;
       focusableElements.forEach((element: Element) => {
         const htmlElement = element as HTMLElement;
         htmlElement.focus();
@@ -811,7 +811,7 @@ describe('4.1 Property-Based: Keyboard Navigation Focus Consistency', () => {
       { withRouter: true }
     );
 
-    let currentElement: Element | null = document.body;
+    const currentElement: Element | null = document.body;
     const visited = new Set<Element>();
     let iterations = 0;
     const maxIterations = 100; // Prevent infinite loops

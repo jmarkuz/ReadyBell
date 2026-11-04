@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@/test/test-utils';
+import { render, screen, within } from '@/test/test-utils';
 import Sidebar from './Sidebar';
 import { signOut } from '@/utils/session';
 
@@ -27,65 +27,37 @@ describe('Sidebar Component', () => {
     expect(nav).toBeInTheDocument();
   });
 
-  it('renders all navigation items', () => {
-    render(<Sidebar />);
-    
-    // Use getAllByText and check the visible ones (filtering out tooltips)
-    const dashboardTexts = screen.getAllByText('Dashboard');
-    expect(dashboardTexts.some(el => el.className.includes('md:inline'))).toBeTruthy();
-    
-    const ordersTexts = screen.getAllByText('Orders');
-    expect(ordersTexts.length).toBeGreaterThan(0);
-    
-    const menuTexts = screen.getAllByText('Menu Management');
-    expect(menuTexts.length).toBeGreaterThan(0);
-    
-    const paymentsTexts = screen.getAllByText('Payments');
-    expect(paymentsTexts.length).toBeGreaterThan(0);
-    
-    const analyticsTexts = screen.getAllByText('Analytics');
-    expect(analyticsTexts.length).toBeGreaterThan(0);
-    
-    const settingsTexts = screen.getAllByText('Settings');
-    expect(settingsTexts.length).toBeGreaterThan(0);
-    
-    const supportTexts = screen.getAllByText('Support');
-    expect(supportTexts.length).toBeGreaterThan(0);
+  it('offers only the dashboard to staff', () => {
+    render(<Sidebar role="STAFF" />);
+    const nav = screen.getByRole('navigation', { name: /main navigation/i });
+    expect(within(nav).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/']);
   });
 
-  it('renders navigation as links', () => {
-    render(<Sidebar />);
-    const links = screen.getAllByRole('link');
-    expect(links.length).toBeGreaterThanOrEqual(7);
+  it('offers the dashboard, staff and settings to a restaurant admin', () => {
+    render(<Sidebar role="RESTAURANT_ADMIN" />);
+    const nav = screen.getByRole('navigation', { name: /main navigation/i });
+    expect(within(nav).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/', '/staff', '/settings']);
   });
 
-  it('marks navigation items as links to correct routes', () => {
-    render(<Sidebar />);
-    
-    // Find the Dashboard link by looking for the visible span with 'Dashboard' text
-    const dashboardLinks = screen.getAllByText('Dashboard');
-    const dashboardSpan = dashboardLinks.find(el => el.className.includes('md:inline'));
-    const dashboardLink = dashboardSpan?.closest('a');
-    expect(dashboardLink?.getAttribute('href')).toBe('/');
-    
-    // Find the Orders link
-    const ordersLinks = screen.getAllByText('Orders');
-    const ordersSpan = ordersLinks.find(el => el.className.includes('text-sm'));
-    const ordersLink = ordersSpan?.closest('a');
-    expect(ordersLink?.getAttribute('href')).toBe('/orders');
+  it('offers only restaurants to the platform admin', () => {
+    render(<Sidebar role="PLATFORM_ADMIN" />);
+    const nav = screen.getByRole('navigation', { name: /main navigation/i });
+    expect(within(nav).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/restaurants']);
   });
 
-  it('calls onNavigate when navigation item is clicked', () => {
+  it('no longer lists the unfinished sections', () => {
+    render(<Sidebar role="RESTAURANT_ADMIN" />);
+    for (const label of ['Menu Management', 'Payments', 'Analytics', 'Support']) {
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
+    }
+  });
+
+  it('calls onNavigate when a navigation item is clicked', () => {
     const onNavigate = vi.fn();
-    render(<Sidebar onNavigate={onNavigate} />);
-    
-    // Find the Orders link (the visible one, not tooltip)
-    const ordersLinks = screen.getAllByText('Orders');
-    const ordersSpan = ordersLinks.find(el => el.className.includes('text-sm'));
-    const ordersLink = ordersSpan?.closest('a') as HTMLAnchorElement;
-    ordersLink?.click();
-    
-    expect(onNavigate).toHaveBeenCalledWith('/orders');
+    render(<Sidebar role="RESTAURANT_ADMIN" onNavigate={onNavigate} />);
+    const staff = screen.getAllByText('Staff').find((el) => el.className.includes('text-sm'));
+    (staff?.closest('a') as HTMLAnchorElement).click();
+    expect(onNavigate).toHaveBeenCalledWith('/staff');
   });
 
   it('renders logout button', () => {

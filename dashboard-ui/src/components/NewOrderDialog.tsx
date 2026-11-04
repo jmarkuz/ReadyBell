@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Check, Copy, Plus, Printer, X } from 'lucide-react';
 import { apiClient } from '@/utils/api';
 import { printReceipt, qrDataUrl, trackingUrl } from '@/utils/receipt';
-import { restaurantBranding } from '@/config/restaurant';
+import { useRestaurant } from '@/context/restaurantContext';
 
 interface Line { name: string; quantity: number }
 interface Created { orderNumber: string; url: string; qr: string }
@@ -22,6 +22,7 @@ const emptyLine = (): Line => ({ name: '', quantity: 1 });
  * then shows the receipt QR code that opens the customer's tracking page.
  */
 export default function NewOrderDialog({ open, onClose, onCreated }: Props) {
+  const restaurant = useRestaurant();
   const [customer, setCustomer] = useState('');
   const [lines, setLines] = useState<Line[]>([emptyLine()]);
   const [minutes, setMinutes] = useState(10);
@@ -83,7 +84,7 @@ export default function NewOrderDialog({ open, onClose, onCreated }: Props) {
             <p className="text-sm text-slate-600 dark:text-slate-400">Show or print this code. The customer scans it to follow the order and get notified.</p>
             <p className="text-xs break-all text-slate-500">{created.url}</p>
             <div className="flex gap-2 justify-center flex-wrap pt-2">
-              <button type="button" onClick={() => printReceipt({ restaurant: restaurantBranding.name, orderNumber: created.orderNumber, qr: created.qr, url: created.url })}
+              <button type="button" onClick={() => printReceipt({ restaurant: restaurant.name, orderNumber: created.orderNumber, qr: created.qr, url: created.url })}
                 className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-stone-800 text-white text-sm font-medium"><Printer className="w-4 h-4" aria-hidden="true" />Print</button>
               <button type="button" onClick={async () => { try { await navigator.clipboard.writeText(created.url); setCopied(true); } catch { /* clipboard unavailable */ } }}
                 className="inline-flex items-center gap-2 h-10 px-4 rounded-full border border-slate-300 text-sm font-medium">{copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}{copied ? 'Copied' : 'Copy link'}</button>
