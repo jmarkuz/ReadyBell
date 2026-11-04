@@ -769,6 +769,15 @@ export class ApiClient {
   }
 
   /**
+   * Single-use ticket (valid 30 s) for opening the staff SSE stream; EventSource cannot send the JWT header.
+   * POST /api/orders/stream/ticket
+   */
+  async createStreamTicket(): Promise<string> {
+    const res = await this.post<{ ticket: string; expiresIn: number }>('/api/orders/stream/ticket', {});
+    return res.ticket;
+  }
+
+  /**
    * Create a new order
    * POST /api/orders
    */

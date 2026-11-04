@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { OrderMetrics, OrderRow, OrderStatus } from '@/types';
 import { apiClient } from '@/utils/api';
-import { tokenManager } from '@/utils/TokenManager';
 import { useSSE } from './useSSE';
 
 /** Fallback refresh interval while the live connection is down. */
@@ -156,7 +155,7 @@ export function useDashboardOrders(query: OrdersQuery): UseDashboardOrdersState 
 
   const sse = useSSE({
     endpoint: '/api/orders/stream',
-    authToken: tokenManager.get() ?? undefined,
+    getTicket: () => apiClient.createStreamTicket(),
     onMessage,
   });
 

@@ -42,7 +42,7 @@ then `createdb -U postgres readybell` once.
 (`staff` / `password` in the `dev` profile). Do **not** set `VITE_API_BASE_URL` in dev: it makes the browser call the backend directly, which fails on CORS
 (use it only when the UI is deployed on a different origin than the API and the backend has CORS configured).
 
-The dashboard lists the 100 newest orders and refreshes on SSE events (`/api/orders/stream?token=…`; the badge shows Live/Offline) and every 30 s while offline.
+The dashboard lists the 100 newest orders and refreshes on SSE events (`/api/orders/stream?ticket=…`, a single-use ticket from `POST /api/orders/stream/ticket`; the badge shows Live/Offline) and every 30 s while offline.
 The UI shows the backend's `IN_PROGRESS` as "Preparing".
 
 Staff change an order's status from the pencil menu in the orders table (only the transitions the lifecycle allows are offered; finished orders are disabled);

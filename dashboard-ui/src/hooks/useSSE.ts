@@ -6,7 +6,11 @@ export interface UseSSEOptions {
   onError?: (error: Error) => void;
   maxRetries?: number;
   initialDelay?: number;
-  authToken?: string;
+  /**
+   * Returns a single-use stream ticket. Called before every (re)connect and sent as `?ticket=`,
+   * because EventSource cannot set an Authorization header and the JWT must not be put in a URL.
+   */
+  getTicket?: () => Promise<string>;
   onClose?: () => void;
 }
 
@@ -24,7 +28,7 @@ export interface UseSSEState {
  * - Auto-reconnect with exponential backoff (1s, 2s, 4s, 8s, max 30s)
  * - Handles connection loss and restoration
  * - Typed message callbacks
- * - Bearer token authentication support
+ * - Single-use ticket authentication (fresh ticket per connection)
  * - Error handling and reporting
  * - Maximum 1 concurrent SSE connection per hook instance
  *
@@ -35,7 +39,7 @@ export interface UseSSEState {
  * ```tsx
  * const state = useSSE({
  *   endpoint: '/api/orders/stream',
- *   authToken: 'your-bearer-token',
+ *   getTicket: () => apiClient.createStreamTicket(),
  *   onMessage: (data) => console.log('Order update:', data),
  *   onError: (error) => console.error('SSE error:', error),
  * });
@@ -46,7 +50,7 @@ export function useSSE(options: UseSSEOptions): UseSSEState {
     endpoint,
     onMessage,
     onError,
-    authToken,
+    getTicket,
     onClose,
     maxRetries = Infinity,
     initialDelay = 1000,
@@ -69,17 +73,47 @@ export function useSSE(options: UseSSEOptions): UseSSEState {
     return Math.min(exponentialDelay, 30000);
   }, [initialDelay]);
 
-  const connect = useCallback(() => {
+  /** Schedules a reconnect with exponential backoff, or gives up after maxRetries. */
+  const scheduleRetry = useCallback(() => {
+    if (retryCountRef.current < maxRetries) {
+      const delay = calculateBackoffDelay();
+      retryCountRef.current += 1;
+      retryTimeoutRef.current = setTimeout(() => {
+        void connectRef.current();
+      }, delay);
+    } else {
+      setState((prev) => ({
+        ...prev,
+        error: new Error('Max retries exceeded'),
+        isRetrying: false,
+      }));
+      onError?.(new Error('Max retries exceeded'));
+      onClose?.();
+    }
+  }, [maxRetries, calculateBackoffDelay, onError, onClose]);
+
+  const connectRef = useRef<() => Promise<void>>(async () => {});
+
+  const connect = useCallback(async () => {
     if (isUnmountingRef.current) return;
 
     try {
-      // Build URL with auth token as query parameter
-      // Note: EventSource API doesn't support custom headers in all browsers,
-      // so token is passed as query parameter. Backend should validate this.
       let connectionUrl = endpoint;
-      if (authToken) {
+      if (getTicket) {
+        let ticket: string;
+        try {
+          ticket = await getTicket();
+        } catch {
+          // No ticket (offline, session expired): same backoff as a dropped connection
+          if (!isUnmountingRef.current) {
+            setState({ isConnected: false, isRetrying: true, error: new Error('Could not get a stream ticket') });
+            scheduleRetry();
+          }
+          return;
+        }
+        if (isUnmountingRef.current) return;
         const separator = endpoint.includes('?') ? '&' : '?';
-        connectionUrl = `${endpoint}${separator}token=${encodeURIComponent(authToken)}`;
+        connectionUrl = `${endpoint}${separator}ticket=${encodeURIComponent(ticket)}`;
       }
 
       const eventSource = new EventSource(connectionUrl);
@@ -122,23 +156,7 @@ export function useSSE(options: UseSSEOptions): UseSSEState {
             error: new Error('SSE connection failed'),
           });
 
-          // Schedule reconnection with exponential backoff
-          if (retryCountRef.current < maxRetries) {
-            const delay = calculateBackoffDelay();
-            retryCountRef.current += 1;
-
-            retryTimeoutRef.current = setTimeout(() => {
-              connect();
-            }, delay);
-          } else {
-            setState((prev) => ({
-              ...prev,
-              error: new Error('Max retries exceeded'),
-              isRetrying: false,
-            }));
-            onError?.(new Error('Max retries exceeded'));
-            onClose?.();
-          }
+          scheduleRetry();
         }
       });
 
@@ -153,11 +171,12 @@ export function useSSE(options: UseSSEOptions): UseSSEState {
       onError?.(err);
       onClose?.();
     }
-  }, [endpoint, onMessage, onError, onClose, authToken, maxRetries, calculateBackoffDelay]);
+  }, [endpoint, onMessage, onError, onClose, getTicket, scheduleRetry]);
+  connectRef.current = connect;
 
   useEffect(() => {
     isUnmountingRef.current = false;
-    connect();
+    void connect();
 
     return () => {
       isUnmountingRef.current = true;

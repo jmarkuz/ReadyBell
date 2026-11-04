@@ -137,14 +137,11 @@ class JwtAuthApiTest {
     }
 
     @Test
-    void sseStreamAcceptsTokenQueryParameterButOtherEndpointsDoNot() throws Exception {
+    void queryParameterTokensAreRejectedEverywhere() throws Exception {
+        // the JWT in a URL is not accepted any more, not even on the SSE stream (see StreamTicketApiTest)
         String token = login("admin", "admin");
-        // the stream starts (async), i.e. it is authenticated
-        mvc.perform(get("/api/orders/stream").param("token", token))
-                .andExpect(request().asyncStarted());
-        mvc.perform(get("/api/orders/stream").param("token", "garbage")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/orders/stream").param("token", token)).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/orders/stream")).andExpect(status().isUnauthorized());
-        // query-parameter tokens must not work anywhere else
         mvc.perform(get("/api/orders").param("token", token)).andExpect(status().isUnauthorized());
     }
 

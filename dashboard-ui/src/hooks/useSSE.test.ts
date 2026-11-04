@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useSSE } from './useSSE';
 
 describe('useSSE Hook', () => {
@@ -50,39 +50,42 @@ describe('useSSE Hook', () => {
     expect((global as any).EventSource).toHaveBeenCalledWith(endpoint);
   });
 
-  it('should append Bearer token to URL when authToken is provided', () => {
+  it('should append a single-use ticket to the URL when getTicket is provided', async () => {
     const onMessage = vi.fn();
     const endpoint = '/api/orders/stream';
-    const authToken = 'test-token-12345';
+    const authToken = 'test-ticket-12345';
 
-    renderHook(() => useSSE({ endpoint, onMessage, authToken }));
+    renderHook(() => useSSE({ endpoint, onMessage, getTicket: async () => authToken }));
+    await waitFor(() => expect((global as any).EventSource).toHaveBeenCalled());
 
     const callUrl = (global as any).EventSource.mock.calls[0][0];
     expect(callUrl).toContain(endpoint);
-    expect(callUrl).toContain(`token=${encodeURIComponent(authToken)}`);
+    expect(callUrl).toContain(`ticket=${encodeURIComponent(authToken)}`);
+    expect(callUrl).not.toContain('token=');
   });
 
-  it('should handle token encoding correctly', () => {
+  it('should handle ticket encoding correctly', async () => {
     const onMessage = vi.fn();
     const endpoint = '/api/orders/stream';
-    const authToken = 'token-with-special-chars!@#$%';
+    const authToken = 'ticket-with-special-chars!@#$%';
 
-    renderHook(() => useSSE({ endpoint, onMessage, authToken }));
+    renderHook(() => useSSE({ endpoint, onMessage, getTicket: async () => authToken }));
+    await waitFor(() => expect((global as any).EventSource).toHaveBeenCalled());
 
     const callUrl = (global as any).EventSource.mock.calls[0][0];
     expect(callUrl).toContain(encodeURIComponent(authToken));
   });
 
-  it('should handle endpoint with existing query parameters', () => {
+  it('should handle endpoint with existing query parameters', async () => {
     const onMessage = vi.fn();
     const endpoint = '/api/orders/stream?filter=active';
-    const authToken = 'test-token';
 
-    renderHook(() => useSSE({ endpoint, onMessage, authToken }));
+    renderHook(() => useSSE({ endpoint, onMessage, getTicket: async () => 'test-ticket' }));
+    await waitFor(() => expect((global as any).EventSource).toHaveBeenCalled());
 
     const callUrl = (global as any).EventSource.mock.calls[0][0];
     expect(callUrl).toContain('?filter=active');
-    expect(callUrl).toContain('&token=');
+    expect(callUrl).toContain('&ticket=');
   });
 
   it('should call onMessage when message event is received', async () => {
@@ -337,18 +340,31 @@ describe('useSSE Hook', () => {
     expect(result.current.isConnected).toBe(true);
   });
 
-  it('should accept Bearer token via authToken option', () => {
-    const onMessage = vi.fn();
-    const token = 'bearer-token-xyz123';
+  it('should request a fresh ticket for every (re)connect', async () => {
+    const getTicket = vi.fn()
+      .mockResolvedValueOnce('ticket-1')
+      .mockResolvedValue('ticket-2');
 
-    renderHook(() => useSSE({
-      endpoint: '/api/orders/stream',
-      onMessage,
-      authToken: token,
-    }));
+    renderHook(() => useSSE({ endpoint: '/api/orders/stream', onMessage: vi.fn(), getTicket, initialDelay: 10 }));
+    await waitFor(() => expect((global as any).EventSource).toHaveBeenCalledTimes(1));
+    expect((global as any).EventSource.mock.calls[0][0]).toContain('ticket=ticket-1');
 
-    const callUrl = (global as any).EventSource.mock.calls[0][0];
-    expect(callUrl).toContain(`token=${encodeURIComponent(token)}`);
+    // Drop the connection: the retry must not reuse the consumed ticket
+    act(() => { mockEventSource.dispatchError(); });
+    await waitFor(() => expect((global as any).EventSource).toHaveBeenCalledTimes(2));
+    expect((global as any).EventSource.mock.calls[1][0]).toContain('ticket=ticket-2');
+  });
+
+  it('should retry when the ticket request fails', async () => {
+    const getTicket = vi.fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue('ticket-ok');
+
+    const { result } = renderHook(() =>
+      useSSE({ endpoint: '/api/orders/stream', onMessage: vi.fn(), getTicket, initialDelay: 10 }));
+    await waitFor(() => expect(result.current.isRetrying).toBe(true));
+    await waitFor(() => expect((global as any).EventSource).toHaveBeenCalledTimes(1));
+    expect((global as any).EventSource.mock.calls[0][0]).toContain('ticket=ticket-ok');
   });
 
   it('should handle connection loss and set error state', async () => {

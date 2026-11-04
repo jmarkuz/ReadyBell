@@ -39,6 +39,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.readybell.platform.auth.FailureStore;
 import org.readybell.platform.auth.RedisFailureStore;
 import org.readybell.platform.auth.InMemoryFailureStore;
+import org.readybell.platform.auth.InMemoryStreamTicketStore;
+import org.readybell.platform.auth.RedisStreamTicketStore;
+import org.readybell.platform.auth.StreamTicketStore;
 
 /**
  * Spring Security configuration for the ReadyBell REST API (Req 7.1, 7.2, 8.1, 8.2, 9.1).
@@ -75,7 +78,7 @@ public class SecurityConfig {
      * @return the configured {@link SecurityFilterChain} bean
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService, StreamTicketStore ticketStore,
             @Value("${readybell.cors.allowed-origins:}") List<String> corsOrigins,
             @Value("${readybell.cors.allowed-origin-patterns:}") List<String> corsOriginPatterns)
             throws Exception {
@@ -125,7 +128,7 @@ public class SecurityConfig {
 
             // Bearer JWT for the dashboard (issued by /api/login); HTTP Basic kept for curl/tests
             .oauth2ResourceServer(oauth -> oauth
-                    .bearerTokenResolver(bearerTokenResolver())
+                    .bearerTokenResolver(bearerTokenResolver(ticketStore))
                     .jwt(jwt -> jwt.decoder(jwtService::decode)
                             .jwtAuthenticationConverter(SecurityConfig::toAuthentication)))
             .httpBasic(Customizer.withDefaults());
@@ -139,11 +142,12 @@ public class SecurityConfig {
      *   <li>Skipped on the token endpoints so an expired token sent to {@code /api/auth/refresh}
      *       reaches the controller instead of being rejected as 401 up front.</li>
      *   <li>The browser {@code EventSource} cannot set headers, so {@code GET /api/orders/stream}
-     *       (and only it) also accepts the token as a {@code token} query parameter. Such URLs can end
-     *       up in access logs, so keep proxy/server logs from recording query strings.</li>
+     *       (and only it) accepts a single-use {@code ticket} query parameter, obtained from
+     *       {@code POST /api/orders/stream/ticket}. The ticket is consumed on first use and expires after
+     *       30 s, so it is harmless in logs; the JWT itself is never accepted in a URL.</li>
      * </ul>
      */
-    private static BearerTokenResolver bearerTokenResolver() {
+    private static BearerTokenResolver bearerTokenResolver(StreamTicketStore ticketStore) {
         DefaultBearerTokenResolver delegate = new DefaultBearerTokenResolver();
         return request -> {
             String path = request.getRequestURI();
@@ -152,8 +156,8 @@ public class SecurityConfig {
             }
             String token = delegate.resolve(request);
             if (token == null && "GET".equals(request.getMethod()) && "/api/orders/stream".equals(path)) {
-                String param = request.getParameter("token");
-                return param == null || param.isBlank() ? null : param;
+                String ticket = request.getParameter("ticket");
+                return ticket == null || ticket.isBlank() ? null : ticketStore.consume(ticket).orElse(null);
             }
             return token;
         };
@@ -174,6 +178,15 @@ public class SecurityConfig {
                 ? new RedisFailureStore(redisTemplate, "readybell:login-failures:")
                 : new InMemoryFailureStore();
         return new LoginAttemptLimiter(login.getMaxFailures(), login.getWindow(), clock, store);
+    }
+
+    @Bean
+    public StreamTicketStore streamTicketStore(Clock clock, ObjectProvider<StringRedisTemplate> redis,
+            @Value("${readybell.sse.redis.enabled:false}") boolean redisEnabled) {
+        var redisTemplate = redisEnabled ? redis.getIfAvailable() : null;
+        return redisTemplate != null
+                ? new RedisStreamTicketStore(redisTemplate, "readybell:stream-ticket:", clock)
+                : new InMemoryStreamTicketStore(clock);
     }
 
     @Bean

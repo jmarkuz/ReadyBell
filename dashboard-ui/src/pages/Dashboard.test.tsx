@@ -23,7 +23,7 @@ const sampleRows: OrderRow[] = [
 
 vi.mock('@/utils/api', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/utils/api')>();
-  return { ...original, apiClient: { getOrders: vi.fn(), getOrderMetrics: vi.fn(), updateOrderStatus: vi.fn(), generateTestData: vi.fn(), clearTestData: vi.fn(), importTestData: vi.fn() } };
+  return { ...original, apiClient: { getOrders: vi.fn(), getOrderMetrics: vi.fn(), createStreamTicket: vi.fn().mockResolvedValue("test-ticket"), updateOrderStatus: vi.fn(), generateTestData: vi.fn(), clearTestData: vi.fn(), importTestData: vi.fn() } };
 });
 
 /** Renders the page and waits for the first load, so tests can assert synchronously afterwards. */
