@@ -23,7 +23,7 @@ const sampleRows: OrderRow[] = [
 
 vi.mock('@/utils/api', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/utils/api')>();
-  return { ...original, apiClient: { getOrders: vi.fn(), updateOrderStatus: vi.fn(), generateTestData: vi.fn(), clearTestData: vi.fn() } };
+  return { ...original, apiClient: { getOrders: vi.fn(), updateOrderStatus: vi.fn(), generateTestData: vi.fn(), clearTestData: vi.fn(), importTestData: vi.fn() } };
 });
 
 /** Renders the page and waits for the first load, so tests can assert synchronously afterwards. */
@@ -63,6 +63,29 @@ describe('Dashboard test data tools', () => {
 
     expect(await screen.findByText('Removed 7 test orders.')).toBeInTheDocument();
     expect(apiClient.clearTestData).toHaveBeenCalledTimes(1);
+  });
+
+  it('imports orders from the chosen file', async () => {
+    vi.mocked(apiClient.importTestData).mockResolvedValue({ created: 2 });
+    await renderDashboard();
+
+    const file = new File(['{"orders":[{"customerName":"A"},{"status":"READY"}]}'], 'orders.json', {
+      type: 'application/json',
+    });
+    await userEvent.upload(screen.getByTestId('test-data-file'), file);
+
+    expect(await screen.findByText('Imported 2 test orders from orders.json.')).toBeInTheDocument();
+    expect(apiClient.importTestData).toHaveBeenCalledWith([{ customerName: 'A' }, { status: 'READY' }]);
+  });
+
+  it('reports an unusable import file without calling the backend', async () => {
+    vi.mocked(apiClient.importTestData).mockClear();
+    await renderDashboard();
+
+    await userEvent.upload(screen.getByTestId('test-data-file'), new File(['nope'], 'bad.json'));
+
+    expect(await screen.findByText('The file is not valid JSON.')).toBeInTheDocument();
+    expect(apiClient.importTestData).not.toHaveBeenCalled();
   });
 
   it('shows the error when the backend rejects the request', async () => {

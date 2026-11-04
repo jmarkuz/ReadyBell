@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useRef, useState, useCallback, type ChangeEvent } from 'react';
 import OrderMetricsGrid from '@/components/OrderMetricsGrid';
 import IncomingOrdersTable from '@/components/IncomingOrdersTable';
 import StatusFilter from '@/components/StatusFilter';
@@ -6,7 +6,8 @@ import { DateRangeFilter } from '@/components/DateRangeFilter';
 import { useSearch } from '@/context/SearchContext';
 import { OrderMetrics, OrderStatus } from '@/types';
 import { useDashboardOrders } from '@/hooks/useDashboardOrders';
-import { apiClient } from '@/utils/api';
+import { apiClient, ApiError } from '@/utils/api';
+import { parseTestDataFile } from '@/utils/testDataFile';
 
 /**
  * Dashboard Page
@@ -57,7 +58,11 @@ export default function Dashboard() {
     try {
       setTestDataMessage(await action());
     } catch (e) {
-      setTestDataMessage(e instanceof Error ? e.message : 'Test data request failed.');
+      setTestDataMessage(
+        e instanceof ApiError && e.statusCode === 404
+          ? 'Test data endpoints not found: restart the backend with SPRING_PROFILES_ACTIVE=dev.'
+          : e instanceof Error ? e.message : 'Test data request failed.'
+      );
     } finally {
       setTestDataBusy(false);
       await reload();
@@ -66,6 +71,19 @@ export default function Dashboard() {
 
   const handleGenerateTestData = useCallback(
     () => runTestData(async () => `Added ${(await apiClient.generateTestData()).created} test orders.`),
+    [runTestData]
+  );
+  const importInput = useRef<HTMLInputElement>(null);
+  const handleImportFile = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = ''; // allow importing the same file again
+      if (!file) return;
+      void runTestData(async () => {
+        const orders = parseTestDataFile(await file.text());
+        return `Imported ${(await apiClient.importTestData(orders)).created} test orders from ${file.name}.`;
+      });
+    },
     [runTestData]
   );
   const handleClearTestData = useCallback(
@@ -197,6 +215,23 @@ export default function Dashboard() {
           >
             Generate test data
           </button>
+          <button
+            type="button"
+            onClick={() => importInput.current?.click()}
+            disabled={testDataBusy}
+            className="px-4 py-2 text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-60 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+          >
+            Import test data
+          </button>
+          <input
+            ref={importInput}
+            type="file"
+            accept=".json,application/json"
+            onChange={handleImportFile}
+            className="hidden"
+            aria-label="Test data file"
+            data-testid="test-data-file"
+          />
           <button
             type="button"
             onClick={handleClearTestData}

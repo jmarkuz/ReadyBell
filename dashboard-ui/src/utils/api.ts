@@ -70,6 +70,14 @@ export type RawOrderRow = Omit<OrderRow, 'deliveryETA' | 'status'> & {
   status: string;
 };
 
+/** One record of a test-data import file (see test-data/test-orders-50.json). */
+export interface TestDataOrder {
+  customerName?: string;
+  estimatedMinutes?: number;
+  status?: 'CREATED' | 'IN_PROGRESS' | 'READY' | 'COMPLETED' | 'CANCELLED';
+  items?: Array<{ name: string; quantity: number }>;
+}
+
 /** Backend → UI status names (the UI says PREPARING where the backend says IN_PROGRESS). */
 export function fromBackendStatus(status: string): OrderStatus {
   return (status === 'IN_PROGRESS' ? 'PREPARING' : status) as OrderStatus;
@@ -175,7 +183,7 @@ export class ApiClient {
       // Parse error details if available
       try {
         const contentType = response.headers.get('content-type');
-        if (contentType?.includes('application/json')) {
+        if (contentType?.includes('json')) {
           const data = await response.clone().json();
           if (data.detail) {
             console.debug(`[API] Error detail: ${data.detail}`);
@@ -510,7 +518,7 @@ export class ApiClient {
       type = 'validation';
     } else if (response.status >= 500) {
       type = 'server';
-    } else if (response.status === 0 || response.type === 'basic') {
+    } else if (response.status === 0) {
       type = 'network';
     }
 
@@ -528,6 +536,10 @@ export class ApiClient {
         break;
       case 404:
         message = errorData.detail || 'Resource not found.';
+        break;
+      case 405:
+      case 415:
+        message = errorData.detail || `Request not supported (${response.status}).`;
         break;
       case 409:
         message = 'Order was updated by another user. Refreshing...';
@@ -600,10 +612,15 @@ export class ApiClient {
         response = await interceptor(response, { url, init: options });
       }
 
+      // 304 Not Modified (ETag polling): nothing changed, there is no body
+      if (response.status === 304) {
+        return null as T;
+      }
+
       // Parse response body
       let data: unknown;
       const contentType = response.headers.get('content-type');
-      if (contentType?.includes('application/json')) {
+      if (contentType?.includes('json')) {
         try {
           data = await response.json();
         } catch (error) {
@@ -721,9 +738,12 @@ export class ApiClient {
    * POST /api/orders
    */
   async createOrder(data: {
-    customerSessionId: string;
-    items: Array<{ menuItemId: string; quantity: number; specialInstructions?: string }>;
-  }): Promise<{ id: string; orderId: string; status: string; createdAt: string }> {
+    sessionId: string;
+    customerName?: string;
+    /** Minutes from now until the order should be ready (0–1440). */
+    estimatedMinutes?: number;
+    items?: Array<{ name: string; quantity: number }>;
+  }): Promise<{ id: string; orderId: string; sessionId: string; status: string; version: number; createdAt: string; updatedAt: string }> {
     return this.post('/api/orders', data);
   }
 
@@ -750,6 +770,14 @@ export class ApiClient {
    */
   async generateTestData(count = 12): Promise<{ created: number }> {
     return this.post(`/api/dev/test-data?count=${count}`, {});
+  }
+
+  /**
+   * Dev only: imports orders parsed from a test-data file.
+   * POST /api/dev/test-data/import (backend `dev` profile)
+   */
+  async importTestData(orders: TestDataOrder[]): Promise<{ created: number }> {
+    return this.post('/api/dev/test-data/import', { orders });
   }
 
   /**
@@ -872,7 +900,10 @@ export class ApiClient {
     const queryString = queryParams.toString();
     const endpoint = `/api/orders/poll${queryString ? '?' + queryString : ''}`;
 
-    return this.get(endpoint);
+    const result = await this.get<{ orders: RawOrderRow[]; eTag: string } | null>(endpoint);
+    // null = 304 Not Modified: same ETag, no changes
+    if (!result) return { orders: [], eTag: params?.eTag ?? '' };
+    return { orders: result.orders.map(normalizeOrderRow), eTag: result.eTag };
   }
 
   // ============================================================================
@@ -909,7 +940,7 @@ export class ApiClient {
         username: typedResponse.username || '',
         email: typedResponse.email || '',
         name: typedResponse.name || typedResponse.username || '',
-        role: typedResponse.role as 'STAFF' | 'ADMIN' | 'PLATFORM_ADMIN',
+        role: typedResponse.role as UserProfile['role'],
         tenantId: typedResponse.tenantId,
       };
       
@@ -950,168 +981,105 @@ export class ApiClient {
   // ============================================================================
 
   /**
-   * Create staff account
-   * POST /api/admin/staff (ADMIN role required)
+   * Create a staff account (RESTAURANT_ADMIN only)
+   * POST /api/admin/staff
    */
   async createStaffAccount(data: {
     username: string;
-    email: string;
     password: string;
-    name: string;
-    role?: 'STAFF' | 'ADMIN';
-  }): Promise<{
-    id: string;
-    username: string;
-    email: string;
-    name: string;
-    role: string;
-    status: string;
-    createdAt: string;
-  }> {
+    role: 'STAFF' | 'RESTAURANT_ADMIN';
+  }): Promise<{ accountId: string; username: string; role: string; status: string }> {
     return this.post('/api/admin/staff', data);
   }
 
   /**
-   * Deactivate staff account
-   * DELETE /api/admin/staff/{accountId} (ADMIN role required)
+   * Deactivate a staff account (RESTAURANT_ADMIN only)
+   * DELETE /api/admin/staff/{accountId}
    */
-  async deactivateStaffAccount(accountId: string): Promise<void> {
-    await this.delete(`/api/admin/staff/${accountId}`);
+  async deactivateStaffAccount(
+    accountId: string
+  ): Promise<{ accountId: string; username: string; role: string; status: string }> {
+    return this.delete(`/api/admin/staff/${accountId}`);
   }
 
   /**
-   * Update restaurant configuration
-   * PUT /api/admin/config (ADMIN role required)
+   * Rename the restaurant (RESTAURANT_ADMIN only)
+   * PUT /api/admin/config
    */
-  async updateRestaurantConfig(data: {
-    restaurantName: string;
-    phoneNumber?: string;
-    address?: string;
-    cuisineType?: string;
-    averagePrepTime?: number;
-    webhookUrl?: string;
-  }): Promise<{
-    id: string;
-    restaurantName: string;
-    phoneNumber?: string;
-    address?: string;
-    cuisineType?: string;
-    averagePrepTime?: number;
-    webhookUrl?: string;
-    updatedAt: string;
-  }> {
+  async updateRestaurantConfig(data: { name: string }): Promise<{ name: string }> {
     return this.put('/api/admin/config', data);
   }
 
-  // ============================================================================
-  // PHASE 3: PLATFORM ADMIN ENDPOINTS
-  // ============================================================================
-
   /**
-   * Create restaurant tenant
-   * POST /api/platform/restaurants (PLATFORM_ADMIN role required)
+   * Onboard a restaurant, optionally with its first admin (PLATFORM_ADMIN only)
+   * POST /api/platform/restaurants
+   *
+   * `adminUsername` and `adminPassword` (min 8 characters) must be given together.
    */
   async createRestaurant(data: {
-    restaurantName: string;
-    ownerEmail: string;
-    ownerName: string;
-  }): Promise<{
-    tenantId: string;
-    restaurantName: string;
-    status: string;
-    createdAt: string;
-  }> {
+    identifier: string;
+    name: string;
+    adminUsername?: string;
+    adminPassword?: string;
+  }): Promise<{ tenantId: string; identifier: string; status: string; adminUsername: string | null }> {
     return this.post('/api/platform/restaurants', data);
   }
 
   /**
-   * Update restaurant (Platform Admin)
-   * PUT /api/platform/restaurants/{tenantId} (PLATFORM_ADMIN role required)
+   * Rename a restaurant (PLATFORM_ADMIN only)
+   * PUT /api/platform/restaurants/{tenantId}
    */
   async updateRestaurant(
     tenantId: string,
-    data: {
-      restaurantName?: string;
-      status?: 'ACTIVE' | 'INACTIVE';
-    }
-  ): Promise<{
-    tenantId: string;
-    restaurantName: string;
-    status: string;
-    updatedAt: string;
-  }> {
+    data: { name: string }
+  ): Promise<{ tenantId: string; identifier: string; status: string; adminUsername: string | null }> {
     return this.put(`/api/platform/restaurants/${tenantId}`, data);
   }
 
   /**
-   * Deactivate restaurant
-   * DELETE /api/platform/restaurants/{tenantId} (PLATFORM_ADMIN role required)
+   * Deactivate a restaurant (PLATFORM_ADMIN only)
+   * DELETE /api/platform/restaurants/{tenantId}
    */
-  async deactivateRestaurant(tenantId: string): Promise<void> {
-    await this.delete(`/api/platform/restaurants/${tenantId}`);
+  async deactivateRestaurant(
+    tenantId: string
+  ): Promise<{ tenantId: string; identifier: string; status: string; adminUsername: string | null }> {
+    return this.delete(`/api/platform/restaurants/${tenantId}`);
   }
 
-  // ============================================================================
-  // PHASE 4: CUSTOMER SESSION ENDPOINTS (PWA - FUTURE)
-  // ============================================================================
-
   /**
-   * Start customer session from QR code
-   * POST /api/sessions (public, no authentication required)
+   * Start a customer session from a QR token (the restaurant identifier). Public endpoint.
+   * POST /api/sessions
    */
-  async startCustomerSession(qrToken: string): Promise<{
-    sessionId: string;
-    tenantId: string;
-    restaurantName: string;
-    status: string;
-    createdAt: string;
-    expiresAt: string;
-  }> {
+  async startCustomerSession(
+    qrToken: string
+  ): Promise<{ sessionId: string; status: string; startedAt: string }> {
     return this.post('/api/sessions', { qrToken });
   }
 
   /**
-   * Get customer session orders
-   * GET /api/sessions/{sessionId}/orders (public, no authentication required)
+   * Orders of a customer session (id + status each)
+   * GET /api/sessions/{sessionId}/orders
    */
-  async getCustomerSessionOrders(sessionId: string): Promise<{
-    sessionId: string;
-    orders: Array<{
-      id: string;
-      orderId: string;
-      status: string;
-      items: Array<{ name: string; quantity: number }>;
-      createdAt: string;
-      estimatedReadyTime: string;
-    }>;
-  }> {
+  async getCustomerSessionOrders(
+    sessionId: string
+  ): Promise<Array<{ orderId: string; status: string }>> {
     return this.get(`/api/sessions/${sessionId}/orders`);
   }
 
   /**
-   * Register device for push notifications
-   * POST /api/sessions/{sessionId}/subscriptions (public)
+   * Register a Web Push subscription for a session
+   * POST /api/sessions/{sessionId}/subscriptions
    */
   async registerDeviceSubscription(
     sessionId: string,
-    subscription: {
-      endpoint: string;
-      keys: {
-        p256dh: string;
-        auth: string;
-      };
-    }
-  ): Promise<{
-    subscriptionId: string;
-    endpoint: string;
-    createdAt: string;
-  }> {
+    subscription: { endpointUrl: string; p256dhKey: string; authKey: string }
+  ): Promise<{ subscriptionId: string; sessionId: string }> {
     return this.post(`/api/sessions/${sessionId}/subscriptions`, subscription);
   }
 
   /**
-   * Revoke device subscription
-   * DELETE /api/sessions/{sessionId}/subscriptions/{subscriptionId} (public)
+   * Revoke a Web Push subscription
+   * DELETE /api/sessions/{sessionId}/subscriptions/{subscriptionId}
    */
   async revokeDeviceSubscription(sessionId: string, subscriptionId: string): Promise<void> {
     await this.delete(`/api/sessions/${sessionId}/subscriptions/${subscriptionId}`);

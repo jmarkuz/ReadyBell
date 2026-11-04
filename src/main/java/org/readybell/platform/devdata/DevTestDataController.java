@@ -14,10 +14,18 @@ import org.readybell.session.domain.CustomerSession;
 import org.readybell.session.domain.CustomerSessionRepository;
 import org.readybell.shared.domain.TenantId;
 import org.readybell.shared.tenancy.TenantContextHolder;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,6 +53,7 @@ public class DevTestDataController {
     static final String MARKER = " (test)";
 
     private static final int MAX_COUNT = 50;
+    static final int MAX_IMPORT = 500;
 
     private static final List<String> CUSTOMERS = List.of(
             "Olena K.", "Taras M.", "Iryna S.", "Andrii P.", "Maria L.", "Dmytro B.", "Sofia H.", "Yurii V.");
@@ -78,24 +87,57 @@ public class DevTestDataController {
         int n = Math.max(1, Math.min(count, MAX_COUNT));
         var rnd = ThreadLocalRandom.current();
         for (int i = 0; i < n; i++) {
-            CustomerSession session = CustomerSession.start(tenantId, clock);
-            sessions.save(session);
-
             List<OrderItem> items = new ArrayList<>();
             for (int k = rnd.nextInt(1, 4); k > 0; k--) {
                 items.add(new OrderItem(DISHES.get(rnd.nextInt(DISHES.size())), rnd.nextInt(1, 4)));
             }
-            var details = new OrderDetails(
-                    CUSTOMERS.get(rnd.nextInt(CUSTOMERS.size())) + MARKER,
+            createOrder(tenantId,
+                    CUSTOMERS.get(rnd.nextInt(CUSTOMERS.size())),
                     items,
-                    clock.instant().plus(Duration.ofMinutes(rnd.nextInt(5, 45))));
-            Order order = manageOrders.createOrder(new CreateOrderCommand(tenantId, session.getId(), details));
-
-            for (OrderStatus step : path(STATUS_MIX.get(rnd.nextInt(STATUS_MIX.size())))) {
-                manageOrders.transitionOrderStatus(new TransitionOrderCommand(tenantId, order.getId(), step));
-            }
+                    rnd.nextInt(5, 45),
+                    STATUS_MIX.get(rnd.nextInt(STATUS_MIX.size())));
         }
         return Map.of("created", n);
+    }
+
+    /**
+     * Imports orders from a file the dashboard has parsed ({@code {"orders": [...]}}). Each record
+     * becomes one order, driven to its {@code status} through the normal transitions.
+     */
+    @PostMapping("/import")
+    public Map<String, Integer> importOrders(@Valid @RequestBody ImportRequest request) {
+        TenantId tenantId = TenantContextHolder.require();
+        for (ImportOrder o : request.orders()) {
+            List<OrderItem> items = o.items() == null ? List.of()
+                    : o.items().stream().map(i -> new OrderItem(i.name(), i.quantity())).toList();
+            createOrder(tenantId, o.customerName(), items, o.estimatedMinutes(),
+                    o.status() == null ? OrderStatus.CREATED : o.status());
+        }
+        return Map.of("created", request.orders().size());
+    }
+
+    public record ImportRequest(@NotEmpty @Size(max = MAX_IMPORT) List<@Valid @NotNull ImportOrder> orders) {}
+
+    public record ImportOrder(
+            @Size(max = OrderDetails.MAX_CUSTOMER_NAME - 7) String customerName,
+            @Min(0) @Max(24 * 60) Integer estimatedMinutes,
+            OrderStatus status,
+            @Size(max = OrderDetails.MAX_ITEMS) List<@Valid @NotNull Item> items) {}
+
+    public record Item(@NotBlank @Size(max = OrderItem.MAX_NAME_LENGTH) String name,
+                       @Min(1) @Max(OrderItem.MAX_QUANTITY) int quantity) {}
+
+    private void createOrder(TenantId tenantId, String customerName, List<OrderItem> items,
+                             Integer estimatedMinutes, OrderStatus target) {
+        CustomerSession session = CustomerSession.start(tenantId, clock);
+        sessions.save(session);
+        String name = (customerName == null || customerName.isBlank() ? "Guest" : customerName.strip()) + MARKER;
+        var details = new OrderDetails(name, items,
+                estimatedMinutes == null ? null : clock.instant().plus(Duration.ofMinutes(estimatedMinutes)));
+        Order order = manageOrders.createOrder(new CreateOrderCommand(tenantId, session.getId(), details));
+        for (OrderStatus step : path(target)) {
+            manageOrders.transitionOrderStatus(new TransitionOrderCommand(tenantId, order.getId(), step));
+        }
     }
 
     /** Deletes every generated order (and its session) of the caller's restaurant. */

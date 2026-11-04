@@ -16,7 +16,17 @@ import org.readybell.session.application.InvalidQrTokenException;
 import org.readybell.shared.tenancy.MissingTenantContextException;
 import org.readybell.subscription.application.SessionNotActiveException;
 import org.readybell.subscription.application.SubscriptionNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.ErrorResponse;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.ServletRequestBindingException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.http.HttpHeaders;
@@ -40,6 +50,8 @@ import java.util.stream.Collectors;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private static final MediaType PROBLEM_JSON =
             MediaType.parseMediaType("application/problem+json");
@@ -174,8 +186,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         return problem(
                 HttpStatus.BAD_REQUEST,
-                "https://readybell.org/problems/invalid-subscription-request",
-                "Invalid Subscription Request",
+                "https://readybell.org/problems/invalid-request",
+                "Invalid Request",
                 ex.getMessage()
         );
     }
@@ -272,12 +284,52 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Catch-all handler for any unexpected exception.
+     * Framework-level request errors that carry their own status: unknown route (404), wrong
+     * method (405), unsupported/unacceptable media type (415/406), missing parameters (400).
+     * Without this they would fall into the catch-all and be reported as 500.
+     */
+    @ExceptionHandler({
+            NoResourceFoundException.class,
+            HttpRequestMethodNotSupportedException.class,
+            HttpMediaTypeNotSupportedException.class,
+            HttpMediaTypeNotAcceptableException.class,
+            MissingServletRequestParameterException.class,
+            ServletRequestBindingException.class})
+    public ResponseEntity<Map<String, Object>> handleFrameworkError(Exception ex) {
+        HttpStatus status = ex instanceof ErrorResponse er
+                ? HttpStatus.valueOf(er.getStatusCode().value())
+                : HttpStatus.BAD_REQUEST;
+        String detail = status == HttpStatus.NOT_FOUND
+                ? "No endpoint matches this request. If it is a new endpoint, restart the backend."
+                : ex.getMessage();
+        return problem(
+                status,
+                "https://readybell.org/problems/" + status.name().toLowerCase().replace('_', '-'),
+                status.getReasonPhrase(),
+                detail
+        );
+    }
+
+    /** A path or query parameter that cannot be converted to the expected type (e.g. a bad UUID or number). */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "https://readybell.org/problems/invalid-request",
+                "Invalid Request",
+                "Parameter '" + ex.getName() + "' has an invalid value."
+        );
+    }
+
+    /**
+     * Catch-all handler for any unexpected exception. The cause is logged; the client only gets a
+     * generic problem detail.
      *
      * @return 500 Internal Server Error with a generic problem detail
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
+        log.error("Unhandled exception", ex);
         return problem(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "https://readybell.org/problems/internal-error",

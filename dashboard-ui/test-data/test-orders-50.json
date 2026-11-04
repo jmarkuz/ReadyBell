@@ -1,0 +1,862 @@
+{
+  "orders": [
+    {
+      "customerName": "Olena Kovalenko",
+      "estimatedMinutes": 30,
+      "status": "COMPLETED",
+      "items": [
+        {
+          "name": "Chicken wrap",
+          "quantity": 2
+        },
+        {
+          "name": "Green tea",
+          "quantity": 3
+        },
+        {
+          "name": "Espresso",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Taras Melnyk",
+      "estimatedMinutes": 30,
+      "status": "IN_PROGRESS",
+      "items": [
+        {
+          "name": "Green tea",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Iryna Shevchenko",
+      "estimatedMinutes": 12,
+      "status": "READY",
+      "items": [
+        {
+          "name": "Club sandwich",
+          "quantity": 2
+        },
+        {
+          "name": "Caesar salad",
+          "quantity": 3
+        },
+        {
+          "name": "Green tea",
+          "quantity": 3
+        },
+        {
+          "name": "Margherita pizza",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Andrii Petrenko",
+      "estimatedMinutes": 25,
+      "status": "IN_PROGRESS",
+      "items": [
+        {
+          "name": "Cappuccino",
+          "quantity": 3
+        },
+        {
+          "name": "Club sandwich",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Maria Lysenko",
+      "estimatedMinutes": 30,
+      "status": "IN_PROGRESS",
+      "items": [
+        {
+          "name": "Americano",
+          "quantity": 1
+        },
+        {
+          "name": "Tiramisu",
+          "quantity": 3
+        },
+        {
+          "name": "Avocado toast",
+          "quantity": 3
+        },
+        {
+          "name": "Green tea",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Dmytro Bondar",
+      "estimatedMinutes": 30,
+      "status": "IN_PROGRESS",
+      "items": [
+        {
+          "name": "Pancakes",
+          "quantity": 3
+        },
+        {
+          "name": "Lemonade",
+          "quantity": 3
+        },
+        {
+          "name": "Margherita pizza",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Sofia Hrytsenko",
+      "estimatedMinutes": 30,
+      "status": "IN_PROGRESS",
+      "items": [
+        {
+          "name": "Green tea",
+          "quantity": 2
+        },
+        {
+          "name": "Cheesecake",
+          "quantity": 1
+        },
+        {
+          "name": "Margherita pizza",
+          "quantity": 1
+        },
+        {
+          "name": "Pancakes",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Yurii Vovk",
+      "estimatedMinutes": 25,
+      "status": "COMPLETED",
+      "items": [
+        {
+          "name": "Varenyky",
+          "quantity": 2
+        },
+        {
+          "name": "Cheesecake",
+          "quantity": 2
+        },
+        {
+          "name": "Caesar salad",
+          "quantity": 3
+        },
+        {
+          "name": "Pancakes",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Natalia Boyko",
+      "estimatedMinutes": 30,
+      "status": "READY",
+      "items": [
+        {
+          "name": "Margherita pizza",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Oleksandr Kravets",
+      "estimatedMinutes": 40,
+      "status": "CREATED",
+      "items": [
+        {
+          "name": "Chicken wrap",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Kateryna Tkachenko",
+      "estimatedMinutes": 15,
+      "status": "READY",
+      "items": [
+        {
+          "name": "Chicken wrap",
+          "quantity": 3
+        },
+        {
+          "name": "Croissant",
+          "quantity": 2
+        },
+        {
+          "name": "Green tea",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Bohdan Marchenko",
+      "estimatedMinutes": 8,
+      "status": "IN_PROGRESS",
+      "items": [
+        {
+          "name": "Varenyky",
+          "quantity": 2
+        },
+        {
+          "name": "Flat white",
+          "quantity": 1
+        },
+        {
+          "name": "Cheesecake",
+          "quantity": 2
+        },
+        {
+          "name": "Pancakes",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Anna Savchenko",
+      "estimatedMinutes": 40,
+      "status": "CREATED",
+      "items": [
+        {
+          "name": "Chicken wrap",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Volodymyr Rudenko",
+      "estimatedMinutes": 8,
+      "status": "CANCELLED",
+      "items": [
+        {
+          "name": "Cheesecake",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Daria Polishchuk",
+      "estimatedMinutes": 20,
+      "status": "IN_PROGRESS",
+      "items": [
+        {
+          "name": "Pancakes",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Ihor Moroz",
+      "estimatedMinutes": 30,
+      "status": "CREATED",
+      "items": [
+        {
+          "name": "Latte",
+          "quantity": 3
+        },
+        {
+          "name": "Borscht",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Oksana Yakovenko",
+      "estimatedMinutes": 10,
+      "status": "CANCELLED",
+      "items": [
+        {
+          "name": "Pancakes",
+          "quantity": 2
+        },
+        {
+          "name": "Avocado toast",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Pavlo Zinchenko",
+      "estimatedMinutes": 40,
+      "status": "IN_PROGRESS",
+      "items": [
+        {
+          "name": "Espresso",
+          "quantity": 1
+        },
+        {
+          "name": "Green tea",
+          "quantity": 3
+        },
+        {
+          "name": "Croissant",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Vira Kovalchuk",
+      "estimatedMinutes": 5,
+      "status": "CREATED",
+      "items": [
+        {
+          "name": "Lemonade",
+          "quantity": 1
+        },
+        {
+          "name": "Americano",
+          "quantity": 1
+        },
+        {
+          "name": "Cheesecake",
+          "quantity": 2
+        },
+        {
+          "name": "Tiramisu",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Maksym Panchenko",
+      "estimatedMinutes": 15,
+      "status": "CREATED",
+      "items": [
+        {
+          "name": "Varenyky",
+          "quantity": 3
+        },
+        {
+          "name": "Latte",
+          "quantity": 2
+        },
+        {
+          "name": "Club sandwich",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Olena Kovalenko",
+      "estimatedMinutes": 40,
+      "status": "CREATED",
+      "items": [
+        {
+          "name": "Borscht",
+          "quantity": 3
+        },
+        {
+          "name": "Flat white",
+          "quantity": 3
+        },
+        {
+          "name": "Tiramisu",
+          "quantity": 1
+        },
+        {
+          "name": "Avocado toast",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Taras Melnyk",
+      "estimatedMinutes": 12,
+      "status": "COMPLETED",
+      "items": [
+        {
+          "name": "Green tea",
+          "quantity": 2
+        },
+        {
+          "name": "Borscht",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Iryna Shevchenko",
+      "estimatedMinutes": 5,
+      "status": "CREATED",
+      "items": [
+        {
+          "name": "Pancakes",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Andrii Petrenko",
+      "estimatedMinutes": 5,
+      "status": "READY",
+      "items": [
+        {
+          "name": "Croissant",
+          "quantity": 3
+        },
+        {
+          "name": "Cappuccino",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Maria Lysenko",
+      "estimatedMinutes": 10,
+      "status": "READY",
+      "items": [
+        {
+          "name": "Cheesecake",
+          "quantity": 3
+        },
+        {
+          "name": "Tiramisu",
+          "quantity": 3
+        },
+        {
+          "name": "Latte",
+          "quantity": 1
+        },
+        {
+          "name": "Espresso",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Dmytro Bondar",
+      "estimatedMinutes": 40,
+      "status": "IN_PROGRESS",
+      "items": [
+        {
+          "name": "Croissant",
+          "quantity": 2
+        },
+        {
+          "name": "Lemonade",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Sofia Hrytsenko",
+      "estimatedMinutes": 30,
+      "status": "READY",
+      "items": [
+        {
+          "name": "Espresso",
+          "quantity": 2
+        },
+        {
+          "name": "Lemonade",
+          "quantity": 1
+        },
+        {
+          "name": "Margherita pizza",
+          "quantity": 2
+        },
+        {
+          "name": "Pancakes",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Yurii Vovk",
+      "estimatedMinutes": 40,
+      "status": "COMPLETED",
+      "items": [
+        {
+          "name": "Margherita pizza",
+          "quantity": 3
+        },
+        {
+          "name": "Chicken wrap",
+          "quantity": 2
+        },
+        {
+          "name": "Croissant",
+          "quantity": 2
+        },
+        {
+          "name": "Tiramisu",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Natalia Boyko",
+      "estimatedMinutes": 20,
+      "status": "CREATED",
+      "items": [
+        {
+          "name": "Flat white",
+          "quantity": 1
+        },
+        {
+          "name": "Cheesecake",
+          "quantity": 1
+        },
+        {
+          "name": "Avocado toast",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Oleksandr Kravets",
+      "estimatedMinutes": 40,
+      "status": "CANCELLED",
+      "items": [
+        {
+          "name": "Pancakes",
+          "quantity": 1
+        },
+        {
+          "name": "Croissant",
+          "quantity": 2
+        },
+        {
+          "name": "Latte",
+          "quantity": 3
+        },
+        {
+          "name": "Club sandwich",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Kateryna Tkachenko",
+      "estimatedMinutes": 12,
+      "status": "CREATED",
+      "items": [
+        {
+          "name": "Flat white",
+          "quantity": 3
+        },
+        {
+          "name": "Caesar salad",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Bohdan Marchenko",
+      "estimatedMinutes": 10,
+      "status": "CANCELLED",
+      "items": [
+        {
+          "name": "Caesar salad",
+          "quantity": 2
+        },
+        {
+          "name": "Americano",
+          "quantity": 1
+        },
+        {
+          "name": "Flat white",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Anna Savchenko",
+      "estimatedMinutes": 10,
+      "status": "CREATED",
+      "items": [
+        {
+          "name": "Cappuccino",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Volodymyr Rudenko",
+      "estimatedMinutes": 15,
+      "status": "CREATED",
+      "items": [
+        {
+          "name": "Club sandwich",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Daria Polishchuk",
+      "estimatedMinutes": 10,
+      "status": "IN_PROGRESS",
+      "items": [
+        {
+          "name": "Margherita pizza",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Ihor Moroz",
+      "estimatedMinutes": 5,
+      "status": "READY",
+      "items": [
+        {
+          "name": "Caesar salad",
+          "quantity": 2
+        },
+        {
+          "name": "Espresso",
+          "quantity": 2
+        },
+        {
+          "name": "Latte",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Oksana Yakovenko",
+      "estimatedMinutes": 5,
+      "status": "READY",
+      "items": [
+        {
+          "name": "Flat white",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Pavlo Zinchenko",
+      "estimatedMinutes": 5,
+      "status": "COMPLETED",
+      "items": [
+        {
+          "name": "Flat white",
+          "quantity": 2
+        },
+        {
+          "name": "Pancakes",
+          "quantity": 2
+        },
+        {
+          "name": "Varenyky",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Vira Kovalchuk",
+      "estimatedMinutes": 40,
+      "status": "COMPLETED",
+      "items": [
+        {
+          "name": "Borscht",
+          "quantity": 3
+        },
+        {
+          "name": "Cheesecake",
+          "quantity": 1
+        },
+        {
+          "name": "Chicken wrap",
+          "quantity": 3
+        },
+        {
+          "name": "Club sandwich",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Maksym Panchenko",
+      "estimatedMinutes": 25,
+      "status": "READY",
+      "items": [
+        {
+          "name": "Lemonade",
+          "quantity": 1
+        },
+        {
+          "name": "Margherita pizza",
+          "quantity": 3
+        },
+        {
+          "name": "Varenyky",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Olena Kovalenko",
+      "estimatedMinutes": 20,
+      "status": "COMPLETED",
+      "items": [
+        {
+          "name": "Margherita pizza",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Taras Melnyk",
+      "estimatedMinutes": 40,
+      "status": "COMPLETED",
+      "items": [
+        {
+          "name": "Flat white",
+          "quantity": 2
+        },
+        {
+          "name": "Margherita pizza",
+          "quantity": 3
+        },
+        {
+          "name": "Green tea",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Iryna Shevchenko",
+      "estimatedMinutes": 8,
+      "status": "COMPLETED",
+      "items": [
+        {
+          "name": "Cheesecake",
+          "quantity": 1
+        },
+        {
+          "name": "Cappuccino",
+          "quantity": 3
+        },
+        {
+          "name": "Flat white",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Andrii Petrenko",
+      "estimatedMinutes": 20,
+      "status": "IN_PROGRESS",
+      "items": [
+        {
+          "name": "Americano",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Maria Lysenko",
+      "estimatedMinutes": 25,
+      "status": "CREATED",
+      "items": [
+        {
+          "name": "Latte",
+          "quantity": 2
+        },
+        {
+          "name": "Green tea",
+          "quantity": 2
+        },
+        {
+          "name": "Americano",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Dmytro Bondar",
+      "estimatedMinutes": 40,
+      "status": "COMPLETED",
+      "items": [
+        {
+          "name": "Green tea",
+          "quantity": 1
+        },
+        {
+          "name": "Avocado toast",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Sofia Hrytsenko",
+      "estimatedMinutes": 40,
+      "status": "CANCELLED",
+      "items": [
+        {
+          "name": "Pancakes",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "customerName": "Yurii Vovk",
+      "estimatedMinutes": 25,
+      "status": "READY",
+      "items": [
+        {
+          "name": "Caesar salad",
+          "quantity": 1
+        },
+        {
+          "name": "Americano",
+          "quantity": 2
+        },
+        {
+          "name": "Avocado toast",
+          "quantity": 3
+        },
+        {
+          "name": "Latte",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "customerName": "Natalia Boyko",
+      "estimatedMinutes": 40,
+      "status": "IN_PROGRESS",
+      "items": [
+        {
+          "name": "Borscht",
+          "quantity": 1
+        },
+        {
+          "name": "Americano",
+          "quantity": 3
+        },
+        {
+          "name": "Espresso",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "customerName": "Oleksandr Kravets",
+      "estimatedMinutes": 12,
+      "status": "CREATED",
+      "items": [
+        {
+          "name": "Borscht",
+          "quantity": 1
+        },
+        {
+          "name": "Club sandwich",
+          "quantity": 3
+        },
+        {
+          "name": "Pancakes",
+          "quantity": 1
+        }
+      ]
+    }
+  ]
+}
