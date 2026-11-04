@@ -69,7 +69,8 @@ public class SecurityConfig {
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
-            @org.springframework.beans.factory.annotation.Value("${readybell.cors.allowed-origins:}") List<String> corsOrigins)
+            @org.springframework.beans.factory.annotation.Value("${readybell.cors.allowed-origins:}") List<String> corsOrigins,
+            @org.springframework.beans.factory.annotation.Value("${readybell.cors.allowed-origin-patterns:}") List<String> corsOriginPatterns)
             throws Exception {
         http
             // Disable CSRF — REST API, no browser form submissions
@@ -79,6 +80,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(request -> {
                 var config = new org.springframework.web.cors.CorsConfiguration();
                 config.setAllowedOrigins(corsOrigins.stream().filter(o -> !o.isBlank()).toList());
+                config.setAllowedOriginPatterns(corsOriginPatterns.stream().filter(o -> !o.isBlank()).toList());
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                 config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Tenant-Id"));
                 config.setMaxAge(3600L);

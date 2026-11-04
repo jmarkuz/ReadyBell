@@ -27,7 +27,7 @@ function validateAuthToken(request: Request): { valid: boolean; tenantId?: strin
     let tenantId = 'tenant-123';
 
     if (token.startsWith('admin-')) {
-      role = 'ADMIN';
+      role = 'RESTAURANT_ADMIN';
       tenantId = token.split('-')[1] || 'tenant-123';
     } else if (token.startsWith('platform-')) {
       role = 'PLATFORM_ADMIN';
@@ -130,7 +130,7 @@ export const handlers = [
         return HttpResponse.json(
           {
             token: 'admin-tenant-123-def456',
-            role: 'ADMIN',
+            role: 'RESTAURANT_ADMIN',
             tenantId: 'tenant-123',
             username: body.username,
             expiresIn: 3600,

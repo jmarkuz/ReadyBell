@@ -25,6 +25,9 @@ h1{font-size:20px;margin:0 0 4px}.n{font-size:34px;font-weight:700;letter-spacin
 img{width:220px;height:220px}p{font-size:13px;margin:6px 0}small{color:#555;word-break:break-all}</style>
 <h1>${esc(opts.restaurant)}</h1><div class="n">${esc(opts.orderNumber)}</div>
 <img src="${opts.qr}" alt="QR code"><p>Scan to follow your order and get a notification when it is ready.</p>
-<small>${esc(opts.url)}</small><script>onload=()=>{print()}</script>`);
+<small>${esc(opts.url)}</small>`);
   w.document.close();
+  // no inline script: the page's Content-Security-Policy would block it
+  w.focus();
+  setTimeout(() => w.print(), 300);
 }

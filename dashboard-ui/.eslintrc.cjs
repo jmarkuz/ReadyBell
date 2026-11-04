@@ -9,6 +9,17 @@ module.exports = {
   ignorePatterns: ['dist', '.eslintrc.cjs'],
   parser: '@typescript-eslint/parser',
   plugins: ['react-refresh'],
+  overrides: [
+    {
+      // Tests, mocks and test setup legitimately use loose types and throwaway locals
+      files: ['**/*.test.ts', '**/*.test.tsx', 'src/test/**', 'src/mocks/**'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-unused-vars': 'off',
+        '@typescript-eslint/ban-types': 'off',
+      },
+    },
+  ],
   rules: {
     'react-refresh/only-export-components': [
       'warn',

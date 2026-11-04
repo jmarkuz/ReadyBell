@@ -33,7 +33,7 @@ export interface AuthState {
   username: string | null;
   email: string | null;
   name: string | null;
-  role: 'STAFF' | 'ADMIN' | 'PLATFORM_ADMIN' | null;
+  role: 'STAFF' | 'RESTAURANT_ADMIN' | 'PLATFORM_ADMIN' | null;
   tenantId: string | null;
   
   // Token info
@@ -142,7 +142,7 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
       username: decoded.username || '',
       email: decoded.email || '',
       name: decoded.name || '',
-      role: decoded.role as 'STAFF' | 'ADMIN' | 'PLATFORM_ADMIN',
+      role: decoded.role as 'STAFF' | 'RESTAURANT_ADMIN' | 'PLATFORM_ADMIN',
       tenantId: decoded.tenant_id || decoded.tenantId || '',
       restaurantName: decoded.name || '',
     }),

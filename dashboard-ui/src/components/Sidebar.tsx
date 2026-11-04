@@ -1,18 +1,12 @@
 import { signOut } from '@/utils/session';
 import React, { memo } from 'react';
 import { NavLink } from 'react-router-dom';
-import {
-  Home,
-  ShoppingCart,
-  Utensils,
-  CreditCard,
-  BarChart3,
-  Settings,
-  HelpCircle,
-  LogOut,
-} from 'lucide-react';
+import { Home, Settings, Users, Store, LogOut } from 'lucide-react';
+import { navFor, type Role } from '@/utils/roles';
 
 interface SidebarProps {
+  /** Decides which entries are shown; without one only the dashboard is offered. */
+  role?: Role | null;
   onNavigate?: (route: string) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -25,39 +19,19 @@ interface SidebarProps {
   };
 }
 
-interface MenuItem {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  route: string;
-}
+const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  dashboard: Home,
+  staff: Users,
+  settings: Settings,
+  restaurants: Store,
+};
 
-/**
- * Sidebar Navigation Component
- * 
- * Left sidebar with:
- * - ReadyBell logo/brand
- * - Navigation menu (7 items)
- * - User profile section (bottom)
- * 
- * Responsive:
- * - Desktop (1024px+): Full width with text labels
- * - Tablet (768px-1023px): Collapsed to icon-only (with hover expand)
- * - Mobile: Drawer overlay or hamburger menu
- */
 export default memo(function Sidebar({
+  role,
   onNavigate,
   userProfile,
 }: SidebarProps) {
-  const menuItems: MenuItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, route: '/' },
-    { id: 'orders', label: 'Orders', icon: ShoppingCart, route: '/orders' },
-    { id: 'menu', label: 'Menu Management', icon: Utensils, route: '/menu' },
-    { id: 'payments', label: 'Payments', icon: CreditCard, route: '/payments' },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3, route: '/analytics' },
-    { id: 'settings', label: 'Settings', icon: Settings, route: '/settings' },
-    { id: 'support', label: 'Support', icon: HelpCircle, route: '/support' },
-  ];
+  const menuItems = navFor(role).map((e) => ({ ...e, icon: ICONS[e.id] ?? Home }));
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-slate-900">

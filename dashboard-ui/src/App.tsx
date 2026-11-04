@@ -5,6 +5,7 @@ import { SearchProvider } from '@/context/SearchContext';
 import { AuthProvider } from '@/context/AuthProvider';
 import Layout from '@/components/Layout';
 import { PageLoader } from '@/components/PageLoader';
+import RequireRole from '@/components/RequireRole';
 import './App.css';
 
 /**
@@ -15,12 +16,9 @@ import './App.css';
  * Validates: AC3 (Use Suspense for loading fallback)
  */
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
-const Orders = lazy(() => import('@/pages/Orders'));
-const Menu = lazy(() => import('@/pages/Menu'));
-const Payments = lazy(() => import('@/pages/Payments'));
-const Analytics = lazy(() => import('@/pages/Analytics'));
+const Staff = lazy(() => import('@/pages/Staff'));
 const Settings = lazy(() => import('@/pages/Settings'));
-const Support = lazy(() => import('@/pages/Support'));
+const Restaurants = lazy(() => import('@/pages/Restaurants'));
 const LoginPage = lazy(() => import('@/pages/Login'));
 const TrackPage = lazy(() => import('@/pages/Track'));
 
@@ -80,61 +78,45 @@ function App() {
                 }
               />
               <Route element={<Layout />}>
-                <Route 
-                  path="/" 
+                <Route
+                  path="/"
                   element={
-                    <Suspense fallback={<PageLoader />}>
-                      <Dashboard />
-                    </Suspense>
-                  } 
+                    <RequireRole roles={['STAFF', 'RESTAURANT_ADMIN']}>
+                      <Suspense fallback={<PageLoader />}>
+                        <Dashboard />
+                      </Suspense>
+                    </RequireRole>
+                  }
                 />
-                <Route 
-                  path="/orders" 
+                <Route
+                  path="/staff"
                   element={
-                    <Suspense fallback={<PageLoader />}>
-                      <Orders />
-                    </Suspense>
-                  } 
+                    <RequireRole roles={['RESTAURANT_ADMIN']}>
+                      <Suspense fallback={<PageLoader />}>
+                        <Staff />
+                      </Suspense>
+                    </RequireRole>
+                  }
                 />
-                <Route 
-                  path="/menu" 
+                <Route
+                  path="/settings"
                   element={
-                    <Suspense fallback={<PageLoader />}>
-                      <Menu />
-                    </Suspense>
-                  } 
+                    <RequireRole roles={['RESTAURANT_ADMIN']}>
+                      <Suspense fallback={<PageLoader />}>
+                        <Settings />
+                      </Suspense>
+                    </RequireRole>
+                  }
                 />
-                <Route 
-                  path="/payments" 
+                <Route
+                  path="/restaurants"
                   element={
-                    <Suspense fallback={<PageLoader />}>
-                      <Payments />
-                    </Suspense>
-                  } 
-                />
-                <Route 
-                  path="/analytics" 
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <Analytics />
-                    </Suspense>
-                  } 
-                />
-                <Route 
-                  path="/settings" 
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <Settings />
-                    </Suspense>
-                  } 
-                />
-                <Route 
-                  path="/support" 
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <Support />
-                    </Suspense>
-                  } 
+                    <RequireRole roles={['PLATFORM_ADMIN']}>
+                      <Suspense fallback={<PageLoader />}>
+                        <Restaurants />
+                      </Suspense>
+                    </RequireRole>
+                  }
                 />
               </Route>
             </Routes>

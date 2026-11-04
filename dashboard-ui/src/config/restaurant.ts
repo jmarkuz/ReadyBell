@@ -6,8 +6,8 @@ export interface RestaurantBranding {
   Logo: LucideIcon;
 }
 
-// Sample branding until the backend exposes the restaurant profile.
+// Shown until the restaurant's own profile (GET /api/restaurant) has loaded, and when it has none.
 export const restaurantBranding: RestaurantBranding = {
-  name: 'Café Aurora',
+  name: 'ReadyBell',
   Logo: Coffee,
 };

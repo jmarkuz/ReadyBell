@@ -1,0 +1,51 @@
+# Production-like stack: app (API + built UI), PostgreSQL, Redis.
+#   cp .env.example .env   # fill in the secrets
+#   docker compose up --build
+services:
+  app:
+    build: .
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/readybell
+      DB_USERNAME: readybell
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (at least 32 characters)}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-placeholder-public-key}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-placeholder-private-key}
+      SPRING_DATA_REDIS_HOST: redis
+      SSE_REDIS_ENABLED: "true"
+      LOGIN_REDIS_ENABLED: "true"
+      # First platform operator (password as {bcrypt}... hash, see .env.example)
+      READYBELL_SECURITY_USERS_0_USERNAME: ${PLATFORM_ADMIN_USERNAME:?set PLATFORM_ADMIN_USERNAME in .env}
+      READYBELL_SECURITY_USERS_0_PASSWORD: ${PLATFORM_ADMIN_PASSWORD_HASH:?set PLATFORM_ADMIN_PASSWORD_HASH in .env}
+      READYBELL_SECURITY_USERS_0_ROLES_0: PLATFORM_ADMIN
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: readybell
+      POSTGRES_USER: readybell
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U readybell -d readybell"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata:

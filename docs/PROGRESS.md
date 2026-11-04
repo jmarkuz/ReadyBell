@@ -35,7 +35,23 @@ Detailed per-task reports were removed; git history keeps them.
 - Keyboard navigation: 71 tests (32 unit + 39 integration), integration 39/39; real-time updates: 75/75; ProblemDetail: 51/51; `App.test.tsx`: 2/2.
 - Re-run `npm test` and `./gradlew test` for current numbers — these were recorded at the time of each task.
 
+## Product flow (receipt QR, customer PWA, admin screens)
+
+| Area | Result |
+|---|---|
+| Order ↔ session | Orders may be created without a session; the server starts one and the receipt QR links to `/track/{sessionId}` |
+| Customer PWA | `/track/:sessionId`: live status (SSE + polling), wait time, Web Push opt-in, uk/en, manifest + service worker |
+| Staff | "New order" dialog with printable QR; role-based navigation (staff / restaurant admin / platform admin) |
+| Admin | Staff management, restaurant name, platform restaurant onboarding; fake metrics and stub pages removed |
+| Reliability | Async push with retries, session housekeeping, Flyway migrations, Redis login throttle, SSE heartbeat |
+| Delivery | Dockerfile, docker-compose, CI, Prometheus metrics, `scripts/smoke.sh`; see [DEPLOYMENT.md](DEPLOYMENT.md) |
+
 ## Open items
+- Web Push has not been verified on real devices (Android Chrome, iOS Safari 16.4+ as an installed PWA) with real VAPID keys.
+- The SSE stream still takes the staff token as a query parameter (`/api/orders/stream?token=`); replace it with a short-lived single-use ticket.
+- A counter QR (one per restaurant, customer enters the order number) is not built; only the per-receipt QR exists.
+- No browser E2E suite (Playwright); `scripts/smoke.sh` covers the API flow only.
+- 7 react-refresh lint warnings (contexts that also export hooks).
 - Admin stubs (`PUT /api/admin/config`, staff management) are mock-only until the backend implements them.
 - Real-device mobile and real screen-reader testing (only emulation / automated tests were done).
 - Accessibility gaps from the screen-reader audit — see [UI_QUALITY.md](UI_QUALITY.md).

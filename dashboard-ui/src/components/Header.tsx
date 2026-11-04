@@ -12,8 +12,11 @@ import {
   LogOut,
 } from 'lucide-react';
 import { restaurantBranding } from '@/config/restaurant';
+import { useRestaurant } from '@/context/restaurantContext';
 
 interface HeaderProps {
+  /** The order search only makes sense on the dashboard. */
+  showSearch?: boolean;
   onMenuToggle?: () => void;
   onSearch?: (query: string) => void;
   notificationCount?: number;
@@ -36,6 +39,7 @@ interface HeaderProps {
  * - Mobile: Search in dropdown, compact icons
  */
 export default memo(function Header({
+  showSearch = true,
   onMenuToggle,
   onSearch,
   notificationCount = 0,
@@ -68,6 +72,7 @@ export default memo(function Header({
   );
 
   // Handle theme toggle
+  const restaurant = useRestaurant();
   const handleThemeToggle = useCallback(() => {
     toggleTheme();
     onThemeToggle?.();
@@ -97,7 +102,7 @@ export default memo(function Header({
         <a
           href="/"
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-          aria-label={`${restaurantBranding.name} dashboard home`}
+          aria-label={`${restaurant.name} dashboard home`}
         >
           <div className="w-9 h-9 bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 rounded-full flex items-center justify-center">
             <restaurantBranding.Logo className="w-5 h-5" aria-hidden="true" />
@@ -106,12 +111,13 @@ export default memo(function Header({
             className="text-2xl hidden sm:inline"
             style={{ fontFamily: 'var(--font-display)', fontWeight: 300, letterSpacing: '-0.02em' }}
           >
-            {restaurantBranding.name}
+            {restaurant.name}
           </span>
         </a>
       </div>
 
       {/* Center: Search input (desktop and tablet) */}
+      {showSearch ? (
       <div className="hidden md:flex flex-1 max-w-md mx-4">
         <div className="relative w-full">
           <label htmlFor="search-orders" className="sr-only">
@@ -141,6 +147,9 @@ export default memo(function Header({
         </div>
         <span id="search-help" className="sr-only">Debounced search, results update automatically</span>
       </div>
+      ) : (
+        <div className="flex-1" />
+      )}
 
       {/* Right: Notifications, Theme Toggle, Settings */}
       <div className="flex items-center gap-2 md:gap-4" role="toolbar" aria-label="Header actions">

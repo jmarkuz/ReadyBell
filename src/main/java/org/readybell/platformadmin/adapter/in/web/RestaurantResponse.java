@@ -11,11 +11,15 @@ import java.util.UUID;
  * @param identifier the business identifier of the restaurant
  * @param status     the current restaurant status ({@code ACTIVE} or {@code DEACTIVATED})
  */
-public record RestaurantResponse(UUID tenantId, String identifier, String status, String adminUsername) {
+public record RestaurantResponse(UUID tenantId, String identifier, String status, String adminUsername, String name) {
 
     /** Response for operations that do not create an admin account. */
     public RestaurantResponse(UUID tenantId, String identifier, String status) {
-        this(tenantId, identifier, status, null);
+        this(tenantId, identifier, status, null, null);
+    }
+
+    public RestaurantResponse(UUID tenantId, String identifier, String status, String adminUsername) {
+        this(tenantId, identifier, status, adminUsername, null);
     }
 
     /**
@@ -26,14 +30,16 @@ public record RestaurantResponse(UUID tenantId, String identifier, String status
      */
     public static RestaurantResponse withAdmin(Restaurant restaurant, String adminUsername) {
         return new RestaurantResponse(restaurant.getTenantId().value(), restaurant.getIdentifier(),
-                restaurant.getStatus().name(), adminUsername);
+                restaurant.getStatus().name(), adminUsername, restaurant.getConfig().name());
     }
 
     public static RestaurantResponse from(Restaurant restaurant) {
         return new RestaurantResponse(
                 restaurant.getTenantId().value(),
                 restaurant.getIdentifier(),
-                restaurant.getStatus().name()
+                restaurant.getStatus().name(),
+                null,
+                restaurant.getConfig().name()
         );
     }
 }

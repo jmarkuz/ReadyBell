@@ -43,4 +43,7 @@ public interface RestaurantRepository {
      * @return the restaurant, or {@link Optional#empty()} if none exists with that identifier
      */
     Optional<Restaurant> findByIdentifier(String identifier);
+
+    /** Every restaurant on the platform (platform admin view). */
+    java.util.List<Restaurant> findAll();
 }

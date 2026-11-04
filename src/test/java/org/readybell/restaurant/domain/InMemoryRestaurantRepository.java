@@ -40,6 +40,11 @@ public class InMemoryRestaurantRepository implements RestaurantRepository {
         return Optional.ofNullable(byIdentifier.get(identifier));
     }
 
+    @Override
+    public java.util.List<Restaurant> findAll() {
+        return java.util.List.copyOf(byTenantId.values());
+    }
+
     /** Convenience helper — returns the total number of stored restaurants. */
     public int size() {
         return byTenantId.size();

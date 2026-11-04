@@ -20,7 +20,7 @@ export interface DecodedToken {
   username?: string;
   email?: string;
   name?: string;
-  role: 'STAFF' | 'ADMIN' | 'PLATFORM_ADMIN';
+  role: 'STAFF' | 'RESTAURANT_ADMIN' | 'PLATFORM_ADMIN';
   tenant_id: string;
   tenantId?: string;
   iat: number;
