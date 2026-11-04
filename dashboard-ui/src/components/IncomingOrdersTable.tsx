@@ -20,6 +20,52 @@ interface IncomingOrdersTableProps {
 }
 
 type SortField = 'id' | 'customerName' | 'itemsOrdered' | 'deliveryETA' | 'status';
+type SortOrder = 'asc' | 'desc';
+interface SortState { field: SortField; order: SortOrder }
+
+/** Clicking the active column flips its direction; clicking another column starts it ascending. */
+const nextSort = (prev: SortState, field: SortField): SortState =>
+  prev.field === field
+    ? { field, order: prev.order === 'asc' ? 'desc' : 'asc' }
+    : { field, order: 'asc' };
+
+const SORTABLE_COLUMNS: { field: SortField; label: string }[] = [
+  { field: 'id', label: 'Order ID' },
+  { field: 'customerName', label: 'Customer' },
+  { field: 'itemsOrdered', label: 'Items' },
+  { field: 'deliveryETA', label: 'ETA' },
+  { field: 'status', label: 'Status' },
+];
+
+const ARIA_SORT = { asc: 'ascending', desc: 'descending' } as const;
+
+function SortIndicator({ order }: { order: SortOrder | null }) {
+  if (!order) return <span className="text-slate-300" aria-hidden="true">⋅</span>;
+  const Icon = order === 'asc' ? ChevronUp : ChevronDown;
+  return <Icon className="w-4 h-4 inline" aria-hidden="true" />;
+}
+
+function SortableHeader({ field, label, sort, onSort }: {
+  field: SortField; label: string; sort: SortState; onSort: (field: SortField) => void;
+}) {
+  const active = sort.field === field;
+  return (
+    <th
+      className="px-0 py-0 text-left text-sm font-semibold text-slate-600 dark:text-slate-300"
+      scope="col"
+      aria-sort={active ? ARIA_SORT[sort.order] : 'none'}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(field)}
+        className="flex w-full items-center gap-2 px-6 py-3 text-left font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+      >
+        {label}
+        <SortIndicator order={active ? sort.order : null} />
+      </button>
+    </th>
+  );
+}
 
 /**
  * Incoming Orders Table Component
@@ -57,7 +103,8 @@ export default memo(function IncomingOrdersTable({
   onStatusChange,
   sortOrder: initialSortOrder = 'asc',
 }: IncomingOrdersTableProps) {
-  const [sortField, setSortField] = useState<SortField>('deliveryETA');
+  const [sort, setSort] = useState<SortState>({ field: 'deliveryETA', order: initialSortOrder });
+  const { field: sortField, order: sortOrder } = sort;
   // The menu is rendered in a portal with fixed coordinates so the table's scroll container cannot clip it
   const [statusMenu, setStatusMenu] = useState<{ orderId: string; right: number; top?: number; bottom?: number } | null>(null);
   const statusMenuFor = statusMenu?.orderId ?? null;
@@ -74,7 +121,6 @@ export default memo(function IncomingOrdersTable({
         : { orderId, right, bottom: window.innerHeight - rect.top + 4 };   // not enough room below: open upwards
     });
   }, []);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(initialSortOrder);
   // Uncontrolled by default: the table pages itself unless the parent passes currentPage
   const [internalPage, setInternalPage] = useState(1);
 
@@ -97,20 +143,6 @@ export default memo(function IncomingOrdersTable({
       window.removeEventListener('scroll', close, true);
     };
   }, [statusMenuFor]);
-
-  // Handle column sort with useCallback for stable reference
-  const handleSort = useCallback((field: SortField) => {
-    setSortField((prevField) => {
-      setSortOrder((prevOrder) => {
-        if (prevField === field) {
-          return prevOrder === 'asc' ? 'desc' : 'asc';
-        } else {
-          return 'asc';
-        }
-      });
-      return prevField === field ? prevField : field;
-    });
-  }, []);
 
   // Sorting logic - memoized for performance
   const sortedOrders = useMemo(() => {
@@ -152,19 +184,16 @@ export default memo(function IncomingOrdersTable({
     setInternalPage(page);
     onPageChange?.(page);
   }, [onPageChange]);
+  // A new sort order makes the old page number meaningless, so go back to the first page
+  const handleSort = useCallback((field: SortField) => {
+    setSort((prev) => nextSort(prev, field));
+    setInternalPage(1);
+    if (currentPage !== 1) onPageChange?.(1);
+  }, [currentPage, onPageChange]);
   const paginatedOrders = useMemo(
     () => sortedOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize),
     [sortedOrders, currentPage, pageSize]
   );
-
-  const SortIndicator = memo(({ field }: { field: SortField }) => {
-    if (sortField !== field) return <span className="text-slate-300">⋅</span>;
-    return sortOrder === 'asc' ? (
-      <ChevronUp className="w-4 h-4 inline" />
-    ) : (
-      <ChevronDown className="w-4 h-4 inline" />
-    );
-  });
 
   if (isLoading) {
     return (
@@ -218,96 +247,9 @@ export default memo(function IncomingOrdersTable({
           <caption className="sr-only">List of incoming orders with sorting and pagination</caption>
           <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
             <tr>
-              <th
-                className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                onClick={() => handleSort('id')}
-                scope="col"
-                aria-sort={sortField === 'id' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    handleSort('id');
-                  }
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  Order ID
-                  <SortIndicator field="id" />
-                </div>
-              </th>
-              <th
-                className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                onClick={() => handleSort('customerName')}
-                scope="col"
-                aria-sort={sortField === 'customerName' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    handleSort('customerName');
-                  }
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  Customer
-                  <SortIndicator field="customerName" />
-                </div>
-              </th>
-              <th
-                className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                onClick={() => handleSort('itemsOrdered')}
-                scope="col"
-                aria-sort={sortField === 'itemsOrdered' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    handleSort('itemsOrdered');
-                  }
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  Items
-                  <SortIndicator field="itemsOrdered" />
-                </div>
-              </th>
-              <th
-                className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                onClick={() => handleSort('deliveryETA')}
-                scope="col"
-                aria-sort={sortField === 'deliveryETA' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    handleSort('deliveryETA');
-                  }
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  ETA
-                  <SortIndicator field="deliveryETA" />
-                </div>
-              </th>
-              <th
-                className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                onClick={() => handleSort('status')}
-                scope="col"
-                aria-sort={sortField === 'status' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    handleSort('status');
-                  }
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  Status
-                  <SortIndicator field="status" />
-                </div>
-              </th>
+              {SORTABLE_COLUMNS.map(({ field, label }) => (
+                <SortableHeader key={field} field={field} label={label} sort={sort} onSort={handleSort} />
+              ))}
               <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">
                 Actions
               </th>

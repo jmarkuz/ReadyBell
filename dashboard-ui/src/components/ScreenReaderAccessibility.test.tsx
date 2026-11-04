@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter as Router } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -159,9 +159,9 @@ describe('Screen Reader Accessibility - Practical Tests', () => {
       const user = userEvent.setup();
       renderWithProviders(<IncomingOrdersTable orders={mockOrders} />);
 
-      // Find sortable headers (they have role="button" and aria-sort)
-      const sortableHeaders = screen.getAllByRole('button').filter(button => 
-        button.hasAttribute('aria-sort')
+      // Sortable headers are <th aria-sort> cells that contain a real <button>
+      const sortableHeaders = screen.getAllByRole('columnheader').filter(th =>
+        th.hasAttribute('aria-sort')
       );
       expect(sortableHeaders.length).toBeGreaterThan(0);
 
@@ -169,9 +169,9 @@ describe('Screen Reader Accessibility - Practical Tests', () => {
       if (sortableHeaders.length > 0) {
         const firstHeader = sortableHeaders[0];
         const initialSort = firstHeader.getAttribute('aria-sort');
-        
-        await user.click(firstHeader);
-        
+
+        await user.click(within(firstHeader).getByRole('button'));
+
         // Sort state should change
         const newSort = firstHeader.getAttribute('aria-sort');
         expect(newSort).not.toBe(initialSort);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter as Router } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -189,20 +189,19 @@ describe('Screen Reader Accessibility (4.2)', () => {
         <IncomingOrdersTable orders={mockOrders} />
       );
 
-      // Find sortable headers - they have role="button" and aria-sort
-      const sortableHeaders = screen.getAllByRole('button').filter(button => 
-        button.hasAttribute('aria-sort')
+      // Sortable headers are <th aria-sort> cells that contain a real <button>
+      const sortableHeaders = screen.getAllByRole('columnheader').filter(th =>
+        th.hasAttribute('aria-sort')
       );
       expect(sortableHeaders.length).toBeGreaterThan(0);
 
       // Test sorting on first sortable header
       if (sortableHeaders.length > 0) {
         const firstSortableHeader = sortableHeaders[0];
-        const initialSort = firstSortableHeader.getAttribute('aria-sort') || 'none';
-        
+
         // Click to sort and check aria-sort updates
-        await userEvent.click(firstSortableHeader);
-        
+        await userEvent.click(within(firstSortableHeader).getByRole('button'));
+
         // Should change from 'none' to 'ascending' or from 'ascending' to 'descending'
         const newSort = firstSortableHeader.getAttribute('aria-sort');
         expect(['ascending', 'descending'].includes(newSort || '')).toBeTruthy();
