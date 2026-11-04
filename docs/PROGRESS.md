@@ -47,7 +47,6 @@ Detailed per-task reports were removed; git history keeps them.
 
 ## Open items
 - Web Push has not been verified on real devices (Android Chrome, iOS Safari 16.4+ as an installed PWA) with real VAPID keys.
-- The SSE stream still takes the staff token as a query parameter (`/api/orders/stream?token=`); replace it with a short-lived single-use ticket.
 - A counter QR (one per restaurant, customer enters the order number) is not built; only the per-receipt QR exists.
 - No browser E2E suite (Playwright); `scripts/smoke.sh` covers the API flow only.
 - 7 react-refresh lint warnings (contexts that also export hooks).
