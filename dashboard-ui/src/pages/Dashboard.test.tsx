@@ -33,12 +33,108 @@ async function renderDashboard() {
   return result;
 }
 
+
+/** Requests for the table page (pageSize 10), as opposed to the 100-order request behind the metric cards. */
+const pageRequests = () =>
+  vi.mocked(apiClient.getOrders).mock.calls.map(([p]) => p ?? {}).filter((p) => p.pageSize === 10);
+
+/** Makes the mocked API behave like the server: slices `total` orders into the requested page. */
+function serveOrders(total: number) {
+  const all: OrderRow[] = Array.from({ length: total }, (_, i) => ({
+    ...sampleRows[0], id: `id-${i}`, orderId: `ORD-${String(i + 1).padStart(3, '0')}`, status: 'CREATED' as const,
+  }));
+  vi.mocked(apiClient.getOrders).mockImplementation(async (p) => {
+    const size = p?.pageSize ?? 25;
+    const page = p?.page ?? 1;
+    return { items: all.slice((page - 1) * size, page * size), totalCount: total, pageCount: Math.ceil(total / size), currentPage: page };
+  });
+}
+
 beforeEach(() => {
   vi.mocked(apiClient.getOrders).mockResolvedValue({
     items: sampleRows,
     totalCount: sampleRows.length,
     pageCount: 1,
     currentPage: 1,
+  });
+});
+
+describe('Dashboard server-side paging, filters and sorting', () => {
+  it('shows 10 rows and "Page 1 of 25" for 250 orders, and asks the server for the next page', async () => {
+    serveOrders(250);
+    const user = userEvent.setup();
+    await renderDashboard();
+
+    expect(screen.getAllByRole('row')).toHaveLength(11);   // header + 10
+    expect(screen.getByText(/Page 1 of 25 \(250 total orders\)/)).toBeInTheDocument();
+    expect(pageRequests()).toEqual([{ page: 1, pageSize: 10, sortBy: 'created', sortOrder: 'desc' }]);
+
+    await user.click(screen.getByRole('button', { name: /next page/i }));
+    expect(await screen.findByText('ORD-011')).toBeInTheDocument();
+    expect(screen.getByText(/Page 2 of 25/)).toBeInTheDocument();
+    expect(pageRequests().at(-1)).toMatchObject({ page: 2 });
+    expect(pageRequests()).toHaveLength(2);
+  });
+
+  it('shows no pagination for 10 orders or fewer', async () => {
+    serveOrders(10);
+    await renderDashboard();
+    expect(screen.queryByRole('region', { name: /table pagination/i })).not.toBeInTheDocument();
+  });
+
+  it('sorting goes back to page 1 with one request, and the Items column is not sortable', async () => {
+    serveOrders(250);
+    const user = userEvent.setup();
+    await renderDashboard();
+    await user.click(screen.getByRole('button', { name: /next page/i }));
+    await screen.findByText('ORD-011');
+    const before = pageRequests().length;
+
+    await user.click(screen.getByRole('button', { name: /^Customer/ }));
+
+    await screen.findByText(/Page 1 of 25/);
+    expect(pageRequests()).toHaveLength(before + 1);
+    expect(pageRequests().at(-1)).toEqual({ page: 1, pageSize: 10, sortBy: 'customerName', sortOrder: 'asc' });
+
+    await user.click(screen.getByRole('button', { name: /^Customer/ }));
+    await waitFor(() => expect(pageRequests().at(-1)).toMatchObject({ sortBy: 'customerName', sortOrder: 'desc' }));
+
+    expect(screen.queryByRole('button', { name: /^Items/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Items' })).not.toHaveAttribute('aria-sort');
+  });
+
+  it('applying a status filter goes back to page 1 with one request carrying the status', async () => {
+    serveOrders(250);
+    const user = userEvent.setup();
+    await renderDashboard();
+    await user.click(screen.getByRole('button', { name: /next page/i }));
+    await screen.findByText('ORD-011');
+    const before = pageRequests().length;
+
+    await user.click(screen.getAllByRole('button', { name: /Status/i })[0]);
+    await user.click(screen.getByRole('checkbox', { name: /Preparing/i }));
+    await user.click(screen.getAllByRole('button', { name: /Apply/i })[0]);
+
+    await waitFor(() => expect(pageRequests()).toHaveLength(before + 1));
+    expect(pageRequests().at(-1)).toEqual({
+      page: 1, pageSize: 10, sortBy: 'created', sortOrder: 'desc', status: ['PREPARING'],
+    });
+  });
+
+  it('steps back to the last page when the current one no longer exists', async () => {
+    serveOrders(250);
+    const user = userEvent.setup();
+    await renderDashboard();
+    await user.click(screen.getByRole('button', { name: /next page/i }));
+    await screen.findByText('ORD-011');
+
+    serveOrders(10);   // orders deleted elsewhere: only one page is left
+    await user.click(screen.getByRole('button', { name: /update status for order ORD-011/i }));
+    vi.mocked(apiClient.updateOrderStatus).mockResolvedValue({ id: 'id-10', status: 'IN_PROGRESS', updatedAt: 'now' });
+    await user.click(screen.getByRole('menuitem', { name: 'Start preparing' }));
+
+    await waitFor(() => expect(pageRequests().at(-1)).toMatchObject({ page: 1 }));
+    expect(await screen.findByText('ORD-001')).toBeInTheDocument();
   });
 });
 
@@ -949,7 +1045,8 @@ describe('Dashboard Page', () => {
       await user.click(screen.getByRole('menuitem', { name: 'Mark ready for pickup' }));
 
       await waitFor(() => expect(apiClient.updateOrderStatus).toHaveBeenCalledWith('1', 'READY'));
-      await waitFor(() => expect(apiClient.getOrders).toHaveBeenCalledTimes(1));
+      // the list page and the newest-orders request behind the metric cards are both reloaded
+      await waitFor(() => expect(pageRequests()).toHaveLength(1));
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 

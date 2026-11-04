@@ -1,5 +1,6 @@
 package org.readybell.ordering.domain;
 
+import java.time.Instant;
 import java.util.Set;
 
 /**
@@ -11,8 +12,11 @@ import java.util.Set;
  * @param sortBy    sort column
  * @param ascending sort direction
  * @param search    case-insensitive text matched against order number, customer and item names; may be {@code null}
+ * @param from      only orders created at or after this instant; {@code null} means no lower bound
+ * @param to        only orders created at or before this instant; {@code null} means no upper bound
  */
-public record OrderQuery(int page, int pageSize, Set<OrderStatus> statuses, Sort sortBy, boolean ascending, String search) {
+public record OrderQuery(int page, int pageSize, Set<OrderStatus> statuses, Sort sortBy, boolean ascending, String search,
+                         Instant from, Instant to) {
 
     public static final int DEFAULT_PAGE_SIZE = 25;
     public static final int MAX_PAGE_SIZE = 100;
@@ -29,5 +33,8 @@ public record OrderQuery(int page, int pageSize, Set<OrderStatus> statuses, Sort
         statuses = statuses == null ? Set.of() : Set.copyOf(statuses);
         sortBy = sortBy == null ? Sort.CREATED : sortBy;
         search = search == null || search.isBlank() ? null : search.strip();
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new IllegalArgumentException("from must not be after to");
+        }
     }
 }

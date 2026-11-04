@@ -110,6 +110,12 @@ public class JpaOrderRepository implements OrderRepository {
             if (query.search() != null) {
                 and.add(searchPredicate(root, cq, cb, query.search()));
             }
+            if (query.from() != null) {
+                and.add(cb.greaterThanOrEqualTo(root.get("createdAt"), query.from()));
+            }
+            if (query.to() != null) {
+                and.add(cb.lessThanOrEqualTo(root.get("createdAt"), query.to()));
+            }
             return cb.and(and.toArray(Predicate[]::new));
         };
         Sort.Direction dir = query.ascending() ? Sort.Direction.ASC : Sort.Direction.DESC;
