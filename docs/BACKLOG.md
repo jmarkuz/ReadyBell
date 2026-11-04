@@ -2,6 +2,7 @@
 
 Ordered by priority. Sizes: S ≤ ½ day, M ≈ 1–2 days, L > 2 days. IDs are referenced from [REVIEW.md](REVIEW.md).
 Done items are kept at the bottom for context.
+The ordered plan for what to do next, with specifications and status, is in [IMPROVEMENTS.md](IMPROVEMENTS.md).
 
 ## P0: before the first pilot restaurant
 
