@@ -6,7 +6,8 @@ import { apiClient } from '@/utils/api';
 
 vi.mock('@/utils/api', async (orig) => ({ ...(await orig<typeof import('@/utils/api')>()), apiClient: { createOrder: vi.fn() } }));
 vi.mock('@/utils/receipt', () => ({
-  trackingUrl: (id: string) => `https://shop.example/track/${id}`,
+  trackingUrl: (id: string) => (globalThis as { __url?: string }).__url ?? `https://shop.example/track/${id}`,
+  isLocalOnlyUrl: (u: string) => u.includes('localhost'),
   qrDataUrl: vi.fn().mockResolvedValue('data:image/png;base64,AAAA'),
   printReceipt: vi.fn(),
 }));
@@ -38,6 +39,17 @@ describe('NewOrderDialog', () => {
     expect(screen.getByAltText('QR code for order #ABCD1234')).toBeInTheDocument();
     expect(screen.getByText('https://shop.example/track/sess-9')).toBeInTheDocument();
     expect(onCreated).toHaveBeenCalled();
+  });
+
+  it('warns when the QR link points to localhost', async () => {
+    (globalThis as { __url?: string }).__url = 'http://localhost:5173/track/s1';
+    vi.mocked(apiClient.createOrder).mockResolvedValue({
+      id: 'o1', orderId: '#ABCD1234', sessionId: 's1', status: 'CREATED', version: 0, createdAt: '', updatedAt: '',
+    });
+    render(<NewOrderDialog open onClose={vi.fn()} onCreated={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Create order' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/cannot open it/);
+    delete (globalThis as { __url?: string }).__url;
   });
 
   it('skips blank item rows and shows server errors', async () => {

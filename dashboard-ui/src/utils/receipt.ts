@@ -5,6 +5,16 @@ export function publicOrigin(): string {
   return (import.meta.env.VITE_PUBLIC_URL as string | undefined)?.replace(/\/$/, '') || window.location.origin;
 }
 
+/** True when the link points at this very machine, so a customer's phone cannot open it. */
+export function isLocalOnlyUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host.endsWith('.localhost');
+  } catch {
+    return false;
+  }
+}
+
 export function trackingUrl(sessionId: string): string {
   return `${publicOrigin()}/track/${sessionId}`;
 }

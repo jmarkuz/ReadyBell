@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Check, Copy, Plus, Printer, X } from 'lucide-react';
 import { apiClient } from '@/utils/api';
-import { printReceipt, qrDataUrl, trackingUrl } from '@/utils/receipt';
+import { isLocalOnlyUrl, printReceipt, qrDataUrl, trackingUrl } from '@/utils/receipt';
 import { useRestaurant } from '@/context/restaurantContext';
 
 interface Line { name: string; quantity: number }
@@ -83,6 +83,13 @@ export default function NewOrderDialog({ open, onClose, onCreated }: Props) {
             <img src={created.qr} alt={`QR code for order ${created.orderNumber}`} className="mx-auto w-56 h-56 rounded-lg border border-slate-200" />
             <p className="text-sm text-slate-600 dark:text-slate-400">Show or print this code. The customer scans it to follow the order and get notified.</p>
             <p className="text-xs break-all text-slate-500">{created.url}</p>
+            {isLocalOnlyUrl(created.url) && (
+              <p role="alert" className="text-sm text-left rounded-lg bg-amber-50 text-amber-900 border border-amber-200 p-3">
+                This link points to <strong>localhost</strong>, so a customer's phone cannot open it. Open the
+                dashboard through this computer's network address (e.g. <code>npm run dev:lan</code>) or set{' '}
+                <code>VITE_PUBLIC_URL</code>, then create the order again.
+              </p>
+            )}
             <div className="flex gap-2 justify-center flex-wrap pt-2">
               <button type="button" onClick={() => printReceipt({ restaurant: restaurant.name, orderNumber: created.orderNumber, qr: created.qr, url: created.url })}
                 className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-stone-800 text-white text-sm font-medium"><Printer className="w-4 h-4" aria-hidden="true" />Print</button>

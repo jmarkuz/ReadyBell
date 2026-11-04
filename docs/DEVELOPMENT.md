@@ -103,3 +103,25 @@ dashboard-ui/src/              components, pages, hooks, context, mocks (MSW), t
 docs/                          architecture, brand, product + this guide, API_INTEGRATION, UI_QUALITY, PROGRESS
 .kiro/specs/                   requirements / design / tasks per feature
 ```
+
+## Opening a tracking link on a phone (QR scan)
+
+The QR code contains the address the dashboard was opened with. With `http://localhost:5173` the phone would
+look for itself, so Safari says "can't connect to the server". To test with a real phone:
+
+1. Phone and computer on the same Wi-Fi.
+2. Start the UI reachable from the network: `cd dashboard-ui && npm run dev:lan`
+   (use `BACKEND_URL=http://localhost:8081 npm run dev:lan` if the backend is not on 8080).
+3. Open the dashboard on the computer through its network address, e.g. `http://192.168.x.x:5173`
+   (or set `VITE_PUBLIC_URL=http://192.168.x.x:5173` and keep using localhost), then create a **new** order:
+   old QR codes keep their old address.
+4. Scan the QR code; the tracking page opens and updates live.
+
+`dev:lan` exposes the dev server (and, through its proxy, the dev backend with its `admin/admin` seed users)
+to everyone on the network, so use it only on a network you trust.
+
+**Notifications need HTTPS.** Browsers allow service workers and Web Push only on HTTPS (or localhost), so on
+`http://192.168…` the page tracks the order but "Notify me" is unavailable. To try push on a phone, serve the
+app over HTTPS, e.g. through a tunnel (`cloudflared tunnel --url http://localhost:5173` or `ngrok http 5173`) and
+use that https address as `VITE_PUBLIC_URL`; iPhones additionally need the page added to the Home Screen.
+Real VAPID keys are required too (`python3 scripts/generate-vapid-keys.py`).
