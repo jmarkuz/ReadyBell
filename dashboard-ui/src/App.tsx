@@ -6,7 +6,6 @@ import { AuthProvider } from '@/context/AuthProvider';
 import Layout from '@/components/Layout';
 import { PageLoader } from '@/components/PageLoader';
 import RequireRole from '@/components/RequireRole';
-import './App.css';
 
 /**
  * Lazy-loaded page components for code splitting

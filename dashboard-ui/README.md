@@ -35,7 +35,7 @@ Create a `.env.local` file (optional):
 
 ```env
 BACKEND_URL=http://localhost:8080   # Vite dev-proxy target for /api (default)
-VITE_USE_MOCKS=false                # true = use the MSW mock API instead of the backend
+VITE_PUBLIC_URL=                    # origin put into receipt QR codes when the dashboard runs on localhost
 # VITE_API_BASE_URL=                # only when the UI is served from a different origin than the API
 ```
 
@@ -188,11 +188,9 @@ Frontend: /api/orders
 
 Configure the proxy target via `BACKEND_URL` or `vite.config.ts`.
 
-### Endpoints (Mocked for Development)
+### Endpoints
 
-- `GET /api/orders` - List orders
-- `GET /api/orders/stream` - SSE real-time updates
-- `GET /api/orders/poll` - Polling fallback
+See [../docs/API_INTEGRATION.md](../docs/API_INTEGRATION.md) for the endpoints the UI uses.
 
 ## Performance Metrics
 

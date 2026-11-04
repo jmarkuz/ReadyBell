@@ -21,7 +21,7 @@ import Sidebar from './Sidebar';
 import IncomingOrdersTable from './IncomingOrdersTable';
 import OrderSummaryCard from './OrderSummaryCard';
 import OrderStatusBadge from './OrderStatusBadge';
-import { mockOrderData, generateMockOrders } from '@/mocks/mockData';
+import { mockOrderData, generateMockOrders } from '@/test/mockData';
 import { ShoppingCart } from 'lucide-react';
 
 /**

@@ -36,13 +36,11 @@ then `createdb -U postgres readybell` once.
   `curl -s -X POST localhost:8080/api/login -H 'Content-Type: application/json' -d '{"username":"staff","password":"password"}'`.
 - `JWT_SECRET` (≥ 32 bytes) is **required** outside the `dev`/`test` profiles; the app refuses to start without it.
 
-### Frontend: real backend (default) vs. mocks
+### Frontend
 `npm run dev` talks to the **real backend**: the browser calls the Vite origin and the dev proxy forwards `/api/*` to `BACKEND_URL`
 (default `http://localhost:8080`; e.g. `BACKEND_URL=http://localhost:8089 npm run dev` if 8080 is taken). Sign in on `/login` with a configured user
 (`staff` / `password` in the `dev` profile). Do **not** set `VITE_API_BASE_URL` in dev: it makes the browser call the backend directly, which fails on CORS
 (use it only when the UI is deployed on a different origin than the API and the backend has CORS configured).
-
-MSW mocks are opt-in: `VITE_USE_MOCKS=true npm run dev` (sign in with `staff@restaurant.com` / `password`).
 
 The dashboard lists the 100 newest orders and refreshes on SSE events (`/api/orders/stream?token=…`; the badge shows Live/Offline) and every 30 s while offline.
 The UI shows the backend's `IN_PROGRESS` as "Preparing".
@@ -50,18 +48,9 @@ The UI shows the backend's `IN_PROGRESS` as "Preparing".
 Staff change an order's status from the pencil menu in the orders table (only the transitions the lifecycle allows are offered; finished orders are disabled);
 the change is sent with `PATCH /api/orders/{id}/status` and the list reloads. **Logout** (sidebar and settings menu) clears the stored token and returns to `/login`.
 
-To see data locally, seed one restaurant for the dev tenant and start a customer session:
-```sql
-insert into restaurant(created_at, tenant_id, config_json, identifier, status)
-values (now(), '00000000-0000-0000-0000-000000000001', '{"name":"Demo Bistro"}', 'demo', 'ACTIVE');
-```
-```bash
-curl -s -X POST localhost:8080/api/sessions -H 'Content-Type: application/json' -d '{"qrToken":"demo"}'   # QR token = restaurant identifier
-```
-then `POST /api/orders` with the returned `sessionId` (see [API_INTEGRATION.md](API_INTEGRATION.md)).
-
-If MSW fails with "Failed to register the Service Worker", make sure
-`dashboard-ui/public/mockServiceWorker.js` exists (`npx msw init public/`).
+To see data locally: the `dev` profile seeds a restaurant (`dev-restaurant`) for the `staff` / `admin` tenant at startup.
+Sign in as `admin` / `admin` and press **New order**, or use the dashboard's *Generate / Import test data* buttons
+(`dashboard-ui/test-data/test-orders-50.json` holds 50 sample orders). Details of the API: [API_INTEGRATION.md](API_INTEGRATION.md).
 
 ## Tests
 
@@ -77,7 +66,7 @@ npm run build && npm run lint
 ### Manual UI checklist
 - **Theme**: toggle sun/moon, reload → choice persists (`localStorage` key `readybell-theme`); first load follows OS preference.
 - **Orders table**: pagination (25/page), sorting, status filter, search, date-range filter, status change via dropdown.
-- **Real-time**: SSE updates (~3 s in mock) with polling fallback.
+- **Real-time**: SSE updates with a 30 s polling fallback while the stream is down.
 - **Auth**: staff/admin login, 401 on invalid token, 403 on cross-tenant access.
 - **Keyboard**: Tab order, Enter/Space activation, visible focus rings, skip link.
 - **Responsive**: 320 / 768 / 1024 px; no horizontal scroll except the table; touch targets ≥ 44 px.
@@ -99,7 +88,7 @@ npm run build && npm run lint
 ```
 src/main/java/org/readybell/   session, ordering, subscription, restaurant, notification, platformadmin, platform
 src/test/java/                 backend tests
-dashboard-ui/src/              components, pages, hooks, context, mocks (MSW), types, utils
+dashboard-ui/src/              components, pages, hooks, context, types, utils
 docs/                          architecture, brand, product + this guide, API_INTEGRATION, UI_QUALITY, PROGRESS
 .kiro/specs/                   requirements / design / tasks per feature
 ```

@@ -28,7 +28,6 @@ Detailed per-task reports were removed; git history keeps them.
 | 1.1.6 Token validation on init | Format/expiry check before protected routes |
 | 1.1.7 Bearer flow E2E | Store-after-login, header injection, refresh and logout flows verified |
 | 1.2.1–1.7 Errors & endpoints | RFC 7807 `ProblemDetail` parser (51 tests); all 22 endpoints in the client with MSW mocks |
-| MSW fix | `public/mockServiceWorker.js` was missing; added |
 | Alignment | Frontend ↔ backend spec: 13/13 criteria satisfied |
 
 ## Test status (last recorded)
@@ -52,6 +51,5 @@ Detailed per-task reports were removed; git history keeps them.
 - A counter QR (one per restaurant, customer enters the order number) is not built; only the per-receipt QR exists.
 - No browser E2E suite (Playwright); `scripts/smoke.sh` covers the API flow only.
 - 7 react-refresh lint warnings (contexts that also export hooks).
-- Admin stubs (`PUT /api/admin/config`, staff management) are mock-only until the backend implements them.
 - Real-device mobile and real screen-reader testing (only emulation / automated tests were done).
 - Accessibility gaps from the screen-reader audit — see [UI_QUALITY.md](UI_QUALITY.md).
