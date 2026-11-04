@@ -16,6 +16,12 @@ export default defineConfig({
         // Dev proxy target (BACKEND_URL). Deliberately NOT VITE_API_BASE_URL: that one makes the browser call the backend directly (CORS).
         target: process.env.BACKEND_URL || 'http://localhost:8080',
         changeOrigin: true,
+        // The browser talks to this dev server (same origin); the backend must not see the page's
+        // Origin, or its CORS check rejects LAN / tunnel addresses (e.g. http://192.168.x.x:5173).
+        // todo: only for testing porpuses
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => proxyReq.removeHeader('origin'));
+        },
       },
     },
   },
