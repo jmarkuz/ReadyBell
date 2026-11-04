@@ -1,7 +1,7 @@
-# Pingood Brand & Product Brief v1.0
+# ReadyBell Brand & Product Brief v1.0
 
 **Document Type:** Brand & Product Vision
-**Product:** Pingood
+**Product:** ReadyBell
 **Version:** 1.0
 **Audience:** Product Team, Engineering Team, AI Development Agents (Kiro)
 **Status:** Foundation Document
@@ -12,11 +12,11 @@
 
 ## Brand Name
 
-**Pingood**
+**ReadyBell**
 
 ## Meaning
 
-Pingood combines two concepts:
+ReadyBell combines two concepts:
 
 **Ping**
 
@@ -40,7 +40,7 @@ Pingood combines two concepts:
 
 # 2. Product Vision
 
-Pingood is a cloud-based customer engagement platform for restaurants that transforms traditional guest communication.
+ReadyBell is a cloud-based customer engagement platform for restaurants that transforms traditional guest communication.
 
 The initial product replaces physical restaurant pagers with a digital, mobile-first notification experience.
 
@@ -68,7 +68,7 @@ Not:
 * Notification tool
 * Order tracking widget
 
-Pingood should be positioned as:
+ReadyBell should be positioned as:
 
 > The digital connection layer between restaurants and their guests.
 
@@ -78,7 +78,7 @@ Pingood should be positioned as:
 
 ## For Restaurants
 
-Pingood helps restaurants:
+ReadyBell helps restaurants:
 
 * Remove hardware dependency
 * Reduce operational costs
@@ -91,7 +91,7 @@ Pingood helps restaurants:
 
 ## For Guests
 
-Pingood provides:
+ReadyBell provides:
 
 * No complicated installation
 * Fast access through QR
@@ -104,7 +104,7 @@ Pingood provides:
 
 # 5. Brand Personality
 
-Pingood should always feel:
+ReadyBell should always feel:
 
 ## Friendly
 
@@ -352,15 +352,15 @@ It is the foundation of a future customer engagement platform.
 
 # 13. Brand Promise
 
-> Pingood helps restaurants create better moments by connecting them with guests instantly and personally.
+> ReadyBell helps restaurants create better moments by connecting them with guests instantly and personally.
 
 ---
 
 # 14. Final Product Statement
 
-Pingood starts by replacing restaurant pagers.
+ReadyBell starts by replacing restaurant pagers.
 
-Pingood grows into the digital relationship platform between hospitality businesses and their customers.
+ReadyBell grows into the digital relationship platform between hospitality businesses and their customers.
 
 ---
 

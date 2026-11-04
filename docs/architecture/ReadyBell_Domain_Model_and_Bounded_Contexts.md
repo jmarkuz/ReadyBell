@@ -1,7 +1,7 @@
-# Pingood Domain Model & Bounded Contexts v1.0
+# ReadyBell Domain Model & Bounded Contexts v1.0
 
 **Document Type:** Domain-Driven Design Specification
-**Product:** Pingood
+**Product:** ReadyBell
 **Version:** 1.0
 **Audience:** Architecture Team, Engineering Team, AI Development Agents (Kiro)
 **Architecture Style:** Domain-Driven Design + Clean Architecture
@@ -11,7 +11,7 @@
 
 # 1. Purpose
 
-This document defines the core domain model of Pingood.
+This document defines the core domain model of ReadyBell.
 
 The goal is to establish:
 
@@ -31,7 +31,7 @@ The database schema, APIs, and technical infrastructure must be derived from thi
 
 # 2. Domain Vision
 
-Pingood connects restaurants and guests through real-time digital communication.
+ReadyBell connects restaurants and guests through real-time digital communication.
 
 The core business capability:
 
@@ -43,7 +43,7 @@ The system evolves from notification into customer engagement.
 
 # 3. Strategic Domain
 
-The Pingood strategic domain is:
+The ReadyBell strategic domain is:
 
 ## Customer Engagement in Hospitality
 
@@ -55,11 +55,11 @@ Restaurant → Customer → Experience
 
 # 4. Bounded Context Overview
 
-Pingood consists of the following bounded contexts:
+ReadyBell consists of the following bounded contexts:
 
 ```
 +------------------------------------------------+
-|                Pingood Platform                |
+|                ReadyBell Platform                |
 +------------------------------------------------+
 
  Restaurant Management Context
@@ -112,7 +112,7 @@ Owns:
 
 ### Restaurant
 
-Represents a Pingood customer tenant.
+Represents a ReadyBell customer tenant.
 
 Attributes:
 
@@ -521,7 +521,7 @@ Modular Monolith.
 Suggested modules:
 
 ```
-pingood
+readybell
 
  ├── restaurant
  │    ├── domain
@@ -596,9 +596,9 @@ Analytics Platform
 
 # 12. Final Domain Statement
 
-The heart of Pingood is not notifications.
+The heart of ReadyBell is not notifications.
 
-The heart of Pingood is the digital relationship created between a restaurant and a guest during a service moment.
+The heart of ReadyBell is the digital relationship created between a restaurant and a guest during a service moment.
 
 The OrderSession is the bridge between operational workflow and customer experience.
 
