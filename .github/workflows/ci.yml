@@ -39,7 +39,8 @@ jobs:
 
   e2e:
     # Real browser against the real stack: Spring Boot (dev profile) + Vite proxy + PostgreSQL
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest is now 26.04, which Playwright 1.56 cannot install browsers for. Bump together with Playwright.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     services:
       postgres:

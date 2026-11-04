@@ -40,6 +40,9 @@ export default defineConfig({
       stdout: 'pipe',
       env: {
         SPRING_PROFILES_ACTIVE: 'dev',
+        // The dev profile needs no Redis (rate limits and tickets stay in memory), but its health check would
+        // report DOWN without one and Playwright would wait for a healthy backend forever
+        MANAGEMENT_HEALTH_REDIS_ENABLED: 'false',
         DB_URL: process.env.E2E_DB_URL ?? 'jdbc:postgresql://localhost:3254/readybell_e2e',
         DB_USERNAME: process.env.E2E_DB_USERNAME ?? 'postgres',
         DB_PASSWORD: process.env.E2E_DB_PASSWORD ?? 'qwer1234',
