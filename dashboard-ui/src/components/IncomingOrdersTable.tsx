@@ -51,7 +51,7 @@ export default memo(function IncomingOrdersTable({
   orders = [],
   isLoading = false,
   pageSize = 10,
-  currentPage = 1,
+  currentPage: controlledPage,
   onPageChange,
   onRowClick,
   onStatusChange,
@@ -75,6 +75,8 @@ export default memo(function IncomingOrdersTable({
     });
   }, []);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(initialSortOrder);
+  // Uncontrolled by default: the table pages itself unless the parent passes currentPage
+  const [internalPage, setInternalPage] = useState(1);
 
   // Close the status menu on Escape or when clicking elsewhere
   useEffect(() => {
@@ -142,8 +144,14 @@ export default memo(function IncomingOrdersTable({
     return sorted;
   }, [orders, sortField, sortOrder]);
 
-  // Pagination logic
+  // Pagination logic — pages only appear once there are more orders than pageSize
   const totalPages = Math.ceil(sortedOrders.length / pageSize);
+  // Clamp so filtering or a removed order never leaves us on a page that no longer exists
+  const currentPage = Math.min(Math.max(1, controlledPage ?? internalPage), Math.max(1, totalPages));
+  const goToPage = useCallback((page: number) => {
+    setInternalPage(page);
+    onPageChange?.(page);
+  }, [onPageChange]);
   const paginatedOrders = useMemo(
     () => sortedOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize),
     [sortedOrders, currentPage, pageSize]
@@ -369,7 +377,7 @@ export default memo(function IncomingOrdersTable({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => onPageChange?.(Math.max(1, currentPage - 1))}
+              onClick={() => goToPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
               className="px-3 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
               aria-label="Go to previous page"
@@ -378,7 +386,7 @@ export default memo(function IncomingOrdersTable({
               Previous
             </button>
             <button
-              onClick={() => onPageChange?.(Math.min(totalPages, currentPage + 1))}
+              onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
               className="px-3 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
               aria-label="Go to next page"
