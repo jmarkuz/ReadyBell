@@ -27,8 +27,8 @@ subset to do next, plus findings from the latest analysis (T01–T04). "Backlog"
 
 | ID | Task | Size | Status | Depends on | Backlog | Spec |
 |----|------|------|--------|-----------|---------|------|
-| T04 | Indexes for the order list query | S | Todo | – | – | [T04](tasks/T04-order-list-indexes.md) |
-| T03 | Orders table fixes (sort toggle, page reset, a11y of headers) | S | Todo | – | Q3 (part) | [T03](tasks/T03-orders-table-fixes.md) |
+  | T04 | Indexes for the order list query | S | Done | – | – | [T04](tasks/T04-order-list-indexes.md) |
+| T03 | Orders table fixes (sort toggle, page reset, a11y of headers) | S | In progress | – | Q3 (part) | [T03](tasks/T03-orders-table-fixes.md) |
 | T01 | Server-side pagination, filters and sorting | M | Todo | PR #8, T04 | – | [T01](tasks/T01-server-side-orders-paging.md) |
 | T02 | Dashboard metrics from the server | S | Todo | – | A1 (part) | [T02](tasks/T02-server-side-metrics.md) |
 
@@ -62,7 +62,7 @@ Q3 remaining accessibility gaps, Q4 customer page extras, Q5 `.kiro` specs.
 
 | Wave | Done / total |
 |------|--------------|
-| 1 | 0 / 4 |
+| 1 | 1 / 4 |
 | 2 | 0 / 4 |
 | 3 | 0 / 5 |
 
@@ -71,3 +71,5 @@ Q3 remaining accessibility gaps, Q4 customer page extras, Q5 `.kiro` specs.
 | Date | Change |
 |------|--------|
 | 2026-11-04 | Plan created from the project analysis; 13 task specifications added in `docs/tasks/`. |
+| 2026-11-04 | T04: added `V2__order_list_indexes.sql` and `scripts/explain-order-list.sh`; on 100k orders the list query uses the new index (0.26 ms). |
+| 2026-11-04 | T04 done: Flyway applies V2 on a fresh and on a pre-Flyway Postgres 16 database, `ddl-auto: validate` passes. T03 started. |
