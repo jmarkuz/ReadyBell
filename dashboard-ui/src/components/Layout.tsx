@@ -28,16 +28,16 @@ export default function Layout({ children }: LayoutProps) {
   const { setQuery } = useSearch();
 
   return (
-    <div className="flex h-screen bg-[#f5f5f5] dark:bg-slate-950 text-slate-900 dark:text-slate-50">
+    <div className="h-screen overflow-hidden bg-[#f5f5f5] dark:bg-slate-950 text-slate-900 dark:text-slate-50">
       {/* Sidebar - Hidden on mobile, toggleable on tablet, always visible on desktop */}
       <aside
         className={`
           fixed left-0 top-0 z-40 h-screen w-64
           bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800
           transition-transform duration-300 ease-in-out
-          lg:relative lg:translate-x-0
+          lg:translate-x-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          md:w-20 md:hover:w-64
+          md:w-20 md:hover:w-64 lg:w-64
           overflow-y-auto
         `}
         aria-label="Main navigation"
@@ -56,7 +56,7 @@ export default function Layout({ children }: LayoutProps) {
       )}
 
       {/* Main layout: Header + Content */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col h-screen overflow-hidden md:ml-20 lg:ml-64">
         {/* Header - Fixed at top */}
         <header className="sticky top-0 z-20 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900" role="banner">
           <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} onSearch={setQuery} />

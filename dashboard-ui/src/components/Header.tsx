@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
 } from 'lucide-react';
+import { restaurantBranding } from '@/config/restaurant';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -92,12 +93,21 @@ export default memo(function Header({
           <Menu className="w-5 h-5" aria-hidden="true" />
         </button>
 
-        {/* Logo - Home link */}
-        <a href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm" aria-hidden="true">RB</span>
+        {/* Restaurant brand - Home link */}
+        <a
+          href="/"
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          aria-label={`${restaurantBranding.name} dashboard home`}
+        >
+          <div className="w-9 h-9 bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 rounded-full flex items-center justify-center">
+            <restaurantBranding.Logo className="w-5 h-5" aria-hidden="true" />
           </div>
-          <span className="text-lg font-bold hidden sm:inline">ReadyBell</span>
+          <span
+            className="text-2xl hidden sm:inline"
+            style={{ fontFamily: 'var(--font-display)', fontWeight: 300, letterSpacing: '-0.02em' }}
+          >
+            {restaurantBranding.name}
+          </span>
         </a>
       </div>
 

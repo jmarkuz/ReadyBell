@@ -8,17 +8,21 @@ import { render, screen, fireEvent, waitFor } from '@/test/test-utils';
 import Header from './Header';
 import { signOut } from '@/utils/session';
 
+import { restaurantBranding } from '@/config/restaurant';
+
 vi.mock('@/utils/session', () => ({ signOut: vi.fn() }));
 
 describe('Header Component', () => {
   it('renders header without errors', () => {
     render(<Header />);
-    expect(screen.getByText('RB')).toBeInTheDocument();
+    expect(screen.getByText(restaurantBranding.name)).toBeInTheDocument();
   });
 
-  it('renders logo', () => {
+  it('renders the restaurant brand link', () => {
     render(<Header />);
-    expect(screen.getByText('RB')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: `${restaurantBranding.name} dashboard home` })
+    ).toBeInTheDocument();
   });
 
   it('renders search input on desktop', () => {
