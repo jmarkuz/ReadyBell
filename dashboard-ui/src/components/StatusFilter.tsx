@@ -85,7 +85,7 @@ export default function StatusFilter({
       {/* Filter button with badge */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+        className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
         aria-label={`Status filter ${selectedStatuses.length > 0 ? `(${selectedStatuses.length} selected)` : ''}`}
         aria-expanded={isOpen}
         aria-haspopup="menu"
@@ -117,7 +117,7 @@ export default function StatusFilter({
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Filter by Status</h3>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
               aria-label="Close filter dropdown"
               type="button"
             >
@@ -149,7 +149,7 @@ export default function StatusFilter({
           <div className="px-4 py-2 border-t border-slate-200 dark:border-slate-700 flex gap-2">
             <button
               onClick={handleSelectAll}
-              className="flex-1 px-3 py-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              className="flex-1 px-3 py-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               disabled={allSelected}
               type="button"
               aria-label="Select all statuses"
@@ -158,7 +158,7 @@ export default function StatusFilter({
             </button>
             <button
               onClick={handleClearAll}
-              className="flex-1 px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              className="flex-1 px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               disabled={tempSelectedStatuses.length === 0}
               type="button"
               aria-label="Clear all statuses"
@@ -171,7 +171,7 @@ export default function StatusFilter({
           <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700 flex gap-2">
             <button
               onClick={handleCancel}
-              className="flex-1 px-3 py-2 text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-3 py-2 text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
               type="button"
             >
               Cancel

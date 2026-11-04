@@ -85,7 +85,7 @@ export default memo(function Header({
         {/* Menu toggle - visible on mobile/tablet */}
         <button
           onClick={onMenuToggle}
-          className="lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label="Toggle navigation menu"
           aria-controls="main-navigation"
         >
@@ -121,7 +121,7 @@ export default memo(function Header({
           {searchQuery && (
             <button
               onClick={handleClearSearch}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full"
               aria-label="Clear search"
               type="button"
             >
@@ -137,7 +137,7 @@ export default memo(function Header({
         {/* Search toggle (mobile only) */}
         <button
           onClick={() => setSearchOpen(!searchOpen)}
-          className="md:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="md:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label="Toggle search"
           aria-expanded={searchOpen}
           type="button"
@@ -147,7 +147,7 @@ export default memo(function Header({
 
         {/* Notification icon with badge */}
         <button
-          className="relative p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="relative p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label={`Notifications ${notificationCount > 0 ? `${notificationCount} unread` : 'none'}`}
           type="button"
         >
@@ -166,7 +166,7 @@ export default memo(function Header({
         {/* Theme toggle button */}
         <button
           onClick={handleThemeToggle}
-          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
           aria-label={`Switch to ${currentMode === 'dark' ? 'light' : 'dark'} theme`}
           type="button"
         >
@@ -181,7 +181,7 @@ export default memo(function Header({
         <div className="relative">
           <button
             onClick={() => setSettingsOpen(!settingsOpen)}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
             aria-label="Open settings menu"
             aria-expanded={settingsOpen}
             aria-haspopup="menu"

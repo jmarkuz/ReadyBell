@@ -332,7 +332,7 @@ export default memo(function IncomingOrdersTable({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onRowClick?.(order.id)}
-                      className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                      className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
                       aria-label={`View details for order ${order.orderId}`}
                       title="View Details"
                       type="button"
@@ -342,7 +342,7 @@ export default memo(function IncomingOrdersTable({
                     <div className="relative">
                       <button
                         onClick={(e) => toggleStatusMenu(order.id, e.currentTarget, NEXT_STATUSES[order.status].length)}
-                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"
                         aria-label={`Update status for order ${order.orderId}, currently ${order.status}`}
                         aria-haspopup="menu"
                         aria-expanded={statusMenuFor === order.id}
@@ -371,7 +371,7 @@ export default memo(function IncomingOrdersTable({
             <button
               onClick={() => onPageChange?.(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+              className="px-3 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
               aria-label="Go to previous page"
               type="button"
             >
@@ -380,7 +380,7 @@ export default memo(function IncomingOrdersTable({
             <button
               onClick={() => onPageChange?.(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+              className="px-3 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
               aria-label="Go to next page"
               type="button"
             >
