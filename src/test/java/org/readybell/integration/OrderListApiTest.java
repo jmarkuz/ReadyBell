@@ -17,6 +17,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,6 +74,10 @@ class OrderListApiTest {
         String body = mvc.perform(get("/api/orders").param("search", search).with(httpBasic("admin", "admin")))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.totalCount");
+    }
+
+    private int totalOf(String query) throws Exception {
+        return JsonPath.read(json(list(query)), "$.totalCount");
     }
 
     private String json(MvcResult r) throws Exception {
@@ -166,6 +172,50 @@ class OrderListApiTest {
             mvc.perform(get("/api/orders?" + q).with(httpBasic("admin", "admin")))
                     .andExpect(status().isBadRequest());
         }
+    }
+
+    @Test
+    void filtersByCreationTimeRange() throws Exception {
+        createOrder(tag, null, null);
+        Instant now = Instant.now();
+        String hourAgo = now.minus(1, ChronoUnit.HOURS).toString();
+        String hourAhead = now.plus(1, ChronoUnit.HOURS).toString();
+
+        assertThat(totalOf("search=" + tag + "&from=" + hourAgo + "&to=" + hourAhead)).isEqualTo(1);
+        assertThat(totalOf("search=" + tag + "&from=" + hourAgo)).isEqualTo(1);           // open upper bound
+        assertThat(totalOf("search=" + tag + "&to=" + hourAhead)).isEqualTo(1);           // open lower bound
+        assertThat(totalOf("search=" + tag + "&from=" + hourAhead)).isZero();             // created before from
+        assertThat(totalOf("search=" + tag + "&to=" + hourAgo)).isZero();                 // created after to
+    }
+
+    @Test
+    void timeRangeBoundsAreInclusive() throws Exception {
+        createOrder(tag, null, null);
+        String created = JsonPath.read(json(list("search=" + tag)), "$.items[0].createdAt");
+        assertThat(totalOf("search=" + tag + "&from=" + created + "&to=" + created)).isEqualTo(1);
+    }
+
+    @Test
+    void timeRangeWithFromAfterToIsRejected() throws Exception {
+        Instant now = Instant.now();
+        mvc.perform(get("/api/orders").param("from", now.plus(1, ChronoUnit.HOURS).toString())
+                        .param("to", now.toString()).with(httpBasic("admin", "admin")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("from must not be after to"));
+        mvc.perform(get("/api/orders?from=yesterday").with(httpBasic("admin", "admin")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void timeRangeDoesNotLeakOtherTenantsOrders() throws Exception {
+        createOrder(tag, null, null);
+        Instant now = Instant.now();
+        mvc.perform(get("/api/orders").param("search", tag)
+                        .param("from", now.minus(1, ChronoUnit.HOURS).toString())
+                        .param("to", now.plus(1, ChronoUnit.HOURS).toString())
+                        .with(httpBasic("other", "other")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(0));
     }
 
     @Test

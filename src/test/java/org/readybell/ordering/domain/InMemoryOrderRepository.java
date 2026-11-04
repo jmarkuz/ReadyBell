@@ -59,6 +59,8 @@ public class InMemoryOrderRepository implements OrderRepository {
     public OrderPage findPage(TenantId tenantId, OrderQuery query) {
         var all = findAllByTenant(tenantId).stream()
                 .filter(o -> query.statuses().isEmpty() || query.statuses().contains(o.getStatus()))
+                .filter(o -> query.from() == null || !o.getCreatedAt().isBefore(query.from()))
+                .filter(o -> query.to() == null || !o.getCreatedAt().isAfter(query.to()))
                 .sorted((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()))
                 .toList();
         int from = Math.min((query.page() - 1) * query.pageSize(), all.size());

@@ -113,6 +113,8 @@ public class OrderController {
      * @param sortBy    {@code created} (default), {@code eta}, {@code status}, {@code customerName}, {@code orderId}
      * @param sortOrder {@code asc} or {@code desc} (default {@code desc})
      * @param search    text matched against order number, customer name and item names
+     * @param from      ISO-8601 instant; only orders created at or after it
+     * @param to        ISO-8601 instant; only orders created at or before it (400 if before {@code from})
      * @return 200 OK with {@code {items, totalCount, pageCount, currentPage}}
      */
     @GetMapping
@@ -122,13 +124,15 @@ public class OrderController {
             @RequestParam(name = "status", required = false) List<String> status,
             @RequestParam(name = "sortBy", defaultValue = "created") String sortBy,
             @RequestParam(name = "sortOrder", defaultValue = "desc") String sortOrder,
-            @RequestParam(name = "search", required = false) String search) {
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "from", required = false) Instant from,
+            @RequestParam(name = "to", required = false) Instant to) {
         TenantId tenantId = TenantContextHolder.require();
         Set<OrderStatus> statuses = status == null ? Set.of() : status.stream()
                 .map(s -> OrderStatus.valueOf(s.strip().toUpperCase(Locale.ROOT)))
                 .collect(Collectors.toSet());
         var result = orderRepository.findPage(tenantId,
-                new OrderQuery(page, pageSize, statuses, parseSort(sortBy), parseDirection(sortOrder), search));
+                new OrderQuery(page, pageSize, statuses, parseSort(sortBy), parseDirection(sortOrder), search, from, to));
         return new OrderPageResponse(
                 result.items().stream().map(o -> OrderRowResponse.from(o, clock)).toList(),
                 result.totalCount(), result.pageCount(), result.page());

@@ -708,7 +708,7 @@ export class ApiClient {
 
   /**
    * Get order list with pagination and filtering
-   * GET /api/orders?page=1&pageSize=25&status=CREATED,READY&sortBy=created&sortOrder=desc
+   * GET /api/orders?page=1&pageSize=25&status=CREATED&status=READY&sortBy=created&sortOrder=desc&from=…&to=…
    */
   async getOrders(params?: {
     page?: number;
@@ -717,17 +717,23 @@ export class ApiClient {
     sortBy?: 'eta' | 'status' | 'created' | 'customerName' | 'orderId';
     sortOrder?: 'asc' | 'desc';
     search?: string;
+    /** Only orders created at or after this instant (ISO-8601). */
+    from?: string;
+    /** Only orders created at or before this instant (ISO-8601). */
+    to?: string;
   }): Promise<PaginatedResponse<OrderRow>> {
     const queryParams = new URLSearchParams();
 
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
     if (params?.status?.length) {
-      params.status.forEach(status => queryParams.append('status', status));
+      params.status.forEach(status => queryParams.append('status', toBackendStatus(status)));
     }
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
     if (params?.search) queryParams.append('search', params.search);
+    if (params?.from) queryParams.append('from', params.from);
+    if (params?.to) queryParams.append('to', params.to);
 
     const queryString = queryParams.toString();
     const endpoint = `/api/orders${queryString ? '?' + queryString : ''}`;

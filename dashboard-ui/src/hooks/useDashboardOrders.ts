@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { OrderRow } from '@/types';
+import { OrderRow, OrderStatus } from '@/types';
 import { apiClient } from '@/utils/api';
 import { tokenManager } from '@/utils/TokenManager';
 import { useSSE } from './useSSE';
 
-/** How many of the newest orders the dashboard loads (backend maximum page size). */
+/** How many of the newest orders feed the metric cards (backend maximum page size). Goes away with T02. */
 export const DASHBOARD_ORDER_LIMIT = 100;
 
 /** Fallback refresh interval while the live connection is down. */
@@ -13,56 +13,144 @@ const POLL_INTERVAL_MS = 30_000;
 /** Delay that coalesces bursts of SSE events into a single reload. */
 const RELOAD_DEBOUNCE_MS = 300;
 
+export type OrdersSortBy = 'created' | 'eta' | 'status' | 'customerName' | 'orderId';
+
+/** Everything the server needs to produce one page of the Incoming Orders table. */
+export interface OrdersQuery {
+  /** 1-based page number. */
+  page: number;
+  pageSize: number;
+  /** Empty means all statuses. */
+  statuses: OrderStatus[];
+  /** Free text matched against order number, customer and item names. */
+  search: string;
+  /** Orders created at or after this instant. */
+  from: Date | null;
+  /** Orders created at or before this instant. */
+  to: Date | null;
+  sortBy: OrdersSortBy;
+  sortOrder: 'asc' | 'desc';
+}
+
+export const DEFAULT_ORDERS_QUERY: OrdersQuery = {
+  page: 1,
+  pageSize: 10,
+  statuses: [],
+  search: '',
+  from: null,
+  to: null,
+  sortBy: 'created',
+  sortOrder: 'desc',
+};
+
 export interface UseDashboardOrdersState {
+  /** The rows of the requested page. */
   orders: OrderRow[];
+  /** Orders matching the filters across all pages. */
+  totalCount: number;
+  pageCount: number;
+  /** The newest orders regardless of the filters; source of the metric cards until T02. */
+  recentOrders: OrderRow[];
+  /** True only until the first page has loaded; later queries keep showing the previous rows. */
   isLoading: boolean;
   /** Last load error, cleared by the next successful load. */
   error: Error | null;
   /** True while the SSE stream is open. */
   isConnected: boolean;
+  /** Reloads the current page (and the metrics source). */
   reload: () => Promise<void>;
 }
 
+const toParams = (q: OrdersQuery) => ({
+  page: q.page,
+  pageSize: q.pageSize,
+  sortBy: q.sortBy,
+  sortOrder: q.sortOrder,
+  ...(q.statuses.length > 0 && { status: q.statuses }),
+  ...(q.search.trim() && { search: q.search.trim() }),
+  ...(q.from && { from: q.from.toISOString() }),
+  ...(q.to && { to: q.to.toISOString() }),
+});
+
 /**
- * Loads the tenant's newest orders from the backend and keeps them fresh.
+ * Loads one page of the tenant's orders from the backend and keeps it fresh.
  *
- * - Initial load through {@code GET /api/orders}.
- * - {@code GET /api/orders/stream} (SSE) signals changes; each burst triggers one reload, so
+ * - {@code GET /api/orders} with the page, filters and sort from {@code query}; any change to
+ *   the query is exactly one request, and a response that arrives after a newer request is dropped.
+ * - {@code GET /api/orders/stream} (SSE) signals changes; each burst reloads the current page, so
  *   rows always carry the server's data (customer, items, ETA) rather than a partial event.
- * - While the stream is down the list is refreshed every 30 s.
+ * - While the stream is down the page is refreshed every 30 s.
  */
-export function useDashboardOrders(): UseDashboardOrdersState {
+export function useDashboardOrders(query: OrdersQuery): UseDashboardOrdersState {
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageCount, setPageCount] = useState(0);
+  const [recentOrders, setRecentOrders] = useState<OrderRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const mounted = useRef(true);
 
-  const reload = useCallback(async () => {
+  // The latest query for callbacks that must stay stable (SSE, polling timer)
+  const queryRef = useRef(query);
+  useEffect(() => {
+    queryRef.current = query;
+  });
+  const queryKey = JSON.stringify([
+    query.page, query.pageSize, query.statuses, query.search.trim(),
+    query.from?.getTime() ?? null, query.to?.getTime() ?? null, query.sortBy, query.sortOrder,
+  ]);
+
+  const latestRequest = useRef(0);
+  const loadPage = useCallback(async () => {
+    const requestId = ++latestRequest.current;
     try {
-      const page = await apiClient.getOrders({
+      const result = await apiClient.getOrders(toParams(queryRef.current));
+      if (!mounted.current || requestId !== latestRequest.current) return;
+      setOrders(result.items);
+      setTotalCount(result.totalCount);
+      setPageCount(result.pageCount);
+      setError(null);
+    } catch (e) {
+      if (!mounted.current || requestId !== latestRequest.current) return;
+      setError(e instanceof Error ? e : new Error('Failed to load orders'));
+    } finally {
+      if (mounted.current && requestId === latestRequest.current) setIsLoading(false);
+    }
+  }, []);
+
+  const loadRecent = useCallback(async () => {
+    try {
+      const result = await apiClient.getOrders({
         page: 1,
         pageSize: DASHBOARD_ORDER_LIMIT,
         sortBy: 'created',
         sortOrder: 'desc',
       });
-      if (!mounted.current) return;
-      setOrders(page.items);
-      setError(null);
-    } catch (e) {
-      if (!mounted.current) return;
-      setError(e instanceof Error ? e : new Error('Failed to load orders'));
-    } finally {
-      if (mounted.current) setIsLoading(false);
+      if (mounted.current) setRecentOrders(result.items);
+    } catch {
+      // The table reports load errors; the metric cards just keep their last numbers
     }
   }, []);
 
+  const reload = useCallback(async () => {
+    await Promise.all([loadPage(), loadRecent()]);
+  }, [loadPage, loadRecent]);
+
   useEffect(() => {
     mounted.current = true;
-    void reload();
     return () => {
       mounted.current = false;
     };
-  }, [reload]);
+  }, []);
+
+  // A new page, filter or sort is one request
+  useEffect(() => {
+    void loadPage();
+  }, [queryKey, loadPage]);
+
+  useEffect(() => {
+    void loadRecent();
+  }, [loadRecent]);
 
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onMessage = useCallback(() => {
@@ -86,5 +174,5 @@ export function useDashboardOrders(): UseDashboardOrdersState {
     return () => clearInterval(timer);
   }, [sse.isConnected, reload]);
 
-  return { orders, isLoading, error, isConnected: sse.isConnected, reload };
+  return { orders, totalCount, pageCount, recentOrders, isLoading, error, isConnected: sse.isConnected, reload };
 }

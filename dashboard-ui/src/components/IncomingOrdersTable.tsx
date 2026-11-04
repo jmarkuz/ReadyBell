@@ -17,15 +17,26 @@ interface IncomingOrdersTableProps {
   onStatusChange?: (orderId: string, newStatus: OrderStatus) => void;
   sortBy?: 'eta' | 'status' | 'created' | 'id';
   sortOrder?: 'asc' | 'desc';
+  /**
+   * Server-driven mode. {@code orders} is then the current page only: the table neither sorts nor
+   * slices it, takes the page count from {@code totalCount}, shows {@code sort} (null = the server's
+   * default order, no column highlighted) and reports header clicks through {@code onSortChange}.
+   * The Items column is not sortable because the server has no such sort field.
+   */
+  serverSide?: {
+    totalCount: number;
+    sort: SortState | null;
+    onSortChange: (sort: SortState) => void;
+  };
 }
 
-type SortField = 'id' | 'customerName' | 'itemsOrdered' | 'deliveryETA' | 'status';
-type SortOrder = 'asc' | 'desc';
-interface SortState { field: SortField; order: SortOrder }
+export type SortField = 'id' | 'customerName' | 'itemsOrdered' | 'deliveryETA' | 'status';
+export type SortOrder = 'asc' | 'desc';
+export interface SortState { field: SortField; order: SortOrder }
 
 /** Clicking the active column flips its direction; clicking another column starts it ascending. */
-const nextSort = (prev: SortState, field: SortField): SortState =>
-  prev.field === field
+const nextSort = (prev: SortState | null, field: SortField): SortState =>
+  prev?.field === field
     ? { field, order: prev.order === 'asc' ? 'desc' : 'asc' }
     : { field, order: 'asc' };
 
@@ -46,14 +57,14 @@ function SortIndicator({ order }: { order: SortOrder | null }) {
 }
 
 function SortableHeader({ field, label, sort, onSort }: {
-  field: SortField; label: string; sort: SortState; onSort: (field: SortField) => void;
+  field: SortField; label: string; sort: SortState | null; onSort: (field: SortField) => void;
 }) {
-  const active = sort.field === field;
+  const order = sort?.field === field ? sort.order : null;
   return (
     <th
       className="px-0 py-0 text-left text-sm font-semibold text-slate-600 dark:text-slate-300"
       scope="col"
-      aria-sort={active ? ARIA_SORT[sort.order] : 'none'}
+      aria-sort={order ? ARIA_SORT[order] : 'none'}
     >
       <button
         type="button"
@@ -61,7 +72,7 @@ function SortableHeader({ field, label, sort, onSort }: {
         className="flex w-full items-center gap-2 px-6 py-3 text-left font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
       >
         {label}
-        <SortIndicator order={active ? sort.order : null} />
+        <SortIndicator order={order} />
       </button>
     </th>
   );
@@ -102,9 +113,11 @@ export default memo(function IncomingOrdersTable({
   onRowClick,
   onStatusChange,
   sortOrder: initialSortOrder = 'asc',
+  serverSide,
 }: IncomingOrdersTableProps) {
-  const [sort, setSort] = useState<SortState>({ field: 'deliveryETA', order: initialSortOrder });
-  const { field: sortField, order: sortOrder } = sort;
+  const [clientSort, setClientSort] = useState<SortState>({ field: 'deliveryETA', order: initialSortOrder });
+  const { field: sortField, order: sortOrder } = clientSort;
+  const sort = serverSide ? serverSide.sort : clientSort;
   // The menu is rendered in a portal with fixed coordinates so the table's scroll container cannot clip it
   const [statusMenu, setStatusMenu] = useState<{ orderId: string; right: number; top?: number; bottom?: number } | null>(null);
   const statusMenuFor = statusMenu?.orderId ?? null;
@@ -146,6 +159,7 @@ export default memo(function IncomingOrdersTable({
 
   // Sorting logic - memoized for performance
   const sortedOrders = useMemo(() => {
+    if (serverSide) return orders;   // the server already sorted this page
     const sorted = [...orders].sort((a, b) => {
       let compareA: string | number | Date | null | undefined = a[sortField];
       let compareB: string | number | Date | null | undefined = b[sortField];
@@ -174,10 +188,11 @@ export default memo(function IncomingOrdersTable({
     });
 
     return sorted;
-  }, [orders, sortField, sortOrder]);
+  }, [orders, sortField, sortOrder, serverSide]);
 
   // Pagination logic — pages only appear once there are more orders than pageSize
-  const totalPages = Math.ceil(sortedOrders.length / pageSize);
+  const totalCount = serverSide ? serverSide.totalCount : sortedOrders.length;
+  const totalPages = Math.ceil(totalCount / pageSize);
   // Clamp so filtering or a removed order never leaves us on a page that no longer exists
   const currentPage = Math.min(Math.max(1, controlledPage ?? internalPage), Math.max(1, totalPages));
   const goToPage = useCallback((page: number) => {
@@ -186,13 +201,15 @@ export default memo(function IncomingOrdersTable({
   }, [onPageChange]);
   // A new sort order makes the old page number meaningless, so go back to the first page
   const handleSort = useCallback((field: SortField) => {
-    setSort((prev) => nextSort(prev, field));
+    const next = nextSort(sort, field);
+    if (serverSide) serverSide.onSortChange(next);
+    else setClientSort(next);
     setInternalPage(1);
     if (currentPage !== 1) onPageChange?.(1);
-  }, [currentPage, onPageChange]);
+  }, [sort, serverSide, currentPage, onPageChange]);
   const paginatedOrders = useMemo(
-    () => sortedOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize),
-    [sortedOrders, currentPage, pageSize]
+    () => (serverSide ? sortedOrders : sortedOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize)),
+    [serverSide, sortedOrders, currentPage, pageSize]
   );
 
   if (isLoading) {
@@ -247,9 +264,15 @@ export default memo(function IncomingOrdersTable({
           <caption className="sr-only">List of incoming orders with sorting and pagination</caption>
           <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
             <tr>
-              {SORTABLE_COLUMNS.map(({ field, label }) => (
-                <SortableHeader key={field} field={field} label={label} sort={sort} onSort={handleSort} />
-              ))}
+              {SORTABLE_COLUMNS.map(({ field, label }) =>
+                serverSide && field === 'itemsOrdered' ? (
+                  <th key={field} scope="col" className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
+                    {label}
+                  </th>
+                ) : (
+                  <SortableHeader key={field} field={field} label={label} sort={sort} onSort={handleSort} />
+                )
+              )}
               <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">
                 Actions
               </th>
@@ -315,7 +338,7 @@ export default memo(function IncomingOrdersTable({
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-6 py-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700" role="region" aria-label="Table pagination">
           <div className="text-sm text-slate-600 dark:text-slate-400">
-            Page {currentPage} of {totalPages} ({sortedOrders.length} total orders)
+            Page {currentPage} of {totalPages} ({totalCount} total orders)
           </div>
           <div className="flex items-center gap-2">
             <button

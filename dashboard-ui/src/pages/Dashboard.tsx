@@ -1,15 +1,27 @@
-import { useMemo, useRef, useState, useCallback, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback, type ChangeEvent } from 'react';
 import OrderMetricsGrid from '@/components/OrderMetricsGrid';
-import IncomingOrdersTable from '@/components/IncomingOrdersTable';
+import IncomingOrdersTable, { type SortField, type SortState } from '@/components/IncomingOrdersTable';
 import StatusFilter from '@/components/StatusFilter';
 import { DateRangeFilter } from '@/components/DateRangeFilter';
 import { useSearch } from '@/context/SearchContext';
 import { OrderMetrics, OrderStatus } from '@/types';
-import { useDashboardOrders } from '@/hooks/useDashboardOrders';
+import { useDashboardOrders, type OrdersQuery, type OrdersSortBy } from '@/hooks/useDashboardOrders';
 import { apiClient, ApiError } from '@/utils/api';
 import { parseTestDataFile } from '@/utils/testDataFile';
 import NewOrderDialog from '@/components/NewOrderDialog';
 import { Plus } from 'lucide-react';
+
+/** Incoming Orders rows per page. */
+const PAGE_SIZE = 10;
+
+/** Table column → the backend's sortBy value; Items has no server-side sort. */
+const SORT_BY: Record<SortField, OrdersSortBy | null> = {
+  id: 'orderId',
+  customerName: 'customerName',
+  deliveryETA: 'eta',
+  status: 'status',
+  itemsOrdered: null,
+};
 
 /**
  * Dashboard Page
@@ -22,12 +34,11 @@ import { Plus } from 'lucide-react';
  * - Date range filter
  * 
  * Features:
- * - Search filters by orderId, customerName, or itemsOrdered (case-insensitive, partial match)
+ * - Search, status filter, date range (by creation time), sorting and paging all run on the server
+ *   (GET /api/orders); the table shows one page of 10 and any filter or sort change goes back to page 1
  * - Status filter: select multiple statuses (CREATED, PREPARING, READY, COMPLETED)
- * - Date range filter: filter by order creation date with presets and custom dates
- * - Data: newest 100 orders from GET /api/orders, refreshed on SSE events (polling while offline)
- * - Metrics calculated from all loaded orders (not filtered)
- * - Table displays filtered orders based on search, status, and date range
+ * - The current page is reloaded on SSE events (polling while offline)
+ * - Metrics are still calculated from the 100 newest orders (server-side metrics: T02)
  * - Filter badges show active filter counts
  * 
  * Responsive:
@@ -45,9 +56,39 @@ export default function Dashboard() {
   const [dateRangeEnd, setDateRangeEnd] = useState<Date | null>(null);
   const [showDateFilter, setShowDateFilter] = useState(false);
 
-  // Mock initial orders data
-  // Orders come from the backend (GET /api/orders) and are refreshed on SSE events
-  const { orders: displayOrders, isLoading, error: loadError, isConnected, reload } = useDashboardOrders();
+  // Sorting: null means the server's default order (newest first)
+  const [sort, setSort] = useState<SortState | null>(null);
+
+  // The page is remembered together with the filters it belongs to; once the filters or the sort
+  // change, the stored page is stale and we are on page 1, without an extra render or request.
+  const filterKey = JSON.stringify([
+    selectedStatuses, searchQuery.trim(), dateRangeStart?.getTime() ?? null, dateRangeEnd?.getTime() ?? null, sort,
+  ]);
+  const [pageState, setPageState] = useState({ page: 1, filterKey });
+  const page = pageState.filterKey === filterKey ? pageState.page : 1;
+  const handlePageChange = useCallback((next: number) => setPageState({ page: next, filterKey }), [filterKey]);
+
+  const query = useMemo<OrdersQuery>(() => ({
+    page,
+    pageSize: PAGE_SIZE,
+    statuses: selectedStatuses,
+    search: searchQuery,
+    from: dateRangeStart,
+    to: dateRangeEnd,
+    sortBy: (sort && SORT_BY[sort.field]) || 'created',
+    sortOrder: sort ? sort.order : 'desc',
+  }), [page, selectedStatuses, searchQuery, dateRangeStart, dateRangeEnd, sort]);
+
+  // Orders come from the backend (GET /api/orders, one page) and are refreshed on SSE events
+  const {
+    orders: pageOrders, totalCount, pageCount, recentOrders, isLoading, error: loadError, isConnected, reload,
+  } = useDashboardOrders(query);
+
+  // The page vanished under us (orders deleted elsewhere): step back to the last one that exists
+  useEffect(() => {
+    const last = Math.max(1, pageCount);
+    if (!isLoading && page > last) handlePageChange(last);
+  }, [isLoading, page, pageCount, handlePageChange]);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const [newOrderOpen, setNewOrderOpen] = useState(false);
@@ -110,50 +151,17 @@ export default function Dashboard() {
   }, [reload]);
 
 
-  // Filter orders based on search query, status, and date range
-  const filteredOrders = useMemo(() => {
-    let result = [...displayOrders];
-
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter((order) => {
-        return (
-          order.orderId.toLowerCase().includes(query) ||
-          (order.customerName?.toLowerCase().includes(query) ?? false) ||
-          order.itemsOrdered.toLowerCase().includes(query)
-        );
-      });
-    }
-
-    // Apply status filter
-    if (selectedStatuses.length > 0) {
-      result = result.filter((order) => selectedStatuses.includes(order.status));
-    }
-
-    // Apply date range filter
-    if (dateRangeStart && dateRangeEnd) {
-      result = result.filter((order) => {
-        const orderDate = order.deliveryETA;
-        // Orders without an ETA cannot match a date range
-        return orderDate !== null && orderDate >= dateRangeStart && orderDate <= dateRangeEnd;
-      });
-    }
-
-    return result;
-  }, [displayOrders, searchQuery, selectedStatuses, dateRangeStart, dateRangeEnd]);
-
-  // Calculate metrics from ALL orders (not filtered)
+  // Metrics come from the newest orders, not from the filtered page (until T02 adds a server endpoint)
   const metrics: OrderMetrics = useMemo(() => {
     return {
-      totalOrders: displayOrders.length,
-      newOrders: displayOrders.filter((o) => o.status === 'CREATED').length,
-      preparing: displayOrders.filter((o) => o.status === 'PREPARING').length,
-      readyForPickup: displayOrders.filter((o) => o.status === 'READY').length,
-      completed: displayOrders.filter((o) => o.status === 'COMPLETED').length,
-      cancelled: displayOrders.filter((o) => o.status === 'CANCELLED').length,
+      totalOrders: recentOrders.length,
+      newOrders: recentOrders.filter((o) => o.status === 'CREATED').length,
+      preparing: recentOrders.filter((o) => o.status === 'PREPARING').length,
+      readyForPickup: recentOrders.filter((o) => o.status === 'READY').length,
+      completed: recentOrders.filter((o) => o.status === 'COMPLETED').length,
+      cancelled: recentOrders.filter((o) => o.status === 'CANCELLED').length,
     };
-  }, [displayOrders]);
+  }, [recentOrders]);
 
   // Count active filters
   const activeFilterCount = (selectedStatuses.length > 0 ? 1 : 0) + (dateRangeStart && dateRangeEnd ? 1 : 0);
@@ -356,7 +364,7 @@ export default function Dashboard() {
           aria-atomic="true"
         >
           <p className="text-sm text-blue-700 dark:text-blue-300">
-            Search results: <strong>{filteredOrders.length}</strong> order(s) found for "{searchQuery}"
+            Search results: <strong>{totalCount}</strong> order(s) found for "{searchQuery}"
           </p>
         </div>
       )}
@@ -364,7 +372,7 @@ export default function Dashboard() {
       {/* Incoming Orders Table */}
       <section aria-labelledby="orders-heading">
         <h2 id="orders-heading" className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-          Incoming Orders {filteredOrders.length !== displayOrders.length && `(${filteredOrders.length})`}
+          Incoming Orders {(searchQuery.trim() || activeFilterCount > 0) && `(${totalCount})`}
         </h2>
         {isLoading ? (
           <p className="text-sm text-slate-600 dark:text-slate-400" role="status">Loading orders…</p>
@@ -373,7 +381,14 @@ export default function Dashboard() {
             {actionError && (
               <p role="alert" className="mb-3 text-sm text-red-700 dark:text-red-400">{actionError}</p>
             )}
-            <IncomingOrdersTable orders={filteredOrders} onStatusChange={handleStatusChange} />
+            <IncomingOrdersTable
+              orders={pageOrders}
+              pageSize={PAGE_SIZE}
+              currentPage={page}
+              onPageChange={handlePageChange}
+              onStatusChange={handleStatusChange}
+              serverSide={{ totalCount, sort, onSortChange: setSort }}
+            />
           </>
         )}
       </section>
