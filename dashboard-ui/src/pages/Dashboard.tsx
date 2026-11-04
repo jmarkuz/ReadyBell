@@ -47,6 +47,32 @@ export default function Dashboard() {
   const { orders: displayOrders, isLoading, error: loadError, isConnected, reload } = useDashboardOrders();
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Dev-only test data tools (the backend endpoints exist under the `dev` profile only)
+  const [testDataBusy, setTestDataBusy] = useState(false);
+  const [testDataMessage, setTestDataMessage] = useState<string | null>(null);
+
+  const runTestData = useCallback(async (action: () => Promise<string>) => {
+    setTestDataBusy(true);
+    setTestDataMessage(null);
+    try {
+      setTestDataMessage(await action());
+    } catch (e) {
+      setTestDataMessage(e instanceof Error ? e.message : 'Test data request failed.');
+    } finally {
+      setTestDataBusy(false);
+      await reload();
+    }
+  }, [reload]);
+
+  const handleGenerateTestData = useCallback(
+    () => runTestData(async () => `Added ${(await apiClient.generateTestData()).created} test orders.`),
+    [runTestData]
+  );
+  const handleClearTestData = useCallback(
+    () => runTestData(async () => `Removed ${(await apiClient.clearTestData()).deleted} test orders.`),
+    [runTestData]
+  );
+
   const handleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus) => {
     if (newStatus === 'CREATED') return; // no transition leads back to CREATED
     setActionError(null);
@@ -159,6 +185,33 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Dev-only: generate / remove test data */}
+      {import.meta.env.DEV && (
+        <section aria-label="Test data" className="flex items-center gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={handleGenerateTestData}
+            disabled={testDataBusy}
+            className="px-4 py-2 text-sm font-medium bg-stone-800 text-white dark:bg-stone-100 dark:text-stone-900 rounded-full hover:opacity-90 disabled:opacity-60 transition-opacity focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+          >
+            Generate test data
+          </button>
+          <button
+            type="button"
+            onClick={handleClearTestData}
+            disabled={testDataBusy}
+            className="px-4 py-2 text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-60 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+          >
+            Delete test data
+          </button>
+          {testDataMessage && (
+            <span className="text-sm text-slate-600 dark:text-slate-400" role="status">
+              {testDataMessage}
+            </span>
+          )}
+        </section>
+      )}
 
       {/* Order Summary Cards Grid */}
       <section aria-labelledby="order-summary-heading">

@@ -745,6 +745,22 @@ export class ApiClient {
   }
 
   /**
+   * Dev only: fills the restaurant with generated orders.
+   * POST /api/dev/test-data (backend `dev` profile)
+   */
+  async generateTestData(count = 12): Promise<{ created: number }> {
+    return this.post(`/api/dev/test-data?count=${count}`, {});
+  }
+
+  /**
+   * Dev only: removes the generated orders again.
+   * DELETE /api/dev/test-data (backend `dev` profile)
+   */
+  async clearTestData(): Promise<{ deleted: number }> {
+    return this.delete('/api/dev/test-data');
+  }
+
+  /**
    * Setup EventSource for real-time order updates
    * GET /api/orders/stream (Server-Sent Events)
    * 

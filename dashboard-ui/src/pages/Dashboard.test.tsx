@@ -23,7 +23,7 @@ const sampleRows: OrderRow[] = [
 
 vi.mock('@/utils/api', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/utils/api')>();
-  return { ...original, apiClient: { getOrders: vi.fn(), updateOrderStatus: vi.fn() } };
+  return { ...original, apiClient: { getOrders: vi.fn(), updateOrderStatus: vi.fn(), generateTestData: vi.fn(), clearTestData: vi.fn() } };
 });
 
 /** Renders the page and waits for the first load, so tests can assert synchronously afterwards. */
@@ -39,6 +39,39 @@ beforeEach(() => {
     totalCount: sampleRows.length,
     pageCount: 1,
     currentPage: 1,
+  });
+});
+
+describe('Dashboard test data tools', () => {
+  it('generates test data and reloads the orders', async () => {
+    vi.mocked(apiClient.generateTestData).mockResolvedValue({ created: 12 });
+    await renderDashboard();
+    const loadsBefore = vi.mocked(apiClient.getOrders).mock.calls.length;
+
+    await userEvent.click(screen.getByRole('button', { name: 'Generate test data' }));
+
+    expect(await screen.findByText('Added 12 test orders.')).toBeInTheDocument();
+    expect(apiClient.generateTestData).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(apiClient.getOrders).mock.calls.length).toBeGreaterThan(loadsBefore);
+  });
+
+  it('deletes test data and reloads the orders', async () => {
+    vi.mocked(apiClient.clearTestData).mockResolvedValue({ deleted: 7 });
+    await renderDashboard();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete test data' }));
+
+    expect(await screen.findByText('Removed 7 test orders.')).toBeInTheDocument();
+    expect(apiClient.clearTestData).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the error when the backend rejects the request', async () => {
+    vi.mocked(apiClient.generateTestData).mockRejectedValue(new Error('Not found'));
+    await renderDashboard();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Generate test data' }));
+
+    expect(await screen.findByText('Not found')).toBeInTheDocument();
   });
 });
 
