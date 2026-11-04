@@ -20,6 +20,8 @@ spring:
       port: 6379
 
 readybell:
+  rate-limit:
+    enabled: false       # existing tests share one client IP; RateLimitApiTest switches it on
   vapid:
     enabled: false
   security:

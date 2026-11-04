@@ -58,3 +58,12 @@ The session id in the URL is the credential for the customer endpoints; the tena
 - Status names are the backend's: `CREATED, IN_PROGRESS, READY, COMPLETED, CANCELLED`; the staff UI labels `IN_PROGRESS` "Preparing".
 - Roles: `STAFF`, `RESTAURANT_ADMIN`, `PLATFORM_ADMIN`.
 - The UI refreshes the order list on SSE events and falls back to polling every 30 s while the stream is down.
+
+## Rate limits (public endpoints)
+
+Per client IP, sliding window (defaults in `application.yml` under `readybell.rate-limit.rules`): session start 20/min,
+push subscribe 20/min, track 120/min, customer poll 240/min, customer stream 30/min. Over the limit: `429` with
+`Retry-After` (seconds) and `application/problem+json` (`type: urn:readybell:rate-limit:exceeded`). Behind a reverse
+proxy set `RATE_LIMIT_TRUSTED_PROXIES` (IP/CIDR list) so `X-Forwarded-For` is used; without it the proxy's own address is
+the key and all clients share one budget. `RATE_LIMIT_REDIS_ENABLED=true` shares counters between replicas.
+Metric: `ratelimit.rejected{endpoint}` at `/actuator/metrics`.
