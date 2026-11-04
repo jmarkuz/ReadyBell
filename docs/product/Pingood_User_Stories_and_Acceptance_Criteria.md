@@ -1,7 +1,7 @@
-# ReadyBell User Stories & Acceptance Criteria v1.0
+# Pingood User Stories & Acceptance Criteria v1.0
 
 **Document Type:** Product Requirements / User Stories
-**Product:** ReadyBell
+**Product:** Pingood
 **Version:** 1.0
 **Audience:** Product Team, Engineering Team, QA Team, AI Development Agents (Kiro)
 **Status:** MVP Functional Specification
@@ -10,7 +10,7 @@
 
 # 1. Purpose
 
-This document defines the core user stories and acceptance criteria for ReadyBell MVP.
+This document defines the core user stories and acceptance criteria for Pingood MVP.
 
 The goal is to provide a clear implementation contract:
 
@@ -51,13 +51,13 @@ Restaurant owner or manager.
 
 Goal:
 
-Configure and manage ReadyBell for their business.
+Configure and manage Pingood for their business.
 
 ---
 
 ## Platform Admin
 
-ReadyBell operator.
+Pingood operator.
 
 Goal:
 
@@ -93,7 +93,7 @@ When:
 
 Then:
 
-* ReadyBell opens in a mobile browser
+* Pingood opens in a mobile browser
 * A customer session is created
 * Restaurant information is displayed
 
@@ -322,7 +322,7 @@ System:
 ## User Story
 
 As a restaurant owner,
-I want to create a ReadyBell account,
+I want to create a Pingood account,
 so that I can use the platform.
 
 ---
@@ -416,7 +416,7 @@ Platform admin can:
 
 Given:
 
-Multiple restaurants use ReadyBell
+Multiple restaurants use Pingood
 
 System must ensure:
 
@@ -526,7 +526,7 @@ Never start from UI or database schema.
 
 # Final Product Behavior
 
-A successful ReadyBell MVP allows:
+A successful Pingood MVP allows:
 
 Customer:
 

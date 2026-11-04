@@ -1,7 +1,7 @@
-# ReadyBell System Architecture v1.0
+# Pingood System Architecture v1.0
 
 **Document Type:** System Architecture Specification
-**Product:** ReadyBell
+**Product:** Pingood
 **Version:** 1.0
 **Audience:** Engineering Team, Solution Architects, AI Development Agents (Kiro)
 **Architecture Style:** Cloud-Native Modular Monolith + Hexagonal Architecture
@@ -12,7 +12,7 @@
 
 # 1. Architecture Vision
 
-ReadyBell is designed as a scalable SaaS platform that connects restaurants and customers through real-time digital communication.
+Pingood is designed as a scalable SaaS platform that connects restaurants and customers through real-time digital communication.
 
 The architecture must support:
 
@@ -171,19 +171,11 @@ module
 Recommended project structure:
 
 ```
-readybell-platform
+pingood-platform
 
-├── readybell-api
+├── pingood-api
 
-├── readybell-restaurant
-
-│   ├── domain
-│   ├── application
-│   ├── adapters
-│   └── infrastructure
-
-
-├── readybell-order
+├── pingood-restaurant
 
 │   ├── domain
 │   ├── application
@@ -191,7 +183,7 @@ readybell-platform
 │   └── infrastructure
 
 
-├── readybell-notification
+├── pingood-order
 
 │   ├── domain
 │   ├── application
@@ -199,11 +191,19 @@ readybell-platform
 │   └── infrastructure
 
 
-├── readybell-security
+├── pingood-notification
 
-├── readybell-events
+│   ├── domain
+│   ├── application
+│   ├── adapters
+│   └── infrastructure
 
-└── readybell-shared
+
+├── pingood-security
+
+├── pingood-events
+
+└── pingood-shared
 
 ```
 
@@ -603,7 +603,7 @@ Must implement:
 Application container:
 
 ```
-readybell-app
+pingood-app
 
 ```
 
@@ -759,7 +759,7 @@ Possible candidates:
 
 # 19. Final Architecture Statement
 
-ReadyBell starts as a modular Spring Boot SaaS application.
+Pingood starts as a modular Spring Boot SaaS application.
 
 The architecture is intentionally designed to evolve into a global hospitality engagement platform.
 

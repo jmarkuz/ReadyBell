@@ -1,7 +1,7 @@
-# ReadyBell Product Strategy v1.0
+# Pingood Product Strategy v1.0
 
 **Document Type:** Product Strategy & Business Direction
-**Product:** ReadyBell
+**Product:** Pingood
 **Version:** 1.0
 **Audience:** Founders, Product Team, Engineering Team, AI Development Agents (Kiro)
 **Status:** Strategic Foundation Document
@@ -10,13 +10,13 @@
 
 # 1. Executive Summary
 
-ReadyBell is a SaaS customer engagement platform for restaurants and hospitality businesses.
+Pingood is a SaaS customer engagement platform for restaurants and hospitality businesses.
 
 The initial product replaces physical restaurant pagers with a digital QR-based notification experience.
 
 The strategic objective is not only to remove hardware, but to create a direct digital relationship between restaurants and guests.
 
-ReadyBell evolves through three stages:
+Pingood evolves through three stages:
 
 1. Digital Pager Replacement
 2. Customer Engagement Platform
@@ -67,7 +67,7 @@ Pain:
 * Lost pager devices
 * Staff interruptions
 
-ReadyBell value:
+Pingood value:
 
 Replace physical queue notification with digital experience.
 
@@ -81,7 +81,7 @@ Characteristics:
 * Need consistency
 * Need analytics
 
-ReadyBell value:
+Pingood value:
 
 * Central management
 * Customer engagement
@@ -96,7 +96,7 @@ Characteristics:
 * Short preparation times
 * High repeat customers
 
-ReadyBell value:
+Pingood value:
 
 * Faster pickup
 * Loyalty opportunities
@@ -154,11 +154,11 @@ Restaurants lack:
 
 ---
 
-# 6. Why Restaurants Buy ReadyBell
+# 6. Why Restaurants Buy Pingood
 
 ## Immediate ROI
 
-ReadyBell replaces:
+Pingood replaces:
 
 * Hardware purchase
 * Hardware maintenance
@@ -306,7 +306,7 @@ Flow:
 1. Restaurant signs up
 2. Creates account
 3. Generates QR code
-4. Starts using ReadyBell
+4. Starts using Pingood
 
 Target:
 
@@ -350,7 +350,7 @@ Weaknesses:
 * No customer relationship
 * No data
 
-ReadyBell advantage:
+Pingood advantage:
 
 * No hardware
 * Mobile-first
@@ -364,7 +364,7 @@ Weakness:
 
 POS systems manage transactions, not relationships.
 
-ReadyBell complements POS.
+Pingood complements POS.
 
 Position:
 
@@ -380,7 +380,7 @@ Weakness:
 * Low adoption
 * Requires installation
 
-ReadyBell advantage:
+Pingood advantage:
 
 * QR-first
 * No app barrier
@@ -390,7 +390,7 @@ ReadyBell advantage:
 
 # 10. Core Differentiation
 
-ReadyBell wins because:
+Pingood wins because:
 
 ## 1. Zero Hardware
 
@@ -484,9 +484,9 @@ Does this support:
 
 # 13. Strategic Statement
 
-ReadyBell is not a pager replacement company.
+Pingood is not a pager replacement company.
 
-ReadyBell is building the digital relationship layer between restaurants and guests.
+Pingood is building the digital relationship layer between restaurants and guests.
 
 The first problem we solve is notification.
 
