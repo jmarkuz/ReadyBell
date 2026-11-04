@@ -16,6 +16,20 @@ ReadyBell is a multi-tenant SaaS platform that lets restaurant customers track t
 - **Real-time updates via SSE with polling fallback** — Order status changes are pushed to open clients over Server-Sent Events (customer and staff-panel streams), with a one-shot polling endpoint as a fallback when a persistent connection isn't available.
 - **Horizontal scalability** — The application runs as stateless replicas behind a load balancer, with session/cache state externalized to Redis so any replica can serve any request.
 
+## Screenshots
+
+**Staff dashboard, light theme.** Live order summary (total, new, preparing, ready for pickup), status and date
+filters, and the incoming-orders table where staff move an order through its lifecycle. **New order** opens the
+order entry dialog and prints the receipt QR code that customers scan to follow their order. The
+*Generate / Import / Delete test data* buttons only appear in development builds.
+
+![ReadyBell staff dashboard, light theme](docs/screenshots/dashboard-light.png)
+
+**The same dashboard in the dark theme.** The theme toggle in the header switches between them and the choice is
+remembered per browser.
+
+![ReadyBell staff dashboard, dark theme](docs/screenshots/dashboard-dark.png)
+
 ## Architecture
 
 ReadyBell is built domain-first using Domain-Driven Design and Clean/Hexagonal (Ports & Adapters) architecture, packaged as a single deployable **modular monolith**. The domain layer has no framework dependencies; application services orchestrate use cases against ports; adapters (REST controllers, JPA repositories, Redis, Web Push, Spring's event publisher) implement those ports and are wired by Spring configuration. Dependencies point inward — nothing in the domain depends on an adapter.
