@@ -3,6 +3,7 @@ package org.readybell.restaurant.domain;
 import org.readybell.shared.domain.TenantId;
 
 import java.util.Optional;
+import java.util.List;
 
 /**
  * Repository port for {@link Restaurant} aggregates.
@@ -45,5 +46,5 @@ public interface RestaurantRepository {
     Optional<Restaurant> findByIdentifier(String identifier);
 
     /** Every restaurant on the platform (platform admin view). */
-    java.util.List<Restaurant> findAll();
+    List<Restaurant> findAll();
 }

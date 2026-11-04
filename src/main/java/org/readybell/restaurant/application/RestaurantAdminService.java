@@ -9,6 +9,7 @@ import org.readybell.restaurant.domain.StaffAccountId;
 import org.readybell.restaurant.domain.StaffAccountRepository;
 import org.readybell.shared.domain.TenantId;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -111,6 +112,19 @@ public class RestaurantAdminService implements RestaurantAdminUseCase {
      *   <li>Persist via {@link RestaurantRepository#save} and return.</li>
      * </ol>
      */
+    @Override
+    public Restaurant getRestaurant(TenantId tenantId) {
+        Objects.requireNonNull(tenantId, "tenantId must not be null");
+        return restaurantRepository.findByTenantId(tenantId)
+                .orElseThrow(() -> new RestaurantNotFoundException(tenantId));
+    }
+
+    @Override
+    public List<StaffAccount> listStaffAccounts(TenantId tenantId) {
+        Objects.requireNonNull(tenantId, "tenantId must not be null");
+        return staffRepository.findAllByTenant(tenantId);
+    }
+
     @Override
     public Restaurant updateRestaurantConfig(TenantId tenantId, RestaurantConfig config) {
         Objects.requireNonNull(tenantId, "tenantId must not be null");

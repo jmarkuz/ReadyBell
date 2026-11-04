@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Locale;
 
 /**
  * Application-layer handler for the {@link OrderReady} domain event.
@@ -127,7 +128,7 @@ public class OrderReadyHandler {
                 .map(r -> r.getConfig().name())
                 .filter(n -> !n.isBlank())
                 .orElse("Your order");
-        String number = "#" + event.orderId().value().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT);
+        String number = "#" + event.orderId().value().toString().substring(0, 8).toUpperCase(Locale.ROOT);
         return new NotificationPayload(
                 restaurant,
                 "Order " + number + " is ready for pickup!",

@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.data.redis.core.ZSetOperations;
 
 /**
  * Failure log in Redis sorted sets (score = epoch millis), so every replica applies the same
@@ -52,7 +53,7 @@ public class RedisFailureStore implements FailureStore {
             if (count == null || count == 0) {
                 return Window.EMPTY;
             }
-            Set<org.springframework.data.redis.core.ZSetOperations.TypedTuple<String>> first = zset.rangeWithScores(k, 0, 0);
+            Set<ZSetOperations.TypedTuple<String>> first = zset.rangeWithScores(k, 0, 0);
             Optional<Instant> oldest = first == null ? Optional.empty() : first.stream().findFirst()
                     .map(t -> Instant.ofEpochMilli(t.getScore().longValue()));
             return new Window(count.intValue(), oldest);

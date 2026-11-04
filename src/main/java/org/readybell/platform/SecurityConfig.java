@@ -32,6 +32,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.web.cors.CorsConfiguration;
+import org.readybell.platform.auth.FailureStore;
+import org.readybell.platform.auth.RedisFailureStore;
+import org.readybell.platform.auth.InMemoryFailureStore;
 
 /**
  * Spring Security configuration for the ReadyBell REST API (Req 7.1, 7.2, 8.1, 8.2, 9.1).
@@ -69,8 +76,8 @@ public class SecurityConfig {
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
-            @org.springframework.beans.factory.annotation.Value("${readybell.cors.allowed-origins:}") List<String> corsOrigins,
-            @org.springframework.beans.factory.annotation.Value("${readybell.cors.allowed-origin-patterns:}") List<String> corsOriginPatterns)
+            @Value("${readybell.cors.allowed-origins:}") List<String> corsOrigins,
+            @Value("${readybell.cors.allowed-origin-patterns:}") List<String> corsOriginPatterns)
             throws Exception {
         http
             // Disable CSRF — REST API, no browser form submissions
@@ -78,7 +85,7 @@ public class SecurityConfig {
 
             // The UI is normally served from the same origin; CORS is opt-in for a separately hosted UI
             .cors(cors -> cors.configurationSource(request -> {
-                var config = new org.springframework.web.cors.CorsConfiguration();
+                var config = new CorsConfiguration();
                 config.setAllowedOrigins(corsOrigins.stream().filter(o -> !o.isBlank()).toList());
                 config.setAllowedOriginPatterns(corsOriginPatterns.stream().filter(o -> !o.isBlank()).toList());
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
@@ -159,13 +166,13 @@ public class SecurityConfig {
 
     @Bean
     public LoginAttemptLimiter loginAttemptLimiter(JwtProperties props, Clock clock,
-            org.springframework.beans.factory.ObjectProvider<org.springframework.data.redis.core.StringRedisTemplate> redis) {
+            ObjectProvider<StringRedisTemplate> redis) {
         var login = props.getLogin();
         // With several replicas the failures must be counted in one place: Redis
         var redisTemplate = login.isRedis() ? redis.getIfAvailable() : null;
-        org.readybell.platform.auth.FailureStore store = redisTemplate != null
-                ? new org.readybell.platform.auth.RedisFailureStore(redisTemplate, "readybell:login-failures:")
-                : new org.readybell.platform.auth.InMemoryFailureStore();
+        FailureStore store = redisTemplate != null
+                ? new RedisFailureStore(redisTemplate, "readybell:login-failures:")
+                : new InMemoryFailureStore();
         return new LoginAttemptLimiter(login.getMaxFailures(), login.getWindow(), clock, store);
     }
 

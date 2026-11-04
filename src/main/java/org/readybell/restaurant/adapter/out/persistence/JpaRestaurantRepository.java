@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.List;
 
 /**
  * JPA adapter implementing the {@link RestaurantRepository} port.
@@ -49,7 +50,7 @@ public class JpaRestaurantRepository implements RestaurantRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public java.util.List<Restaurant> findAll() {
+    public List<Restaurant> findAll() {
         return springRepo.findAll().stream().map(RestaurantJpaEntity::toDomain).toList();
     }
 }

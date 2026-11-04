@@ -2,6 +2,7 @@ package org.readybell.platformadmin.application;
 
 import org.readybell.restaurant.application.DuplicateUsernameException;
 import org.readybell.restaurant.application.UsernamePolicy;
+import org.readybell.restaurant.application.RestaurantNotFoundException;
 import org.readybell.restaurant.domain.Restaurant;
 import org.readybell.restaurant.domain.RestaurantConfig;
 import org.readybell.restaurant.domain.RestaurantRepository;
@@ -10,6 +11,8 @@ import org.readybell.restaurant.domain.StaffAccount;
 import org.readybell.restaurant.domain.StaffAccountRepository;
 import org.readybell.shared.domain.TenantId;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -87,6 +90,13 @@ public class PlatformAdminService implements PlatformAdminUseCase {
         restaurant.updateConfig(config);
         restaurantRepository.save(restaurant);
         return restaurant;
+    }
+
+    @Override
+    public List<Restaurant> listRestaurants() {
+        return restaurantRepository.findAll().stream()
+                .sorted(Comparator.comparing(Restaurant::getIdentifier))
+                .toList();
     }
 
     /**

@@ -5,6 +5,8 @@ import org.readybell.notification.domain.NotificationRepository;
 import org.readybell.notification.domain.NotificationSender;
 import org.readybell.ordering.application.ManageOrderService;
 import org.readybell.ordering.application.ManageOrderUseCase;
+import org.readybell.ordering.application.TrackSessionService;
+import org.readybell.ordering.application.TrackSessionUseCase;
 import org.readybell.ordering.domain.OrderRepository;
 import org.readybell.platformadmin.application.PlatformAdminService;
 import org.readybell.platformadmin.application.PlatformAdminUseCase;
@@ -24,6 +26,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Clock;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.List;
+import java.time.Duration;
 
 /**
  * Composition root — wires the hexagonal ports to their production adapters.
@@ -85,6 +90,14 @@ public class ApplicationConfig {
         return new ManageOrderService(sessionRepository, orderRepository, eventPublisher, clock);
     }
 
+    /** Read side of the customer tracking page. */
+    @Bean
+    public TrackSessionUseCase trackSessionUseCase(CustomerSessionRepository sessionRepository,
+                                                   OrderRepository orderRepository,
+                                                   RestaurantRepository restaurantRepository) {
+        return new TrackSessionService(sessionRepository, orderRepository, restaurantRepository);
+    }
+
     /** Application clock; a single bean so ETAs, token expiry and tests share one time source. */
     @Bean
     public Clock clock() {
@@ -136,8 +149,8 @@ public class ApplicationConfig {
             DomainEventPublisher eventPublisher,
             ManageSubscriptionUseCase subscriptionUseCase,
             RestaurantRepository restaurantRepository,
-            @org.springframework.beans.factory.annotation.Value("${readybell.push.retry-delays-ms:500,2000,5000}")
-            java.util.List<Long> retryDelaysMs) {
+            @Value("${readybell.push.retry-delays-ms:500,2000,5000}")
+            List<Long> retryDelaysMs) {
         return new OrderReadyHandler(
                 subscriptionRepository,
                 notificationRepository,
@@ -145,7 +158,7 @@ public class ApplicationConfig {
                 eventPublisher,
                 subscriptionUseCase,
                 restaurantRepository,
-                retryDelaysMs.stream().map(java.time.Duration::ofMillis).toList());
+                retryDelaysMs.stream().map(Duration::ofMillis).toList());
     }
 
     // -------------------------------------------------------------------------
