@@ -60,6 +60,14 @@ public class SseEmitterRegistry {
         });
     }
 
+    public int customerConnections() {
+        return customerEmitters.values().stream().mapToInt(Set::size).sum();
+    }
+
+    public int staffConnections() {
+        return staffEmitters.values().stream().mapToInt(Set::size).sum();
+    }
+
     public int openConnections() {
         return customerEmitters.values().stream().mapToInt(Set::size).sum()
                 + staffEmitters.values().stream().mapToInt(Set::size).sum();

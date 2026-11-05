@@ -53,3 +53,4 @@ bin/
 ### Playwright ###
 dashboard-ui/playwright-report/
 dashboard-ui/test-results/
+ops/prometheus/readybell-scrape-password

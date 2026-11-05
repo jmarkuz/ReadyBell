@@ -20,13 +20,17 @@ import java.util.Objects;
 public class SpringOrderReadyEventListener {
 
     private final OrderReadyHandler orderReadyHandler;
+    private final org.readybell.platform.metrics.PushMetrics pushMetrics;
 
     /**
      * @param orderReadyHandler the application-layer handler for order-ready events
+     * @param pushMetrics       measures READY to push-handed-over latency
      */
-    public SpringOrderReadyEventListener(OrderReadyHandler orderReadyHandler) {
+    public SpringOrderReadyEventListener(OrderReadyHandler orderReadyHandler,
+                                         org.readybell.platform.metrics.PushMetrics pushMetrics) {
         this.orderReadyHandler = Objects.requireNonNull(
                 orderReadyHandler, "orderReadyHandler must not be null");
+        this.pushMetrics = Objects.requireNonNull(pushMetrics, "pushMetrics must not be null");
     }
 
     /**
@@ -41,6 +45,6 @@ public class SpringOrderReadyEventListener {
      */
     @EventListener
     public void onOrderReady(OrderReady event) {
-        orderReadyHandler.handle(event);
+        pushMetrics.whileHandling(event.occurredAt(), () -> orderReadyHandler.handle(event));
     }
 }

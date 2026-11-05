@@ -39,6 +39,7 @@ Check a running instance end to end with `PLATFORM_PASS=… BASE_URL=… scripts
   `LOGIN_REDIS_ENABLED=true` (one shared failed-login limit); compose does both.
 - **Probes**: `/actuator/health/liveness` and `/actuator/health/readiness`.
 - **Metrics**: `/actuator/prometheus`, readable only by the platform operator (HTTP Basic works for scrapers).
+  Business metrics, alert rules and a Prometheus setup: [MONITORING.md](MONITORING.md).
 - **Housekeeping**: hourly, sessions older than `readybell.session.ttl` (24h) with no open orders are ended and
   their push subscriptions deleted. Orders are kept.
 - **Logs**: unexpected errors are logged with a stack trace; clients only see a generic 500.
