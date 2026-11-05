@@ -53,3 +53,6 @@ bin/
 ### Playwright ###
 dashboard-ui/playwright-report/
 dashboard-ui/test-results/
+
+# local PostgreSQL dumps (scripts/backup.sh)
+/backups/
