@@ -29,6 +29,7 @@ HTTPS (localhost excepted), and iPhones need the page added to the Home Screen.
    follow the order and tap **Notify me**.
 
 Check a running instance end to end with `PLATFORM_PASS=… BASE_URL=… scripts/smoke.sh`.
+Before the first pilot restaurant, work through [PILOT_CHECKLIST.md](PILOT_CHECKLIST.md) (real-device Web Push tests, timing sheet, run sheet).
 
 ## Operations
 
