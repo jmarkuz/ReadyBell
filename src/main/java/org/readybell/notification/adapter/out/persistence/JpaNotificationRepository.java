@@ -37,6 +37,16 @@ public class JpaNotificationRepository implements NotificationRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public boolean existsSent(TenantId tenantId, java.util.UUID orderId,
+                              org.readybell.subscription.domain.DeviceSubscriptionId subscriptionId) {
+        return springRepo.existsByTenantIdAndOrderIdAndSubscriptionIdAndStatusIn(
+                tenantId.value(), orderId, subscriptionId.value(),
+                java.util.List.of(org.readybell.notification.domain.NotificationStatus.SENT,
+                        org.readybell.notification.domain.NotificationStatus.DELIVERED));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<Notification> findByTenantAndId(TenantId tenantId, NotificationId id) {
         return springRepo.findById(id.value())
                 .map(NotificationJpaEntity::toDomain);

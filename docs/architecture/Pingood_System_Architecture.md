@@ -773,3 +773,23 @@ The system must optimize for:
 ---
 
 **End of Document**
+
+
+## Transactional outbox (T05)
+
+`OrderReady` and `OrderStatusUpdated` are not published directly. `ManageOrderService` runs inside one transaction
+(`TransactionalManageOrderUseCase`); the `OutboxDomainEventPublisher` adapter of the `DomainEventPublisher` port inserts the
+events into `outbox_event` in that same transaction, so a status change and its events commit or roll back together.
+`OutboxRelay` (platform) then delivers them to the existing in-process handlers:
+
+1. `claim`: select due, unprocessed rows `FOR UPDATE SKIP LOCKED`, set `locked_until` (lease), commit. Several nodes can
+   run the relay; each event goes to one of them. A worker that dies lets the lease expire and the event is claimed again.
+2. dispatch to the handlers synchronously on the relay thread; success sets `processed_at`, an exception schedules a retry
+   with exponential backoff (2 s doubling to 5 min) and after `max-attempts` (10) parks the row (`failed_at`).
+3. delivery is **at least once**: `OrderReadyHandler` skips a device that already has a SENT/DELIVERED notification for the
+   order, so a replay does not push twice. A crash in the instant between the push service accepting a message and the
+   notification being saved as SENT can still repeat that one push.
+
+A commit wakes the relay immediately (live updates stay within a second); a 1 s poll covers restarts and missed wake-ups.
+Config: `readybell.outbox.*` (`enabled`, `poll-interval`, `batch-size`, `lease`, `max-attempts`, `retention`). Metrics:
+`outbox.pending`, `outbox.failed`. Processed rows are deleted after 7 days.

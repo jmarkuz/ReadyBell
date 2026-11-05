@@ -86,8 +86,12 @@ public class ApplicationConfig {
             CustomerSessionRepository sessionRepository,
             OrderRepository orderRepository,
             DomainEventPublisher eventPublisher,
-            Clock clock) {
-        return new ManageOrderService(sessionRepository, orderRepository, eventPublisher, clock);
+            Clock clock,
+            org.springframework.transaction.PlatformTransactionManager transactionManager) {
+        // One transaction per use case: the order and its outbox events commit together
+        return new org.readybell.platform.outbox.TransactionalManageOrderUseCase(
+                new ManageOrderService(sessionRepository, orderRepository, eventPublisher, clock),
+                new org.springframework.transaction.support.TransactionTemplate(transactionManager));
     }
 
     /** Read side of the customer tracking page. */

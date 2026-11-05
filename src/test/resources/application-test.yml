@@ -20,6 +20,10 @@ spring:
       port: 6379
 
 readybell:
+  outbox:
+    # Test contexts are cached and share one in-memory database; a live relay in one of them would steal the
+    # events of another test. Tests that need delivery call OutboxRelay.drain() themselves.
+    enabled: false
   rate-limit:
     enabled: false       # existing tests share one client IP; RateLimitApiTest switches it on
   vapid:

@@ -28,7 +28,7 @@ where possible, now enforced by tests. No behaviour changed.
 |----------|-----|---------|
 | **Receipt QR links to a session the server creates with the order** (`/track/{sessionId}`), instead of a per-restaurant QR | Staff can enter an order before any customer scan; no change to the order aggregate (it keeps a mandatory session) | Holds. Trade-off: the counter QR flow (customer types an order number) is not built |
 | Unguessable session UUID is the customer's credential | No accounts (MVP rule); tenant derived from the session | Holds; sessions are ended after 24 h without open orders, and their push subscriptions deleted |
-| Push on its own executor with bounded retries | Marking an order READY must not wait on push services | Holds. Gap: no outbox, so a crash between "saved" and "published" loses the notification (BACKLOG R1) |
+| Push on its own executor with bounded retries | Marking an order READY must not wait on push services | Holds. `OrderReady` and `OrderStatusUpdated` go through a transactional outbox (T05): written in the order's transaction, delivered at least once by `OutboxRelay`, push deduplicated per order and device |
 | Flyway baseline V1 + `ddl-auto: validate` (dev keeps `create`) | Schema changes need a history; existing DBs are adopted at V1 | Holds; verified on a fresh and an existing PostgreSQL |
 | `OrderStatus.IN_PROGRESS` in the API, "Preparing" in the UI | Keep the backend vocabulary, translate at the edge | Holds |
 | Login throttle shared through Redis, local fallback | Several replicas must apply one limit; Redis outage must not disable it | Holds |

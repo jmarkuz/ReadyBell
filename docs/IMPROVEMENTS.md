@@ -36,7 +36,7 @@ subset to do next, plus findings from the latest analysis (T01–T04). "Backlog"
 
 | ID | Task | Size | Status | Depends on | Backlog | Spec |
 |----|------|------|--------|-----------|---------|------|
-| T05 | Transactional outbox for `OrderReady` | L | Todo | – | R1 | [T05](tasks/T05-transactional-outbox.md) |
+| T05 | Transactional outbox for `OrderReady` | L | In review | – | R1 | [T05](tasks/T05-transactional-outbox.md) |
 | T06 | Structural tenant filter + guard test | M | In review | – | S1 | [T06](tasks/T06-structural-tenant-filter.md) |
 | T07 | Single-use ticket for the SSE stream | S | In review | – | S2 | [T07](tasks/T07-sse-ticket.md) |
 | T08 | Rate-limit public endpoints | S | In review | – | S4 | [T08](tasks/T08-public-rate-limits.md) |
@@ -63,7 +63,7 @@ Q3 remaining accessibility gaps, Q4 customer page extras, Q5 `.kiro` specs.
 | Wave | Done / total |
 |------|--------------|
 | 1 | 3 / 4 (T02 in review) |
-| 2 | 0 / 4 (T06, T07, T08 in review) |
+| 2 | 0 / 4 (T05–T08 in review) |
 | 3 | 0 / 5 |
 
 ## Log
@@ -79,4 +79,5 @@ Q3 remaining accessibility gaps, Q4 customer page extras, Q5 `.kiro` specs.
 | 2026-11-04 | T07: `POST /api/orders/stream/ticket` issues a 30 s single-use ticket (maps to the caller's JWT, so user and tenant are preserved); `GET /api/orders/stream` accepts only `?ticket=`; `?token=` removed. `useSSE` takes `getTicket` and fetches a fresh ticket on every (re)connect, retrying with backoff if that fails. Backend suite and 718 UI tests pass. Access-log masking not done: tickets are harmless after one use, and no access log is configured in the repo. |
 | 2026-11-04 | T08: `RateLimitFilter` (before Spring Security) applies per-IP sliding-window limits from `readybell.rate-limit.rules` to session start, push subscribe, track, customer poll and customer stream; 429 + `Retry-After` as problem+json, metric `ratelimit.rejected{endpoint}`. Client IP honors `X-Forwarded-For` only from `trusted-proxies` (right-most untrusted hop). Redis counters with per-node fallback. Disabled in the test profile; `RateLimitApiTest` enables it. |
 | 2026-11-04 | T06: `TenantFilterInterceptor` (Spring advisor, inside the repository transaction) binds `tenantFilter` for every `@Repository` in `adapter.out.persistence`: tenant from the `TenantId` argument, else the request context, else `MissingTenantContextException`; `@CrossTenant("reason")` methods run with the filter off. All 17 manual `enableTenantFilter` calls removed. `TenantGuardArchitectureTest` fails for an adapter method with neither a `TenantId` nor `@CrossTenant`; `TenantFilterBindingTest` checks two tenants and the session's filter state. `NotificationRepository.findById` became `findByTenantAndId(TenantId, ...)`. Background threads need no context: every call passes a tenant or is `@CrossTenant`. |
+| 2026-11-04 | T05: `outbox_event` table (Flyway V3, also `notification.order_id`). `OutboxDomainEventPublisher` (@Primary) writes `OrderReady`/`OrderStatusUpdated` into it inside the order's transaction (the order use case now runs in one `TransactionTemplate`); other events still go straight to the bus. `OutboxRelay` claims due rows with `FOR UPDATE SKIP LOCKED` plus a lease, runs the handlers synchronously, marks them processed, retries with exponential backoff, parks after 10 attempts; woken right after commit and every 1 s; processed rows deleted after 7 days; gauges `outbox.pending`, `outbox.failed`. `SpringOrderReadyEventListener` is no longer `@Async` (the relay thread is the async boundary). `OrderReadyHandler` skips a device that already has a SENT/DELIVERED notification for the order. Verified on H2 (tests) and on Postgres 16 (V3 applied, `ddl-auto: validate`, a hand-inserted event was processed). |
 | 2026-11-04 | T10: Playwright E2E in `dashboard-ui/e2e/` (7 tests: sign-in x3, order -> QR -> live customer tracking to READY, unknown link, server-side paging with 25 generated orders, dark theme); `webServer` starts the dev-profile backend (port 18080, DB `readybell_e2e`) and Vite (5273); new `e2e` CI job uploads report, traces and videos on failure; `docs/DEVELOPMENT.md` documents it. **Found and fixed a T07 regression:** `useDashboardOrders` passed `getTicket` as an inline arrow, so `useSSE` reopened the stream on every render (ticket -> stream -> abort loop) and starved the browser's connections until "Create order" hung; `getTicket` is now read through a ref and a unit test covers it. 10 consecutive green local runs (35-55 s each); the CI job has not run yet, so the <5 min and <1 % flakiness criteria are still to be confirmed there. |

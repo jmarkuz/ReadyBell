@@ -32,6 +32,8 @@ public class Notification {
     private final DeviceSubscriptionId subscriptionId;
     private NotificationStatus status;
     private final String payload;
+    /** The order that triggered this notification; lets a replayed event be recognised (may be null). */
+    private final UUID orderId;
 
     private final List<DomainEvent> pendingEvents = new ArrayList<>();
 
@@ -39,7 +41,9 @@ public class Notification {
                          TenantId tenantId,
                          DeviceSubscriptionId subscriptionId,
                          NotificationStatus status,
-                         String payload) {
+                         String payload,
+                         UUID orderId) {
+        this.orderId = orderId;
         this.id = Objects.requireNonNull(id, "notificationId must not be null");
         this.tenantId = Objects.requireNonNull(tenantId, "tenantId must not be null");
         this.subscriptionId = Objects.requireNonNull(subscriptionId, "subscriptionId must not be null");
@@ -58,11 +62,19 @@ public class Notification {
     public static Notification compose(TenantId tenantId,
                                        DeviceSubscriptionId subscriptionId,
                                        String payload) {
+        return compose(tenantId, subscriptionId, payload, null);
+    }
+
+    /** Composes a notification caused by the given order. */
+    public static Notification compose(TenantId tenantId,
+                                       DeviceSubscriptionId subscriptionId,
+                                       String payload,
+                                       UUID orderId) {
         Objects.requireNonNull(tenantId, "tenantId must not be null");
         Objects.requireNonNull(subscriptionId, "subscriptionId must not be null");
         Objects.requireNonNull(payload, "payload must not be null");
         return new Notification(NotificationId.newId(), tenantId, subscriptionId,
-                NotificationStatus.PENDING, payload);
+                NotificationStatus.PENDING, payload, orderId);
     }
 
     /**
@@ -161,6 +173,20 @@ public class Notification {
                                             DeviceSubscriptionId subscriptionId,
                                             NotificationStatus status,
                                             String payload) {
-        return new Notification(id, tenantId, subscriptionId, status, payload);
+        return new Notification(id, tenantId, subscriptionId, status, payload, null);
+    }
+
+    public static Notification reconstitute(NotificationId id,
+                                            TenantId tenantId,
+                                            DeviceSubscriptionId subscriptionId,
+                                            NotificationStatus status,
+                                            String payload,
+                                            UUID orderId) {
+        return new Notification(id, tenantId, subscriptionId, status, payload, orderId);
+    }
+
+    /** The order that caused this notification, or null when unknown. */
+    public UUID orderId() {
+        return orderId;
     }
 }

@@ -90,6 +90,9 @@ class QrToNotificationFlowTest {
     @Autowired
     private NotificationRepository notificationRepository;
 
+    @Autowired
+    private org.readybell.platform.outbox.OutboxRelay outboxRelay;
+
     @MockBean
     private NotificationSender notificationSender;
 
@@ -199,6 +202,8 @@ class QrToNotificationFlowTest {
         // The OrderReady event should trigger the OrderReadyHandler
         // which should send a notification via NotificationSender
         // Verify the notification sender was called at least once
+        // Delivery goes through the outbox (the scheduled relay is off in tests): play the relay
+        outboxRelay.drain();
         verify(notificationSender, atLeastOnce()).send(any(), any());
         
         // Step 7: Verify notification events were recorded

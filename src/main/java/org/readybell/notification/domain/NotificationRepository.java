@@ -2,7 +2,10 @@ package org.readybell.notification.domain;
 
 import org.readybell.shared.domain.TenantId;
 
+import org.readybell.subscription.domain.DeviceSubscriptionId;
+
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Repository port for {@link Notification} aggregates.
@@ -32,5 +35,11 @@ public interface NotificationRepository {
      * @param id the notification identity (must not be null)
      * @return the notification, or {@link Optional#empty()} if not found
      */
+    /**
+     * Whether a push for this order was already accepted by the push service for this subscription
+     * (status SENT or DELIVERED). Used to make a replayed {@code OrderReady} event harmless.
+     */
+    boolean existsSent(TenantId tenantId, UUID orderId, DeviceSubscriptionId subscriptionId);
+
     Optional<Notification> findByTenantAndId(TenantId tenantId, NotificationId id);
 }
