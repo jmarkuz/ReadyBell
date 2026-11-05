@@ -10,7 +10,7 @@ The ordered plan for what to do next, with specifications and status, is in [IMP
 |----|------|------|-------|
 | P1 | Verify Web Push on real devices (Android Chrome, iOS Safari as Home-Screen PWA) with real VAPID keys over HTTPS | M | Cannot be automated here; checklist: subscribe, ready ping within 2 s, tap opens `/track/…`, expired endpoint is removed |
 | P2 | Deploy to a real host with TLS, set a stable VAPID pair, create the platform operator with a bcrypt hash | S | `docs/DEPLOYMENT.md`; run `scripts/smoke.sh` against it |
-| P3 | Backups + restore drill for PostgreSQL | S | Nothing exists today |
+| P3 | Backups + restore drill for PostgreSQL | S | `scripts/backup.sh`, `restore.sh`, `backup-drill.sh` + compose `backup` profile, see DEPLOYMENT.md (done, M4) |
 | P4 | Counter QR flow: one QR per restaurant, customer enters the order number from the receipt | M | Needs a public `POST /api/sessions/{id}/claim` (or similar) and a small form on the PWA |
 
 ## P1: reliability and security
