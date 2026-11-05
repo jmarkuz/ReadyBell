@@ -40,6 +40,7 @@ class ReceiptTrackingFlowTest {
                 .andReturn().getResponse().getContentAsString();
         String sessionId = JsonPath.read(body, "$.sessionId");
         String orderId = JsonPath.read(body, "$.id");
+        String displayNumber = JsonPath.read(body, "$.orderId");
 
         // anonymous: no credentials
         mvc.perform(get("/api/sessions/" + sessionId + "/track"))
@@ -47,6 +48,7 @@ class ReceiptTrackingFlowTest {
                 .andExpect(jsonPath("$.sessionActive").value(true))
                 .andExpect(jsonPath("$.orders.length()").value(1))
                 .andExpect(jsonPath("$.orders[0].status").value("CREATED"))
+                .andExpect(jsonPath("$.orders[0].orderNumber").value(displayNumber))   // same number as the receipt
                 .andExpect(jsonPath("$.orders[0].items[0].name").value("Latte"))
                 .andExpect(jsonPath("$.orders[0].estimatedWaitMinutes").isNumber());
 

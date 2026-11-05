@@ -22,7 +22,7 @@ describe('NewOrderDialog', () => {
 
   it('creates the order without a session id and shows the receipt QR', async () => {
     vi.mocked(apiClient.createOrder).mockResolvedValue({
-      id: 'o1', orderId: '#ABCD1234', sessionId: 'sess-9', status: 'CREATED', version: 0, createdAt: '', updatedAt: '',
+      id: 'o1', orderId: '#101', sessionId: 'sess-9', status: 'CREATED', version: 0, createdAt: '', updatedAt: '',
     });
     const onCreated = vi.fn();
     render(<NewOrderDialog open onClose={vi.fn()} onCreated={onCreated} />);
@@ -35,8 +35,8 @@ describe('NewOrderDialog', () => {
     expect(apiClient.createOrder).toHaveBeenCalledWith({
       customerName: 'Anna', estimatedMinutes: 15, items: [{ name: 'Latte', quantity: 1 }],
     });
-    expect(await screen.findByText('#ABCD1234')).toBeInTheDocument();
-    expect(screen.getByAltText('QR code for order #ABCD1234')).toBeInTheDocument();
+    expect(await screen.findByText('#101')).toBeInTheDocument();
+    expect(screen.getByAltText('QR code for order #101')).toBeInTheDocument();
     expect(screen.getByText('https://shop.example/track/sess-9')).toBeInTheDocument();
     expect(onCreated).toHaveBeenCalled();
   });
@@ -44,7 +44,7 @@ describe('NewOrderDialog', () => {
   it('warns when the QR link points to localhost', async () => {
     (globalThis as { __url?: string }).__url = 'http://localhost:5173/track/s1';
     vi.mocked(apiClient.createOrder).mockResolvedValue({
-      id: 'o1', orderId: '#ABCD1234', sessionId: 's1', status: 'CREATED', version: 0, createdAt: '', updatedAt: '',
+      id: 'o1', orderId: '#101', sessionId: 's1', status: 'CREATED', version: 0, createdAt: '', updatedAt: '',
     });
     render(<NewOrderDialog open onClose={vi.fn()} onCreated={vi.fn()} />);
     await userEvent.click(screen.getByRole('button', { name: 'Create order' }));

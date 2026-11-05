@@ -14,7 +14,7 @@ vi.mock('@/utils/push', () => ({
 }));
 
 const order = (status: trackApi.TrackedOrder['status']): trackApi.TrackedOrder => ({
-  orderNumber: '#ABCD1234', status, estimatedReadyAt: null, estimatedWaitMinutes: 7,
+  orderNumber: '#101', status, estimatedReadyAt: null, estimatedWaitMinutes: 7,
   items: [{ name: 'Latte', quantity: 2 }], updatedAt: '2026-01-01T00:00:00Z',
 });
 
@@ -36,7 +36,7 @@ describe('Track page', () => {
   it('shows the restaurant, order number, status, wait time and items', async () => {
     vi.mocked(trackApi.fetchTrack).mockResolvedValue({ restaurantName: 'Café Aurora', sessionActive: true, orders: [order('IN_PROGRESS')] });
     renderPage();
-    expect(await screen.findByText('#ABCD1234')).toBeInTheDocument();
+    expect(await screen.findByText('#101')).toBeInTheDocument();
     expect(screen.getByText('Café Aurora')).toBeInTheDocument();
     expect(screen.getByText('Being prepared')).toBeInTheDocument();
     expect(screen.getByText('about 7 min')).toBeInTheDocument();

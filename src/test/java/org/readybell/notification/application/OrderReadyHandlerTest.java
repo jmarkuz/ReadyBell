@@ -6,6 +6,9 @@ import org.readybell.notification.domain.InMemoryNotificationRepository;
 import org.readybell.notification.domain.NotificationPayload;
 import org.readybell.notification.domain.NotificationSender;
 import org.readybell.notification.domain.SendResult;
+import org.readybell.ordering.domain.InMemoryOrderRepository;
+import org.readybell.ordering.domain.Order;
+import org.readybell.ordering.domain.OrderDetails;
 import org.readybell.ordering.domain.OrderId;
 import org.readybell.ordering.domain.OrderReady;
 import org.readybell.restaurant.domain.InMemoryRestaurantRepository;
@@ -37,6 +40,7 @@ class OrderReadyHandlerTest {
     private InMemoryNotificationRepository notifications;
     private RecordingDomainEventPublisher events;
     private InMemoryRestaurantRepository restaurants;
+    private InMemoryOrderRepository orders;
     private final List<SendResult> script = new ArrayList<>();
     private final List<NotificationPayload> sent = new ArrayList<>();
 
@@ -52,6 +56,7 @@ class OrderReadyHandlerTest {
         notifications = new InMemoryNotificationRepository();
         events = new RecordingDomainEventPublisher();
         restaurants = new InMemoryRestaurantRepository();
+        orders = new InMemoryOrderRepository();
         restaurants.save(Restaurant.create(tenant, "aurora", RestaurantConfig.of("Café Aurora")));
         subscriptions.save(DeviceSubscription.register(tenant, session,
                 new PushEndpoint("https://push.example/1", "p256dh", "auth")));
@@ -59,12 +64,13 @@ class OrderReadyHandlerTest {
 
     private OrderReadyHandler handler(List<Duration> retries) {
         return new OrderReadyHandler(subscriptions, notifications, sender, events,
-                mock(ManageSubscriptionUseCase.class), restaurants, retries);
+                mock(ManageSubscriptionUseCase.class), restaurants, orders, retries);
     }
 
     private OrderReady event() {
-        return OrderReady.of(new OrderId(UUID.fromString("abcdef12-0000-0000-0000-000000000000")),
-                tenant, session, Instant.now());
+        var order = Order.create(tenant, session, java.time.Clock.systemUTC(), OrderDetails.NONE, 101);
+        orders.save(order);
+        return OrderReady.of(order.getId(), tenant, session, Instant.now());
     }
 
     @Test
@@ -73,7 +79,7 @@ class OrderReadyHandlerTest {
 
         assertEquals(1, sent.size());
         assertEquals("Café Aurora", sent.get(0).title());
-        assertEquals("Order #ABCDEF12 is ready for pickup!", sent.get(0).body());
+        assertEquals("Order #101 is ready for pickup!", sent.get(0).body());
         assertEquals("/track/" + session.value(), sent.get(0).url());
     }
 

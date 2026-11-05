@@ -40,6 +40,8 @@ import java.util.Objects;
 public class Order {
 
     private final OrderId id;
+    /** Human-friendly per-restaurant sequence number (1, 2, 3 ...), unique within the tenant. */
+    private final int orderNumber;
     private final TenantId tenantId;
     private final CustomerSessionId sessionId;
     private OrderStatus status;
@@ -62,6 +64,7 @@ public class Order {
     private final List<DomainEvent> pendingEvents = new ArrayList<>();
 
     private Order(OrderId id,
+                  int orderNumber,
                   TenantId tenantId,
                   CustomerSessionId sessionId,
                   OrderStatus status,
@@ -72,7 +75,11 @@ public class Order {
         Objects.requireNonNull(tenantId,  "tenantId must not be null");
         Objects.requireNonNull(sessionId, "sessionId must not be null");
         Objects.requireNonNull(status,    "status must not be null");
+        if (orderNumber < 0) {
+            throw new IllegalArgumentException("orderNumber must not be negative");
+        }
         this.id        = id;
+        this.orderNumber = orderNumber;
         this.tenantId  = tenantId;
         this.sessionId = sessionId;
         this.status    = status;
@@ -97,18 +104,22 @@ public class Order {
      * @return a new CREATED order with one pending {@link OrderCreated} event
      */
     public static Order create(TenantId tenantId, CustomerSessionId sessionId, Clock clock) {
-        return create(tenantId, sessionId, clock, OrderDetails.NONE);
+        return create(tenantId, sessionId, clock, OrderDetails.NONE, 1);
     }
 
-    /** As {@link #create(TenantId, CustomerSessionId, Clock)}, with customer name, items and ETA. */
-    public static Order create(TenantId tenantId, CustomerSessionId sessionId, Clock clock, OrderDetails details) {
+    /**
+     * As {@link #create(TenantId, CustomerSessionId, Clock)}, with customer name, items and ETA, and the
+     * restaurant's next sequential order number (allocated by an {@code OrderNumberGenerator}).
+     */
+    public static Order create(TenantId tenantId, CustomerSessionId sessionId, Clock clock, OrderDetails details,
+                               int orderNumber) {
         Objects.requireNonNull(tenantId,  "tenantId must not be null");
         Objects.requireNonNull(sessionId, "sessionId must not be null");
         Objects.requireNonNull(clock,     "clock must not be null");
         Objects.requireNonNull(details,   "details must not be null");
 
         Instant now = clock.instant();
-        var order = new Order(OrderId.newId(), tenantId, sessionId, OrderStatus.CREATED, details, now, now);
+        var order = new Order(OrderId.newId(), orderNumber, tenantId, sessionId, OrderStatus.CREATED, details, now, now);
         order.record(OrderCreated.of(order.id, tenantId, sessionId, clock.instant()));
         return order;
     }
@@ -160,6 +171,11 @@ public class Order {
 
     public OrderId getId() {
         return id;
+    }
+
+    /** Per-restaurant sequential number shown to staff and customers (101 displays as {@code #101}). */
+    public int getOrderNumber() {
+        return orderNumber;
     }
 
     public TenantId getTenantId() {
@@ -243,12 +259,13 @@ public class Order {
                                      CustomerSessionId sessionId,
                                      OrderStatus status,
                                      long version) {
-        return reconstitute(id, tenantId, sessionId, status, version, OrderDetails.NONE,
+        return reconstitute(id, 0, tenantId, sessionId, status, version, OrderDetails.NONE,
                 Instant.EPOCH, Instant.EPOCH);
     }
 
     /** Full reconstitution including descriptive data and timestamps (persistence adapter only). */
     public static Order reconstitute(OrderId id,
+                                     int orderNumber,
                                      TenantId tenantId,
                                      CustomerSessionId sessionId,
                                      OrderStatus status,
@@ -256,7 +273,7 @@ public class Order {
                                      OrderDetails details,
                                      Instant createdAt,
                                      Instant updatedAt) {
-        var order = new Order(id, tenantId, sessionId, status, details, createdAt, updatedAt);
+        var order = new Order(id, orderNumber, tenantId, sessionId, status, details, createdAt, updatedAt);
         order.version = version;
         return order;
     }

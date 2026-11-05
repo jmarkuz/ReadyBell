@@ -6,7 +6,6 @@ import org.readybell.ordering.domain.OrderItem;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -14,7 +13,7 @@ import java.util.stream.Collectors;
  * One row of the staff order table (the dashboard's {@code OrderRow}).
  *
  * @param id                 order UUID
- * @param orderId            short display number, e.g. {@code #1A2B3C4D}
+ * @param orderId            short display number, e.g. {@code #101}
  * @param customerName       may be {@code null}
  * @param itemsOrdered       e.g. {@code "2x Burger, Fries"}; empty string when no items
  * @param deliveryETA        expected ready time; may be {@code null}
@@ -43,8 +42,8 @@ public record OrderRowResponse(UUID id, String orderId, String customerName, Str
                 order.getUpdatedAt());
     }
 
-    /** {@code #} + the first 8 hex digits of the order id, upper-case. */
+    /** {@code #} + the restaurant's sequential order number, e.g. {@code #101}. */
     static String displayNumber(Order order) {
-        return "#" + order.getId().value().toString().substring(0, 8).toUpperCase(Locale.ROOT);
+        return "#" + order.getOrderNumber();
     }
 }

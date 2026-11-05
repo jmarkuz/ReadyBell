@@ -1,6 +1,7 @@
 package org.readybell.ordering.application;
 
 import org.readybell.ordering.domain.Order;
+import org.readybell.ordering.domain.OrderNumberGenerator;
 import org.readybell.ordering.domain.OrderRepository;
 import org.readybell.session.domain.CustomerSessionRepository;
 import org.readybell.shared.domain.DomainEventPublisher;
@@ -28,6 +29,7 @@ public class ManageOrderService implements ManageOrderUseCase {
 
     private final CustomerSessionRepository sessionRepository;
     private final OrderRepository orderRepository;
+    private final OrderNumberGenerator orderNumbers;
     private final DomainEventPublisher eventPublisher;
     private final Clock clock;
 
@@ -35,18 +37,22 @@ public class ManageOrderService implements ManageOrderUseCase {
      * @param sessionRepository repository port for loading and validating the target
      *                          customer session
      * @param orderRepository   repository port for persisting the new order
+     * @param orderNumbers      port allocating the restaurant's next sequential order number
      * @param eventPublisher    outbound port for publishing domain events
      * @param clock             clock used to timestamp the order and its events;
      *                          injectable for deterministic testing
      */
     public ManageOrderService(CustomerSessionRepository sessionRepository,
                               OrderRepository orderRepository,
+                              OrderNumberGenerator orderNumbers,
                               DomainEventPublisher eventPublisher,
                               Clock clock) {
         this.sessionRepository = Objects.requireNonNull(sessionRepository,
                 "sessionRepository must not be null");
         this.orderRepository   = Objects.requireNonNull(orderRepository,
                 "orderRepository must not be null");
+        this.orderNumbers      = Objects.requireNonNull(orderNumbers,
+                "orderNumbers must not be null");
         this.eventPublisher    = Objects.requireNonNull(eventPublisher,
                 "eventPublisher must not be null");
         this.clock             = Objects.requireNonNull(clock,
@@ -93,7 +99,8 @@ public class ManageOrderService implements ManageOrderUseCase {
         }
 
         // Step 4 — create the order (Req 4.1, 4.2, 4.4)
-        var order = Order.create(command.tenantId(), command.sessionId(), clock, command.details());
+        var order = Order.create(command.tenantId(), command.sessionId(), clock, command.details(),
+                orderNumbers.next(command.tenantId()));
 
         // Step 5 — persist
         orderRepository.save(order);
