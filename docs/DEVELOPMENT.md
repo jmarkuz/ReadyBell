@@ -114,3 +114,28 @@ to everyone on the network, so use it only on a network you trust.
 app over HTTPS, e.g. through a tunnel (`cloudflared tunnel --url http://localhost:5173` or `ngrok http 5173`) and
 use that https address as `VITE_PUBLIC_URL`; iPhones additionally need the page added to the Home Screen.
 Real VAPID keys are required too (`python3 scripts/generate-vapid-keys.py`).
+
+
+## Browser E2E tests (Playwright)
+
+`dashboard-ui/e2e/` drives a real Chromium against the real stack (Spring Boot in the `dev` profile + the Vite dev server
+that proxies `/api` + PostgreSQL). Scenarios: staff sign-in (and the login guard), the main flow (staff create an order,
+the receipt QR link opens in a second browser, the customer's open page follows *Received -> Being prepared -> Ready*
+live over SSE), server-side paging of Incoming Orders with 25 generated orders, and the dark theme.
+
+```bash
+# once: a database that is used for nothing else - the dev profile rebuilds its schema on every start
+docker exec readybell-pg psql -U postgres -c "CREATE DATABASE readybell_e2e"    # or: createdb readybell_e2e
+cd dashboard-ui
+npm ci --legacy-peer-deps
+npx playwright install chromium                                                  # once
+npm run e2e                                                                      # starts both servers itself
+npm run e2e:ui                                                                   # Playwright UI mode
+```
+
+Playwright starts the backend on port 18080 and Vite on 5273, so a normal dev stack on 8080/5173 is untouched. Servers that
+are already running on those ports are reused (outside CI), which is quick but means a stale server is tested; stop it if
+a run behaves oddly. Connection settings: `E2E_DB_URL` (default `jdbc:postgresql://localhost:3254/readybell_e2e`),
+`E2E_DB_USERNAME`, `E2E_DB_PASSWORD`, `E2E_BACKEND_PORT`, `E2E_UI_PORT`. **Never point `E2E_DB_URL` at the database of your
+dev stack.** Failed tests keep a trace and a video in `dashboard-ui/test-results/` (`npx playwright show-trace <trace.zip>`);
+CI uploads them, with the HTML report, as the `e2e-report` artifact.
