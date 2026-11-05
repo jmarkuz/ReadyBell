@@ -42,6 +42,7 @@ class VapidNotificationSenderAdapter implements NotificationSender {
 
     private final Optional<PushService> pushService;
 
+    @org.springframework.beans.factory.annotation.Autowired
     VapidNotificationSenderAdapter(
             @Value("${readybell.vapid.public-key}") String publicKey,
             @Value("${readybell.vapid.private-key}") String privateKey,
@@ -55,6 +56,11 @@ class VapidNotificationSenderAdapter implements NotificationSender {
         } else {
             this.pushService = initializePushService(publicKey, privateKey, subject);
         }
+    }
+
+    /** For tests: use the given push service (empty means credentials are not configured). */
+    VapidNotificationSenderAdapter(Optional<PushService> pushService) {
+        this.pushService = pushService;
     }
 
     private static Optional<PushService> initializePushService(String publicKey, String privateKey, String subject) {
