@@ -355,6 +355,20 @@ describe('useSSE Hook', () => {
     expect((global as any).EventSource.mock.calls[1][0]).toContain('ticket=ticket-2');
   });
 
+  it('should keep one connection when getTicket is a new function on every render', async () => {
+    const onMessage = vi.fn();     // stable, like the callback in useDashboardOrders
+    const { rerender } = renderHook(
+      () => useSSE({ endpoint: '/api/orders/stream', onMessage, getTicket: async () => 'ticket' }));
+    await waitFor(() => expect((global as any).EventSource).toHaveBeenCalledTimes(1));
+
+    rerender();
+    rerender();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect((global as any).EventSource).toHaveBeenCalledTimes(1);
+    expect(mockEventSource.close).not.toHaveBeenCalled();
+  });
+
   it('should retry when the ticket request fails', async () => {
     const getTicket = vi.fn()
       .mockRejectedValueOnce(new Error('offline'))

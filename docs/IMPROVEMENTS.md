@@ -28,25 +28,25 @@ subset to do next, plus findings from the latest analysis (T01–T04). "Backlog"
 | ID | Task | Size | Status | Depends on | Backlog | Spec |
 |----|------|------|--------|-----------|---------|------|
   | T04 | Indexes for the order list query | S | Done | – | – | [T04](tasks/T04-order-list-indexes.md) |
-| T03 | Orders table fixes (sort toggle, page reset, a11y of headers) | S | In review | – | Q3 (part) | [T03](tasks/T03-orders-table-fixes.md) |
+| T03 | Orders table fixes (sort toggle, page reset, a11y of headers) | S | Done | – | Q3 (part) | [T03](tasks/T03-orders-table-fixes.md) |
 | T01 | Server-side pagination, filters and sorting | M | Done | PR #8, T04 | – | [T01](tasks/T01-server-side-orders-paging.md) |
-| T02 | Dashboard metrics from the server | S | In review | – | A1 (part) | [T02](tasks/T02-server-side-metrics.md) |
+| T02 | Dashboard metrics from the server | S | Done | – | A1 (part) | [T02](tasks/T02-server-side-metrics.md) |
 
 ## Wave 2: reliability and security (before the first pilot)
 
 | ID | Task | Size | Status | Depends on | Backlog | Spec |
 |----|------|------|--------|-----------|---------|------|
-| T05 | Transactional outbox for `OrderReady` | L | In review | – | R1 | [T05](tasks/T05-transactional-outbox.md) |
-| T06 | Structural tenant filter + guard test | M | In review | – | S1 | [T06](tasks/T06-structural-tenant-filter.md) |
-| T07 | Single-use ticket for the SSE stream | S | In review | – | S2 | [T07](tasks/T07-sse-ticket.md) |
-| T08 | Rate-limit public endpoints | S | In review | – | S4 | [T08](tasks/T08-public-rate-limits.md) |
+| T05 | Transactional outbox for `OrderReady` | L | Done | – | R1 | [T05](tasks/T05-transactional-outbox.md) |
+| T06 | Structural tenant filter + guard test | M | Done | – | S1 | [T06](tasks/T06-structural-tenant-filter.md) |
+| T07 | Single-use ticket for the SSE stream | S | Done | – | S2 | [T07](tasks/T07-sse-ticket.md) |
+| T08 | Rate-limit public endpoints | S | Done | – | S4 | [T08](tasks/T08-public-rate-limits.md) |
 
 ## Wave 3: quality and product
 
 | ID | Task | Size | Status | Depends on | Backlog | Spec |
 |----|------|------|--------|-----------|---------|------|
-| T09 | Unit tests for application services, raise coverage floor | M | In review | – | – | [T09](tasks/T09-application-tests-coverage.md) |
-| T10 | Playwright E2E | M | Todo | – | Q1 | [T10](tasks/T10-playwright-e2e.md) |
+| T09 | Unit tests for application services, raise coverage floor | M | Done | – | – | [T09](tasks/T09-application-tests-coverage.md) |
+| T10 | Playwright E2E | M | Done | – | Q1 | [T10](tasks/T10-playwright-e2e.md) |
 | T11 | Sequential order numbers per restaurant | M | Todo | – | F1 | [T11](tasks/T11-sequential-order-numbers.md) |
 | T12 | Counter QR flow (customer enters the order number) | M | Todo | T08, T11 | P4 | [T12](tasks/T12-counter-qr-flow.md) |
 | T13 | Sound / vibration alert for new orders | S | Todo | – | Q6 (part) | [T13](tasks/T13-new-order-alert.md) |
@@ -62,9 +62,9 @@ Q3 remaining accessibility gaps, Q4 customer page extras, Q5 `.kiro` specs.
 
 | Wave | Done / total |
 |------|--------------|
-| 1 | 3 / 4 (T02 in review) |
-| 2 | 0 / 4 (T05–T08 in review) |
-| 3 | 0 / 5 |
+| 1 | 4 / 4 |
+| 2 | 4 / 4 |
+| 3 | 2 / 5 |
 
 ## Log
 
@@ -81,3 +81,5 @@ Q3 remaining accessibility gaps, Q4 customer page extras, Q5 `.kiro` specs.
 | 2026-11-04 | T06: `TenantFilterInterceptor` (Spring advisor, inside the repository transaction) binds `tenantFilter` for every `@Repository` in `adapter.out.persistence`: tenant from the `TenantId` argument, else the request context, else `MissingTenantContextException`; `@CrossTenant("reason")` methods run with the filter off. All 17 manual `enableTenantFilter` calls removed. `TenantGuardArchitectureTest` fails for an adapter method with neither a `TenantId` nor `@CrossTenant`; `TenantFilterBindingTest` checks two tenants and the session's filter state. `NotificationRepository.findById` became `findByTenantAndId(TenantId, ...)`. Background threads need no context: every call passes a tenant or is `@CrossTenant`. |
 | 2026-11-04 | T05: `outbox_event` table (Flyway V3, also `notification.order_id`). `OutboxDomainEventPublisher` (@Primary) writes `OrderReady`/`OrderStatusUpdated` into it inside the order's transaction (the order use case now runs in one `TransactionTemplate`); other events still go straight to the bus. `OutboxRelay` claims due rows with `FOR UPDATE SKIP LOCKED` plus a lease, runs the handlers synchronously, marks them processed, retries with exponential backoff, parks after 10 attempts; woken right after commit and every 1 s; processed rows deleted after 7 days; gauges `outbox.pending`, `outbox.failed`. `SpringOrderReadyEventListener` is no longer `@Async` (the relay thread is the async boundary). `OrderReadyHandler` skips a device that already has a SENT/DELIVERED notification for the order. Verified on H2 (tests) and on Postgres 16 (V3 applied, `ddl-auto: validate`, a hand-inserted event was processed). |
 | 2026-11-04 | T09: unit tests (in-memory repositories, no Spring) for `ManageOrderService`, `TrackSessionService`, `SessionService`, `ManageSubscriptionService`, `RestaurantAdminService`, `PlatformAdminService`, each public method with success and error paths incl. tenant checks; plus `VapidNotificationSenderAdapter` (status mapping, JSON escaping, failures; new package-private constructor for a fake `PushService`), `RedisStreamTicketStore`, `SpringDomainEventPublisherAdapter`, `Notification`. Coverage 81.2 % lines / 69.5 % branches -> 87.3 % / 77.6 %; JaCoCo floors raised from 75/65 to 85/75, `./gradlew check` passes. PIT mutation testing not done (optional in the spec). |
+| 2026-11-04 | T10: Playwright E2E in `dashboard-ui/e2e/` (7 tests: sign-in x3, order -> QR -> live customer tracking to READY, unknown link, server-side paging with 25 generated orders, dark theme); `webServer` starts the dev-profile backend (port 18080, DB `readybell_e2e`) and Vite (5273); new `e2e` CI job uploads report, traces and videos on failure; `docs/DEVELOPMENT.md` documents it. **Found and fixed a T07 regression:** `useDashboardOrders` passed `getTicket` as an inline arrow, so `useSSE` reopened the stream on every render (ticket -> stream -> abort loop) and starved the browser's connections until "Create order" hung; `getTicket` is now read through a ref and a unit test covers it. 10 consecutive green local runs (35-55 s each); the CI job has not run yet, so the <5 min and <1 % flakiness criteria are still to be confirmed there. |
+| 2026-11-05 | PRs #11 (T05), #12 (T09), #13 (E2E CI fixes) merged; all CI jobs green incl. `e2e` (2 min 16 s). T10 flakiness (< 1 % over 20 runs) is only evidenced by 10 local runs and 3 CI runs so far. Also fixed a test-only race: the scheduled outbox relay of one cached Spring test context stole events of another, so the relay is off in the test profile and tests call `OutboxRelay.drain()`. Wave 3 left: T11, T12, T13. |

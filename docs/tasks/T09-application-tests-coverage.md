@@ -4,7 +4,7 @@
 |------|----------|
 | Пріоритет | P2 (хвиля 3) |
 | Розмір | M |
-| Статус | In review |
+| Статус | Done |
 
 ## Проблема
 Юніт-тести є лише для доменів і `OrderReadyHandler`. Сервіси `ManageOrderService`, `TrackSessionService`,

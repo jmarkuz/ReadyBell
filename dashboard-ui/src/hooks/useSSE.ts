@@ -62,6 +62,12 @@ export function useSSE(options: UseSSEOptions): UseSSEState {
     error: null,
   });
 
+  // The latest getTicket without making it a dependency: callers usually pass an inline arrow, and a new
+  // function on every render must not tear down and reopen the stream.
+  const getTicketRef = useRef(getTicket);
+  getTicketRef.current = getTicket;
+  const usesTicket = getTicket !== undefined;
+
   const eventSourceRef = useRef<EventSource | null>(null);
   const retryCountRef = useRef(0);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -99,10 +105,10 @@ export function useSSE(options: UseSSEOptions): UseSSEState {
 
     try {
       let connectionUrl = endpoint;
-      if (getTicket) {
+      if (usesTicket) {
         let ticket: string;
         try {
-          ticket = await getTicket();
+          ticket = await getTicketRef.current!();
         } catch {
           // No ticket (offline, session expired): same backoff as a dropped connection
           if (!isUnmountingRef.current) {
@@ -171,7 +177,7 @@ export function useSSE(options: UseSSEOptions): UseSSEState {
       onError?.(err);
       onClose?.();
     }
-  }, [endpoint, onMessage, onError, onClose, getTicket, scheduleRetry]);
+  }, [endpoint, onMessage, onError, onClose, usesTicket, scheduleRetry]);
   connectRef.current = connect;
 
   useEffect(() => {
