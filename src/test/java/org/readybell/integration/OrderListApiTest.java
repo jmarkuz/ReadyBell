@@ -88,7 +88,7 @@ class OrderListApiTest {
     void createStoresDetailsAndReturnsDashboardShape() throws Exception {
         String res = json(create("{\"sessionId\":\"" + sessionId + "\",\"customerName\":\"" + tag
                 + "\",\"estimatedMinutes\":15,\"items\":[{\"name\":\"Burger\",\"quantity\":2},{\"menuItemId\":\"Fries\",\"quantity\":1}]}"));
-        assertThat((String) JsonPath.read(res, "$.orderId")).matches("#[0-9A-F]{8}");
+        assertThat((String) JsonPath.read(res, "$.orderId")).matches("#[1-9][0-9]*");
         assertThat((String) JsonPath.read(res, "$.status")).isEqualTo("CREATED");
         assertThat((String) JsonPath.read(res, "$.id")).hasSize(36);
 
@@ -159,9 +159,14 @@ class OrderListApiTest {
 
     @Test
     void searchMatchesItemNameAndOrderNumberAndTreatsWildcardsLiterally() throws Exception {
-        String id = createOrder(tag, "[{\"name\":\"Zucchini-" + tag + "\",\"quantity\":1}]", null);
+        createOrder(tag, "[{\"name\":\"Zucchini-" + tag + "\",\"quantity\":1}]", null);
         assertThat(totalFor("zucchini-" + tag.toUpperCase())).isEqualTo(1);
-        assertThat(totalFor("#" + id.substring(0, 8).toUpperCase())).isEqualTo(1);
+        String number = JsonPath.read(json(list("search=" + tag)), "$.items[0].orderId");     // e.g. "#7"
+        for (String term : new String[]{number, number.substring(1)}) {
+            String found = mvc.perform(get("/api/orders").param("search", term).with(httpBasic("admin", "admin")))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            assertThat((java.util.List<String>) JsonPath.read(found, "$.items[*].orderId")).contains(number);
+        }
         assertThat(totalFor("%")).isZero();            // would match everything if treated as a wildcard
         assertThat(totalFor("_" + tag.substring(1))).isZero();
     }

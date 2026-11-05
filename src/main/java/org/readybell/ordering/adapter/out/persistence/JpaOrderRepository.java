@@ -122,9 +122,7 @@ public class JpaOrderRepository implements OrderRepository {
         };
         Sort.Direction dir = query.ascending() ? Sort.Direction.ASC : Sort.Direction.DESC;
         Sort sort = Sort.by(dir, sortProperty(query.sortBy()));
-        if (!"id".equals(sortProperty(query.sortBy()))) {
-            sort = sort.and(Sort.by(Sort.Direction.ASC, "id")); // stable paging
-        }
+        sort = sort.and(Sort.by(Sort.Direction.ASC, "id")); // stable paging
         var page = springRepo.findAll(spec, PageRequest.of(query.page() - 1, query.pageSize(), sort));
         return new OrderPage(page.getContent().stream().map(OrderJpaEntity::toDomain).toList(),
                 page.getTotalElements(), query.page(), query.pageSize());
@@ -158,15 +156,15 @@ public class JpaOrderRepository implements OrderRepository {
             case ETA -> "estimatedReadyAt";
             case STATUS -> "status";
             case CUSTOMER_NAME -> "customerName";
-            case ORDER_ID -> "id";
+            case ORDER_ID -> "orderNumber";
         };
     }
 
-    /** Matches the order number prefix, the customer name, or any item name (case-insensitive, literal text). */
+    /** Matches the order number (digit prefix, with or without #), the customer name, or any item name (case-insensitive, literal text). */
     private static Predicate searchPredicate(Root<OrderJpaEntity> root, CriteriaQuery<?> cq,
                                              CriteriaBuilder cb, String search) {
         String term = search.toLowerCase(Locale.ROOT);
-        String idPrefix = term.startsWith("#") ? term.substring(1) : term;
+        String numberPrefix = term.startsWith("#") ? term.substring(1) : term;
         String contains = "%" + escapeLike(term) + "%";
 
         Subquery<Integer> items = cq.subquery(Integer.class);
@@ -177,9 +175,9 @@ public class JpaOrderRepository implements OrderRepository {
                 cb.like(cb.lower(item.get("name")), contains, '\\'));
 
         return cb.or(
-                // Real SQL CAST: Expression.as() only reinterprets the Java type, and PostgreSQL has no lower(uuid)
-                cb.like(cb.lower(((HibernateCriteriaBuilder) cb).cast((JpaExpression<?>) root.get("id"), String.class)),
-                        escapeLike(idPrefix) + "%", '\\'),
+                // Real SQL CAST: Expression.as() only reinterprets the Java type; "#10" matches 10, 100..109
+                cb.like(((HibernateCriteriaBuilder) cb).cast((JpaExpression<?>) root.get("orderNumber"), String.class),
+                        escapeLike(numberPrefix) + "%", '\\'),
                 cb.like(cb.lower(root.get("customerName")), contains, '\\'),
                 cb.exists(items));
     }

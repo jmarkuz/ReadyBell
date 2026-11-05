@@ -6,6 +6,7 @@ import org.readybell.notification.domain.NotificationRepository;
 import org.readybell.notification.domain.NotificationSender;
 import org.readybell.notification.domain.SendResult;
 import org.readybell.ordering.domain.OrderReady;
+import org.readybell.ordering.domain.OrderRepository;
 import org.readybell.shared.domain.DomainEventPublisher;
 import org.readybell.subscription.application.ManageSubscriptionUseCase;
 import org.readybell.subscription.domain.DeviceSubscription;
@@ -18,7 +19,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Locale;
 
 /**
  * Application-layer handler for the {@link OrderReady} domain event.
@@ -56,6 +56,7 @@ public class OrderReadyHandler {
     private final DomainEventPublisher eventPublisher;
     private final ManageSubscriptionUseCase subscriptionService;
     private final RestaurantRepository restaurantRepository;
+    private final OrderRepository orderRepository;
     private final List<Duration> retryDelays;
 
     /**
@@ -73,6 +74,7 @@ public class OrderReadyHandler {
                              DomainEventPublisher eventPublisher,
                              ManageSubscriptionUseCase subscriptionService,
                              RestaurantRepository restaurantRepository,
+                             OrderRepository orderRepository,
                              List<Duration> retryDelays) {
         this.subscriptionRepository = Objects.requireNonNull(subscriptionRepository,
                 "subscriptionRepository must not be null");
@@ -86,6 +88,8 @@ public class OrderReadyHandler {
                 "subscriptionService must not be null");
         this.restaurantRepository = Objects.requireNonNull(restaurantRepository,
                 "restaurantRepository must not be null");
+        this.orderRepository = Objects.requireNonNull(orderRepository,
+                "orderRepository must not be null");
         this.retryDelays = List.copyOf(retryDelays);
     }
 
@@ -128,16 +132,18 @@ public class OrderReadyHandler {
     // Private helpers
     // -------------------------------------------------------------------------
 
-    /** "Café Aurora: order #AB12CD34 is ready", tapping it opens the tracking page. */
+    /** "Café Aurora: order #101 is ready", tapping it opens the tracking page. */
     private NotificationPayload payloadFor(OrderReady event) {
         String restaurant = restaurantRepository.findByTenantId(event.tenantId())
                 .map(r -> r.getConfig().name())
                 .filter(n -> !n.isBlank())
                 .orElse("Your order");
-        String number = "#" + event.orderId().value().toString().substring(0, 8).toUpperCase(Locale.ROOT);
+        String body = orderRepository.findByTenantAndId(event.tenantId(), event.orderId())
+                .map(o -> "Order #" + o.getOrderNumber() + " is ready for pickup!")
+                .orElse("Your order is ready for pickup!");
         return new NotificationPayload(
                 restaurant,
-                "Order " + number + " is ready for pickup!",
+                body,
                 "/track/" + event.sessionId().value());
     }
 

@@ -57,8 +57,8 @@ describe('API client - auth endpoints and backend mapping', () => {
   it('getOrders converts dates and maps IN_PROGRESS to PREPARING', async () => {
     fetchMock.mockImplementation(async () => jsonResponse(200, {
       items: [
-        { id: '1', orderId: '#AAAA1111', customerName: 'Anna', itemsOrdered: '2x Burger', deliveryETA: '2026-01-01T10:00:00Z', status: 'IN_PROGRESS', estimatedWaitTime: 5, itemCount: 2 },
-        { id: '2', orderId: '#BBBB2222', customerName: null, itemsOrdered: '', deliveryETA: null, status: 'CREATED', estimatedWaitTime: null, itemCount: 0 },
+        { id: '1', orderId: '#101', customerName: 'Anna', itemsOrdered: '2x Burger', deliveryETA: '2026-01-01T10:00:00Z', status: 'IN_PROGRESS', estimatedWaitTime: 5, itemCount: 2 },
+        { id: '2', orderId: '#102', customerName: null, itemsOrdered: '', deliveryETA: null, status: 'CREATED', estimatedWaitTime: null, itemCount: 0 },
       ],
       totalCount: 2, pageCount: 1, currentPage: 1,
     }, '/api/orders'));
