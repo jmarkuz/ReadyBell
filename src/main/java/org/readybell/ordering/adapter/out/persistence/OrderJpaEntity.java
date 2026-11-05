@@ -35,13 +35,18 @@ import java.util.UUID;
         indexes = {
                 @Index(name = "idx_order_tenant_id", columnList = "tenant_id"),
                 @Index(name = "idx_order_tenant_session", columnList = "tenant_id,session_id")
-        }
+        },
+        uniqueConstraints = @UniqueConstraint(name = "uq_order_tenant_number", columnNames = {"tenant_id", "order_number"})
 )
 public class OrderJpaEntity extends TenantScopedEntity {
 
     @Id
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
+
+    /** Per-restaurant sequence number; unique together with {@code tenant_id}. */
+    @Column(name = "order_number", nullable = false, updatable = false)
+    private int orderNumber;
 
     @Column(name = "session_id", nullable = false, updatable = false)
     private UUID sessionId;
@@ -89,6 +94,7 @@ public class OrderJpaEntity extends TenantScopedEntity {
     public static OrderJpaEntity from(Order order) {
         var entity = new OrderJpaEntity();
         entity.id        = order.getId().value();
+        entity.orderNumber = order.getOrderNumber();
         entity.tenantId  = order.getTenantId().value();
         entity.sessionId = order.getSessionId().value();
         entity.status    = order.getStatus();
@@ -105,6 +111,7 @@ public class OrderJpaEntity extends TenantScopedEntity {
     public Order toDomain() {
         return Order.reconstitute(
                 new OrderId(id),
+                orderNumber,
                 new TenantId(tenantId),
                 new CustomerSessionId(sessionId),
                 status,
@@ -122,6 +129,8 @@ public class OrderJpaEntity extends TenantScopedEntity {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
+
+    public int getOrderNumber() { return orderNumber; }
 
     public UUID getSessionId() { return sessionId; }
     public void setSessionId(UUID sessionId) { this.sessionId = sessionId; }

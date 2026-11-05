@@ -9,7 +9,7 @@ import java.util.UUID;
  * Result of creating or transitioning an order.
  *
  * @param id        order UUID (use this in URLs)
- * @param orderId   short display number shown to staff, e.g. {@code #1A2B3C4D}
+ * @param orderId   short display number shown to staff, e.g. {@code #101}
  * @param sessionId owning customer session
  */
 public record OrderResponse(UUID id, String orderId, UUID sessionId, String status, long version,

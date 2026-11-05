@@ -2,6 +2,7 @@ package org.readybell.ordering.application;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.readybell.ordering.domain.InMemoryOrderNumberGenerator;
 import org.readybell.ordering.domain.InMemoryOrderRepository;
 import org.readybell.ordering.domain.InvalidTransitionException;
 import org.readybell.ordering.domain.Order;
@@ -42,7 +43,7 @@ class ManageOrderServiceTest {
         sessions = new InMemoryCustomerSessionRepository();
         orders = new InMemoryOrderRepository();
         events = new RecordingDomainEventPublisher();
-        service = new ManageOrderService(sessions, orders, events, CLOCK);
+        service = new ManageOrderService(sessions, orders, new InMemoryOrderNumberGenerator(), events, CLOCK);
     }
 
     private CustomerSession activeSession(TenantId tenant) {
@@ -65,6 +66,17 @@ class ManageOrderServiceTest {
         assertThat(order.getSessionId()).isEqualTo(session.getId());
         assertThat(orders.findByTenantAndId(TENANT, order.getId())).isPresent();
         assertThat(order.getPendingEvents()).isEmpty();                       // published, then cleared
+    }
+
+    @Test
+    void ordersGetConsecutiveNumbersPerRestaurant() {
+        var a = activeSession(TENANT);
+        var b = activeSession(OTHER_TENANT);
+
+        assertThat(service.createOrder(new CreateOrderCommand(TENANT, a.getId())).getOrderNumber()).isEqualTo(1);
+        assertThat(service.createOrder(new CreateOrderCommand(TENANT, a.getId())).getOrderNumber()).isEqualTo(2);
+        assertThat(service.createOrder(new CreateOrderCommand(OTHER_TENANT, b.getId())).getOrderNumber()).isEqualTo(1);
+        assertThat(service.createOrder(new CreateOrderCommand(TENANT, a.getId())).getOrderNumber()).isEqualTo(3);
     }
 
     @Test

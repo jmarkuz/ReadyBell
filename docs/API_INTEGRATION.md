@@ -22,6 +22,15 @@ Client code: `dashboard-ui/src/utils/api.ts` (staff API, Bearer token) and `dash
 
 The session id in the URL is the credential for the customer endpoints; the tenant is derived from it.
 
+## Order numbers
+
+Every order has a per-restaurant sequential number (1, 2, 3 ...; unique within the restaurant, never reset, allocated in
+the same transaction as the order so there are no duplicates or gaps). It is shown as `#101` everywhere a person sees an
+order: `orderId` in the staff responses (`POST /api/orders`, status updates, `GET /api/orders` rows), `orderNumber` in
+`GET /api/sessions/{id}/track`, the receipt/QR dialog and the order-ready push text. The order UUID (`id`) remains the
+identifier for URLs and API calls. `GET /api/orders?sortBy=orderId` sorts numerically; `search` matches the digits of
+the number (with or without `#`, prefix match: `10` finds #10 and #100-#109).
+
 ## Staff (Bearer token, tenant taken from the token)
 
 | Method | Path | Role | Notes |
