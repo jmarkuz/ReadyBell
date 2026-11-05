@@ -1,0 +1,17 @@
+# Sample Prometheus config for ReadyBell. See docs/MONITORING.md.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: readybell
+    metrics_path: /actuator/prometheus
+    # The endpoint is readable only by the platform operator (HTTP Basic).
+    basic_auth:
+      username: operator   # replace with PLATFORM_ADMIN_USERNAME from your .env
+      password_file: /etc/prometheus/readybell-scrape-password   # plain-text password of that account
+    static_configs:
+      - targets: ["app:8080"]   # the compose service; use host:port otherwise

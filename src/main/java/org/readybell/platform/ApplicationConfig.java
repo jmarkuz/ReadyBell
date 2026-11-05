@@ -151,6 +151,7 @@ public class ApplicationConfig {
             DeviceSubscriptionRepository subscriptionRepository,
             NotificationRepository notificationRepository,
             NotificationSender notificationSender,
+            org.readybell.platform.metrics.PushMetrics pushMetrics,
             DomainEventPublisher eventPublisher,
             ManageSubscriptionUseCase subscriptionUseCase,
             RestaurantRepository restaurantRepository,
@@ -160,7 +161,7 @@ public class ApplicationConfig {
         return new OrderReadyHandler(
                 subscriptionRepository,
                 notificationRepository,
-                notificationSender,
+                new org.readybell.platform.metrics.MeteredNotificationSender(notificationSender, pushMetrics),
                 eventPublisher,
                 subscriptionUseCase,
                 restaurantRepository,
