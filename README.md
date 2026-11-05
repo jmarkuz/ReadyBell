@@ -173,6 +173,7 @@ Domain and application logic is covered by JUnit 5 unit tests co-located under `
 ## Documentation
 
 - [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — local setup, running, testing, troubleshooting
+- [docs/PILOT_CHECKLIST.md](docs/PILOT_CHECKLIST.md) — pilot readiness: pre-flight, onboarding timing, Web Push device matrix, run sheet
 - [docs/API_INTEGRATION.md](docs/API_INTEGRATION.md) — dashboard ↔ backend endpoints, auth, errors
 - [docs/UI_QUALITY.md](docs/UI_QUALITY.md) — accessibility, contrast, responsive and performance reference
 - [docs/PROGRESS.md](docs/PROGRESS.md) — completed tasks and results
