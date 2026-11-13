@@ -48,7 +48,7 @@ public class RestaurantJpaEntity {
     private RestaurantStatus status;
 
     /** Stores the JSON-serialised {@link RestaurantConfig} (kept simple as text). */
-    /** Stored as a real JSON document ({@code {"name": "..."}}): jsonb on PostgreSQL, json on H2. */
+    /** Stored as a real JSON document ({@code {"name": "..."}}): jsonb on PostgreSQL. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "config_json")
     private Map<String, String> config;

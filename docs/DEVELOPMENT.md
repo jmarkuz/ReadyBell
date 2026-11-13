@@ -54,6 +54,12 @@ Sign in as `admin` / `admin` and press **New order**, or use the dashboard's *Ge
 
 ## Tests
 
+Backend integration tests run against a real PostgreSQL 16 started by Testcontainers (`jdbc:tc:` URL in
+`src/test/resources/application-test.yml`): **Docker must be running**. One container is shared by all Spring test
+contexts of a run; Flyway applies the real migrations and Hibernate only validates the entities. `OrderNumberMigrationTest`
+starts its own container to test a migration against pre-existing data. A few tests (`SseFanoutTest.ViaRedis`, the
+`/actuator/health` check) also need Redis on `localhost:6379`, e.g. `docker run --rm -p 6379:6379 redis:7-alpine`.
+
 ```bash
 ./gradlew test                                   # backend (JUnit 5 + jqwik)
 cd dashboard-ui

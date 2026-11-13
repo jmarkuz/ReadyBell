@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /** The dev-only test-data endpoints: generate, import from a file, delete. */
 @SpringBootTest
 @AutoConfigureMockMvc
-// "test" last so its H2 datasource and users override the dev profile's local PostgreSQL settings
+// "test" last so its Testcontainers datasource, Flyway settings and users override the dev profile's local PostgreSQL settings
 @ActiveProfiles({"dev", "test"})
 class DevTestDataApiTest {
 

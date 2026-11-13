@@ -22,7 +22,7 @@ import java.util.UUID;
  * inserts the order) ends, so concurrent creations for the same restaurant are serialised, numbers are consecutive
  * and a rollback gives its number back. Counters of different restaurants never contend.
  *
- * <p>Plain JDBC with only portable SQL, so it behaves the same on PostgreSQL and on the H2 used by tests.
+ * <p>Plain JDBC with only portable SQL.
  */
 @Repository
 @Transactional
