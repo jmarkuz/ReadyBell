@@ -7,6 +7,7 @@ import org.readybell.platform.auth.FailureStore;
 import org.readybell.platform.auth.InMemoryFailureStore;
 import org.readybell.platform.auth.LoginAttemptLimiter;
 import org.readybell.platform.auth.RedisFailureStore;
+import org.readybell.testsupport.SharedRedis;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -19,9 +20,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-/** Needs a Redis on localhost:6379; skipped when none is reachable. */
+/** Runs against the Testcontainers Redis shared by the test run. */
 class RedisFailureStoreTest {
 
     private LettuceConnectionFactory factory;
@@ -31,14 +31,11 @@ class RedisFailureStoreTest {
 
     @BeforeEach
     void connect() {
-        factory = new LettuceConnectionFactory(new RedisStandaloneConfiguration("localhost", 6379));
+        factory = new LettuceConnectionFactory(new RedisStandaloneConfiguration(SharedRedis.host(), SharedRedis.port()));
         factory.afterPropertiesSet();
         redis = new StringRedisTemplate(factory);
         redis.afterPropertiesSet();
-        boolean up;
-        try { up = "PONG".equalsIgnoreCase(redis.getConnectionFactory().getConnection().ping()); }
-        catch (Exception e) { up = false; }
-        assumeTrue(up, "Redis not available");
+        assertEquals("PONG", redis.getConnectionFactory().getConnection().ping());
     }
 
     @AfterEach

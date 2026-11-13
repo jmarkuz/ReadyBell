@@ -16,15 +16,12 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** Order status events reach SSE clients locally, and via Redis pub/sub when enabled. */
 class SseFanoutTest {
@@ -94,7 +91,6 @@ class SseFanoutTest {
 
         @Test
         void deliversExactlyOnceThroughRedisRelay() throws Exception {
-            assumeTrue(redisReachable(), "Redis not reachable on localhost:6379 - skipping");
             var session = new CustomerSessionId(UUID.randomUUID());
             var emitter = new CapturingEmitter();
             registry.registerCustomer(session, emitter);
@@ -104,15 +100,6 @@ class SseFanoutTest {
             awaitSize(emitter, 1);
             Thread.sleep(300); // a duplicate (local + relayed) would show up by now
             assertThat(emitter.events()).hasSize(1);
-        }
-
-        private boolean redisReachable() {
-            try (Socket s = new Socket()) {
-                s.connect(new InetSocketAddress("localhost", 6379), 500);
-                return true;
-            } catch (Exception e) {
-                return false;
-            }
         }
     }
 }

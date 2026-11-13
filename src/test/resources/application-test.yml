@@ -1,23 +1,22 @@
 spring:
+  # Real PostgreSQL in a Testcontainers container (needs Docker). The tc: JDBC URL starts one container per JVM on
+  # first use and every cached Spring context shares it (TC_DAEMON keeps it alive between connections).
+  # Keep the image tag in line with docker-compose.yml.
+  datasource:
+    url: jdbc:tc:postgresql:16:///readybell?TC_DAEMON=true
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    username: test
+    password: test
+
+  # The real migrations build the schema and Hibernate only checks the entities against it
   flyway:
-    enabled: false   # tests build their H2 schema from the entities
+    enabled: true
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     show-sql: false
 
-  # Use an embedded H2 in PostgreSQL compatibility mode for slice tests that
-  # exercise JPA schema generation without a real database.
-  datasource:
-    url: jdbc:h2:mem:readybell-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-
-  data:
-    redis:
-      host: localhost
-      port: 6379
+  # spring.data.redis.host/port are set by org.readybell.testsupport.RedisContainerInitializer (Testcontainers Redis)
 
 readybell:
   outbox:

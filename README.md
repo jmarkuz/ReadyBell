@@ -82,7 +82,7 @@ Contexts integrate only through domain events published via the event port or th
 | In-process events | Spring `ApplicationEventPublisher` behind a `DomainEventPublisher` port |
 | Cache / session store | Redis (Spring Data Redis) |
 | Web Push | VAPID via `web-push` (BouncyCastle for EC crypto), behind a `NotificationSender` port |
-| Testing | JUnit 5, jqwik (property-based testing), Spring Security Test, H2 (test profile) |
+| Testing | JUnit 5, jqwik (property-based testing), Spring Security Test, Testcontainers (PostgreSQL) |
 
 ## Getting Started
 
