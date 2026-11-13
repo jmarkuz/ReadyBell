@@ -47,7 +47,7 @@ class BusinessMetricsTest {
 
         metrics.onSessionStarted(CustomerSessionStarted.of(session, tenant, NOW));
         metrics.onSessionStarted(CustomerSessionStarted.of(session, tenant, NOW));
-        metrics.onOrderCreated(OrderCreated.of(OrderId.newId(), tenant, session, NOW));
+        metrics.onOrderCreated(OrderCreated.of(OrderId.newId(), tenant, session, NOW, 1));
         metrics.onOrderStatusUpdated(OrderStatusUpdated.of(OrderId.newId(), tenant, session,
                 OrderStatus.IN_PROGRESS, OrderStatus.READY, NOW));
 

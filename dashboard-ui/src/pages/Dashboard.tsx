@@ -5,7 +5,8 @@ import StatusFilter from '@/components/StatusFilter';
 import { DateRangeFilter } from '@/components/DateRangeFilter';
 import { useSearch } from '@/context/SearchContext';
 import { OrderMetrics, OrderStatus } from '@/types';
-import { useDashboardOrders, type OrdersQuery, type OrdersSortBy } from '@/hooks/useDashboardOrders';
+import { useDashboardOrders, type NewOrderEvent, type OrdersQuery, type OrdersSortBy } from '@/hooks/useDashboardOrders';
+import { useNewOrderAlerts } from '@/context/alertContext';
 import { apiClient, ApiError } from '@/utils/api';
 import { parseTestDataFile } from '@/utils/testDataFile';
 import NewOrderDialog from '@/components/NewOrderDialog';
@@ -13,6 +14,9 @@ import { Plus } from 'lucide-react';
 
 /** Incoming Orders rows per page. */
 const PAGE_SIZE = 10;
+
+/** How long a "new order" alert waits to learn whether the order was entered on this screen. */
+const OWN_ORDER_GRACE_MS = 1500;
 
 /** Table column → the backend's sortBy value; Items has no server-side sort. */
 const SORT_BY: Record<SortField, OrdersSortBy | null> = {
@@ -79,10 +83,27 @@ export default function Dashboard() {
     sortOrder: sort ? sort.order : 'desc',
   }), [page, selectedStatuses, searchQuery, dateRangeStart, dateRangeEnd, sort]);
 
+  // An order staff entered on this very screen must not beep at them. The server's "new order" event can arrive
+  // before the response to our own request, so the alert waits a moment and checks whether the order is ours.
+  const { notifyNewOrder } = useNewOrderAlerts();
+  const ownOrderIds = useRef(new Set<string>());
+  const alertTimers = useRef(new Set<ReturnType<typeof setTimeout>>());
+  const handleNewOrder = useCallback((order: NewOrderEvent) => {
+    const timer = setTimeout(() => {
+      alertTimers.current.delete(timer);
+      if (!ownOrderIds.current.has(order.id)) notifyNewOrder(order.orderNumber);
+    }, OWN_ORDER_GRACE_MS);
+    alertTimers.current.add(timer);
+  }, [notifyNewOrder]);
+  useEffect(() => {
+    const timers = alertTimers.current;
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
   // Orders come from the backend (GET /api/orders, one page) and are refreshed on SSE events
   const {
     orders: pageOrders, totalCount, pageCount, metrics: serverMetrics, isLoading, error: loadError, isConnected, reload,
-  } = useDashboardOrders(query);
+  } = useDashboardOrders(query, { onNewOrder: handleNewOrder });
 
   // The page vanished under us (orders deleted elsewhere): step back to the last one that exists
   useEffect(() => {
@@ -93,6 +114,10 @@ export default function Dashboard() {
 
   const [newOrderOpen, setNewOrderOpen] = useState(false);
   const closeNewOrder = useCallback(() => setNewOrderOpen(false), []);
+  const handleOrderCreated = useCallback((orderId: string) => {
+    ownOrderIds.current.add(orderId);
+    void reload();
+  }, [reload]);
 
   // Dev-only test data tools (the backend endpoints exist under the `dev` profile only)
   const [testDataBusy, setTestDataBusy] = useState(false);
@@ -219,7 +244,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <NewOrderDialog open={newOrderOpen} onClose={closeNewOrder} onCreated={reload} />
+      <NewOrderDialog open={newOrderOpen} onClose={closeNewOrder} onCreated={handleOrderCreated} />
 
       {/* Dev-only: generate / remove test data */}
       {import.meta.env.DEV && (

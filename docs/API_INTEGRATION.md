@@ -49,7 +49,7 @@ the number (with or without `#`, prefix match: `10` finds #10 and #100-#109).
 | POST | `/api/orders` | any | `{sessionId?, customerName?, estimatedMinutes?, items?[{name, quantity}]}`; without `sessionId` the server starts a session (the receipt QR links to `/track/{sessionId}`) |
 | PATCH | `/api/orders/{id}/status` | any | `{status}`; lifecycle `CREATED → IN_PROGRESS → READY → COMPLETED`, `CANCELLED` from any open state (422 otherwise, 409 on a concurrent change) |
 | POST | `/api/orders/stream/ticket` | any | → `{ticket, expiresIn: 30}`: single-use ticket bound to the caller (Redis `SET EX` / `GETDEL` when `SSE_REDIS_ENABLED`, else in memory) |
-| GET | `/api/orders/stream` | ticket | SSE; `EventSource` cannot set headers, so pass `?ticket=` from the call above (one use, 30 s). `?token=` is no longer accepted; no ticket → 401 |
+| GET | `/api/orders/stream` | ticket | SSE; `EventSource` cannot set headers, so pass `?ticket=` from the call above (one use, 30 s). `?token=` is no longer accepted; no ticket → 401. Events: `order-status-updated` `{id, orderId, status}` and, for the staff stream only, `order-created` `{id, orderId, status: "CREATED", event: "order-created", orderNumber: "#12"}` (sent after the order's transaction commits; the dashboard reloads and alerts staff) |
 | GET | `/api/orders/poll` | any | `since` / `eTag`; 200 `{orders, eTag}` or 304 |
 | GET / POST | `/api/admin/staff` | RESTAURANT_ADMIN | list / create `{username, password (8–72), role}` |
 | DELETE | `/api/admin/staff/{accountId}` | RESTAURANT_ADMIN | deactivate |

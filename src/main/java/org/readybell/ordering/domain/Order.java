@@ -122,7 +122,7 @@ public class Order {
 
         Instant now = clock.instant();
         var order = new Order(OrderId.newId(), orderNumber, tenantId, sessionId, OrderStatus.CREATED, details, now, now);
-        order.record(OrderCreated.of(order.id, tenantId, sessionId, clock.instant()));
+        order.record(OrderCreated.of(order.id, tenantId, sessionId, clock.instant(), orderNumber));
         return order;
     }
 

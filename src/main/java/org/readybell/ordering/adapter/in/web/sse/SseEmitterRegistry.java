@@ -33,7 +33,9 @@ public class SseEmitterRegistry {
 
     /** Pushes {@code message} to every matching local connection. */
     public void deliver(SseMessage message) {
-        send(customerEmitters, message.sessionId(), message);
+        if (message.forCustomers()) {
+            send(customerEmitters, message.sessionId(), message);
+        }
         send(staffEmitters, message.tenantId(), message);
     }
 
@@ -78,6 +80,11 @@ public class SseEmitterRegistry {
         return attach(customerEmitters, sessionId.value(), emitter);
     }
 
+    /** Registers an externally created emitter for a restaurant's staff panel (used by tests). */
+    public SseEmitter registerStaff(TenantId tenantId, SseEmitter emitter) {
+        return attach(staffEmitters, tenantId.value(), emitter);
+    }
+
     private SseEmitter register(ConcurrentHashMap<UUID, Set<SseEmitter>> registry, UUID key) {
         return attach(registry, key, new SseEmitter(0L)); // no server-side timeout
     }
@@ -105,7 +112,7 @@ public class SseEmitterRegistry {
         }
         for (SseEmitter emitter : emitters) {
             try {
-                emitter.send(SseEmitter.event().name("order-status-updated").data(message.payload()));
+                emitter.send(SseEmitter.event().name(message.event()).data(message.payload()));
             } catch (IOException | IllegalStateException ex) {
                 remove(registry, key, emitter);
             }

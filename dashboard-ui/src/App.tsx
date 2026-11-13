@@ -1,4 +1,5 @@
 import { Suspense, lazy } from 'react';
+import { AlertProvider } from '@/context/AlertProvider';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { SearchProvider } from '@/context/SearchContext';
@@ -60,74 +61,76 @@ function App() {
       <ThemeProvider defaultMode="light" persistToLocalStorage>
         <SearchProvider>
           <AuthProvider>
-            <Routes>
-              <Route
-                path="/login"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <LoginPage />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="/track/:sessionId"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <TrackPage />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="/r/:identifier"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <CounterClaimPage />
-                  </Suspense>
-                }
-              />
-              <Route element={<Layout />}>
+            <AlertProvider>
+              <Routes>
                 <Route
-                  path="/"
+                  path="/login"
                   element={
-                    <RequireRole roles={['STAFF', 'RESTAURANT_ADMIN']}>
-                      <Suspense fallback={<PageLoader />}>
-                        <Dashboard />
-                      </Suspense>
-                    </RequireRole>
+                    <Suspense fallback={<PageLoader />}>
+                      <LoginPage />
+                    </Suspense>
                   }
                 />
                 <Route
-                  path="/staff"
+                  path="/track/:sessionId"
                   element={
-                    <RequireRole roles={['RESTAURANT_ADMIN']}>
-                      <Suspense fallback={<PageLoader />}>
-                        <Staff />
-                      </Suspense>
-                    </RequireRole>
+                    <Suspense fallback={<PageLoader />}>
+                      <TrackPage />
+                    </Suspense>
                   }
                 />
                 <Route
-                  path="/settings"
+                  path="/r/:identifier"
                   element={
-                    <RequireRole roles={['RESTAURANT_ADMIN']}>
-                      <Suspense fallback={<PageLoader />}>
-                        <Settings />
-                      </Suspense>
-                    </RequireRole>
+                    <Suspense fallback={<PageLoader />}>
+                      <CounterClaimPage />
+                    </Suspense>
                   }
                 />
-                <Route
-                  path="/restaurants"
-                  element={
-                    <RequireRole roles={['PLATFORM_ADMIN']}>
-                      <Suspense fallback={<PageLoader />}>
-                        <Restaurants />
-                      </Suspense>
-                    </RequireRole>
-                  }
-                />
-              </Route>
-            </Routes>
+                <Route element={<Layout />}>
+                  <Route
+                    path="/"
+                    element={
+                      <RequireRole roles={['STAFF', 'RESTAURANT_ADMIN']}>
+                        <Suspense fallback={<PageLoader />}>
+                          <Dashboard />
+                        </Suspense>
+                      </RequireRole>
+                    }
+                  />
+                  <Route
+                    path="/staff"
+                    element={
+                      <RequireRole roles={['RESTAURANT_ADMIN']}>
+                        <Suspense fallback={<PageLoader />}>
+                          <Staff />
+                        </Suspense>
+                      </RequireRole>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <RequireRole roles={['RESTAURANT_ADMIN']}>
+                        <Suspense fallback={<PageLoader />}>
+                          <Settings />
+                        </Suspense>
+                      </RequireRole>
+                    }
+                  />
+                  <Route
+                    path="/restaurants"
+                    element={
+                      <RequireRole roles={['PLATFORM_ADMIN']}>
+                        <Suspense fallback={<PageLoader />}>
+                          <Restaurants />
+                        </Suspense>
+                      </RequireRole>
+                    }
+                  />
+                </Route>
+              </Routes>
+            </AlertProvider>
           </AuthProvider>
         </SearchProvider>
       </ThemeProvider>

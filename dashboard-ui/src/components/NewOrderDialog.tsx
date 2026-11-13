@@ -10,8 +10,8 @@ interface Created { orderNumber: string; url: string; qr: string }
 interface Props {
   open: boolean;
   onClose: () => void;
-  /** Called after an order was created so the list can refresh. */
-  onCreated: () => void;
+  /** Called with the new order's id once it is saved, so the list can refresh. */
+  onCreated: (orderId: string) => void;
 }
 
 const ETA_CHIPS = [5, 10, 15, 20];
@@ -59,7 +59,7 @@ export default function NewOrderDialog({ open, onClose, onCreated }: Props) {
       });
       const url = trackingUrl(order.sessionId);
       setCreated({ orderNumber: order.orderId, url, qr: await qrDataUrl(url) });
-      onCreated();
+      onCreated(order.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create the order.');
     } finally {

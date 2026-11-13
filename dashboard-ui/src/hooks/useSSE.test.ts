@@ -26,6 +26,11 @@ describe('useSSE Hook', () => {
         const event = new MessageEvent('message', { data });
         this.listeners['message']?.forEach((cb: Function) => cb(event));
       },
+      /** A named server event, as the backend sends `order-created` and `order-status-updated`. */
+      dispatchNamed(name: string, data: string) {
+        const event = new MessageEvent(name, { data });
+        this.listeners[name]?.forEach((cb: Function) => cb(event));
+      },
       dispatchError() {
         this.listeners['error']?.forEach((cb: Function) => cb(new Event('error')));
       },
@@ -112,6 +117,21 @@ describe('useSSE Hook', () => {
     await waitFor(() => {
       expect(onMessage).toHaveBeenCalledWith(messageData);
     });
+  });
+
+  it('delivers the backend\'s named order-created and order-status-updated events', async () => {
+    const onMessage = vi.fn();
+    renderHook(() => useSSE({ endpoint: '/api/orders/stream', onMessage }));
+    mockEventSource.dispatchOpen();
+
+    const created = { id: 'o-1', status: 'CREATED', event: 'order-created', orderNumber: '#5' };
+    const updated = { id: 'o-1', status: 'READY' };
+    mockEventSource.dispatchNamed('order-created', JSON.stringify(created));
+    mockEventSource.dispatchNamed('order-status-updated', JSON.stringify(updated));
+
+    await waitFor(() => expect(onMessage).toHaveBeenCalledTimes(2));
+    expect(onMessage).toHaveBeenNthCalledWith(1, created);
+    expect(onMessage).toHaveBeenNthCalledWith(2, updated);
   });
 
   it('should set isRetrying when error occurs', async () => {

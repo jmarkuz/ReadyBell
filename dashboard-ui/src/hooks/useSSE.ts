@@ -149,9 +149,10 @@ export function useSSE(options: UseSSEOptions): UseSSEState {
         }
       };
 
-      // Unnamed events, and the backend's named `order-status-updated` event
+      // Unnamed events, and the backend's named `order-status-updated` and (staff stream) `order-created` events
       eventSource.addEventListener('message', handleMessage);
       eventSource.addEventListener('order-status-updated', handleMessage as EventListener);
+      eventSource.addEventListener('order-created', handleMessage as EventListener);
 
       eventSource.addEventListener('error', () => {
         if (!isUnmountingRef.current) {

@@ -75,7 +75,7 @@ npm run build && npm run lint
 ### Manual UI checklist
 - **Theme**: toggle sun/moon, reload → choice persists (`localStorage` key `readybell-theme`); first load follows OS preference.
 - **Orders table**: pagination (25/page), sorting, status filter, search, date-range filter, status change via dropdown.
-- **Real-time**: SSE updates with a 30 s polling fallback while the stream is down.
+- **Real-time**: SSE updates with a 30 s polling fallback while the stream is down. A new order entered on another screen appears live; the header's speaker button (off by default, remembered in `localStorage` key `readybell-alert-sound`) turns on a chime and vibration for it, the tab title shows `(n)` while the tab is in the background, and screen readers get a polite "New order #12" announcement. The screen the order was entered on stays quiet.
 - **Auth**: staff/admin login, 401 on invalid token, 403 on cross-tenant access.
 - **Keyboard**: Tab order, Enter/Space activation, visible focus rings, skip link.
 - **Responsive**: 320 / 768 / 1024 px; no horizontal scroll except the table; touch targets ≥ 44 px.
