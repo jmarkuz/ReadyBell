@@ -8,11 +8,14 @@ import {
   Bell,
   Moon,
   Sun,
+  Volume2,
+  VolumeX,
   Settings,
   LogOut,
 } from 'lucide-react';
 import { restaurantBranding } from '@/config/restaurant';
 import { useRestaurant } from '@/context/restaurantContext';
+import { useNewOrderAlerts } from '@/context/alertContext';
 
 interface HeaderProps {
   /** The order search only makes sense on the dashboard. */
@@ -46,6 +49,7 @@ export default memo(function Header({
   onThemeToggle,
 }: HeaderProps) {
   const { currentMode, toggleTheme } = useTheme();
+  const { soundEnabled, setSoundEnabled } = useNewOrderAlerts();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -179,6 +183,22 @@ export default memo(function Header({
             >
               {notificationCount > 99 ? '99+' : notificationCount}
             </span>
+          )}
+        </button>
+
+        {/* New-order sound and vibration: off until staff turn it on (browsers need that click anyway) */}
+        <button
+          onClick={() => setSoundEnabled(!soundEnabled)}
+          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+          aria-label="New order sound"
+          aria-pressed={soundEnabled}
+          title={soundEnabled ? 'New order sound is on' : 'Play a sound when a new order arrives'}
+          type="button"
+        >
+          {soundEnabled ? (
+            <Volume2 className="w-5 h-5 text-slate-900 dark:text-slate-100" aria-hidden="true" />
+          ) : (
+            <VolumeX className="w-5 h-5 text-slate-500" aria-hidden="true" />
           )}
         </button>
 

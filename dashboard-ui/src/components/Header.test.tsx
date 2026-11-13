@@ -3,14 +3,22 @@
  * Verifies Header renders with search, notifications, theme toggle, and settings
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@/test/test-utils';
 import Header from './Header';
 import { signOut } from '@/utils/session';
 
 import { restaurantBranding } from '@/config/restaurant';
+import { AlertProvider } from '@/context/AlertProvider';
+import * as newOrderAlert from '@/utils/newOrderAlert';
 
 vi.mock('@/utils/session', () => ({ signOut: vi.fn() }));
+vi.mock('@/utils/newOrderAlert', async (orig) => ({
+  ...(await orig<typeof newOrderAlert>()),
+  playNewOrderSound: vi.fn(),
+  vibrateForNewOrder: vi.fn(),
+  unlockAudio: vi.fn(),
+}));
 
 describe('Header Component', () => {
   it('renders header without errors', () => {
@@ -138,5 +146,29 @@ describe('Header Component', () => {
     fireEvent.click(menuToggle);
     
     expect(onMenuToggle).toHaveBeenCalled();
+  });
+
+  describe('new order sound toggle', () => {
+    beforeEach(() => localStorage.clear());
+
+    it('is off by default and switches on and off', () => {
+      render(<AlertProvider><Header /></AlertProvider>);
+      const toggle = screen.getByRole('button', { name: 'New order sound' });
+      expect(toggle).toHaveAttribute('aria-pressed', 'false');
+
+      fireEvent.click(toggle);
+      expect(toggle).toHaveAttribute('aria-pressed', 'true');
+      expect(newOrderAlert.playNewOrderSound).toHaveBeenCalledTimes(1);   // preview, and the click unlocks browser audio
+      expect(newOrderAlert.unlockAudio).toHaveBeenCalled();
+
+      fireEvent.click(toggle);
+      expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('is a quiet no-op without the alert provider', () => {
+      render(<Header />);
+      fireEvent.click(screen.getByRole('button', { name: 'New order sound' }));
+      expect(screen.getByRole('button', { name: 'New order sound' })).toHaveAttribute('aria-pressed', 'false');
+    });
   });
 });

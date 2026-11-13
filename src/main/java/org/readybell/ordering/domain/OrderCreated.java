@@ -25,7 +25,8 @@ public record OrderCreated(
         OrderId orderId,
         TenantId tenantId,
         CustomerSessionId sessionId,
-        Instant occurredAt
+        Instant occurredAt,
+        int orderNumber
 ) implements DomainEvent {
 
     public OrderCreated {
@@ -42,7 +43,8 @@ public record OrderCreated(
     public static OrderCreated of(OrderId orderId,
                                    TenantId tenantId,
                                    CustomerSessionId sessionId,
-                                   Instant occurredAt) {
-        return new OrderCreated(UUID.randomUUID(), orderId, tenantId, sessionId, occurredAt);
+                                   Instant occurredAt,
+                                   int orderNumber) {
+        return new OrderCreated(UUID.randomUUID(), orderId, tenantId, sessionId, occurredAt, orderNumber);
     }
 }

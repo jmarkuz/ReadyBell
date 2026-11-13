@@ -187,4 +187,39 @@ describe('useDashboardOrders', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(90_000); });
     expect(apiClient.getOrders).not.toHaveBeenCalled();
   });
+
+  describe('new-order events', () => {
+    it('tells the caller about an order-created event, with its number', async () => {
+      const onNewOrder = vi.fn();
+      renderHook(() => useDashboardOrders(DEFAULT_ORDERS_QUERY, { onNewOrder }));
+
+      act(() => onMessage({ id: 'o-1', orderId: 'o-1', status: 'CREATED', event: 'order-created', orderNumber: '#12' }));
+
+      expect(onNewOrder).toHaveBeenCalledWith({ id: 'o-1', orderNumber: '#12' });
+    });
+
+    it('stays quiet for plain status updates and malformed messages', async () => {
+      const onNewOrder = vi.fn();
+      renderHook(() => useDashboardOrders(DEFAULT_ORDERS_QUERY, { onNewOrder }));
+
+      act(() => onMessage({ id: 'o-1', orderId: 'o-1', status: 'READY' }));
+      act(() => onMessage('order-created'));
+      act(() => onMessage(null));
+      act(() => onMessage({ event: 'order-created' }));   // no id
+
+      expect(onNewOrder).not.toHaveBeenCalled();
+    });
+
+    it('still reloads on an order-created event so the new order shows up', async () => {
+      const { result } = renderHook(() => useDashboardOrders(DEFAULT_ORDERS_QUERY));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      const before = pageCalls().length;
+      vi.useFakeTimers();
+
+      act(() => onMessage({ id: 'o-2', status: 'CREATED', event: 'order-created', orderNumber: '#2' }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(400); });
+
+      expect(pageCalls().length).toBe(before + 1);
+    });
+  });
 });

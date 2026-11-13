@@ -9,6 +9,20 @@ const POLL_INTERVAL_MS = 30_000;
 /** Delay that coalesces bursts of SSE events into a single reload. */
 const RELOAD_DEBOUNCE_MS = 300;
 
+/** A new order announced by the live stream (`order-created`). */
+export interface NewOrderEvent {
+  id: string;
+  /** The receipt number, for example `#12`. */
+  orderNumber?: string;
+}
+
+function asNewOrderEvent(data: unknown): NewOrderEvent | null {
+  if (typeof data !== 'object' || data === null) return null;
+  const message = data as { event?: unknown; id?: unknown; orderNumber?: unknown };
+  if (message.event !== 'order-created' || typeof message.id !== 'string') return null;
+  return { id: message.id, orderNumber: typeof message.orderNumber === 'string' ? message.orderNumber : undefined };
+}
+
 export type OrdersSortBy = 'created' | 'eta' | 'status' | 'customerName' | 'orderId';
 
 /** Everything the server needs to produce one page of the Incoming Orders table. */
@@ -77,7 +91,10 @@ const toParams = (q: OrdersQuery) => ({
  *   rows always carry the server's data (customer, items, ETA) rather than a partial event.
  * - While the stream is down the page is refreshed every 30 s.
  */
-export function useDashboardOrders(query: OrdersQuery): UseDashboardOrdersState {
+export function useDashboardOrders(
+  query: OrdersQuery,
+  options: { onNewOrder?: (order: NewOrderEvent) => void } = {}
+): UseDashboardOrdersState {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [pageCount, setPageCount] = useState(0);
@@ -85,6 +102,11 @@ export function useDashboardOrders(query: OrdersQuery): UseDashboardOrdersState 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const mounted = useRef(true);
+
+  const onNewOrderRef = useRef(options.onNewOrder);
+  useEffect(() => {
+    onNewOrderRef.current = options.onNewOrder;
+  });
 
   // The latest query for callbacks that must stay stable (SSE, polling timer)
   const queryRef = useRef(query);
@@ -144,7 +166,9 @@ export function useDashboardOrders(query: OrdersQuery): UseDashboardOrdersState 
   }, [loadMetrics]);
 
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const onMessage = useCallback(() => {
+  const onMessage = useCallback((data: unknown) => {
+    const created = asNewOrderEvent(data);
+    if (created) onNewOrderRef.current?.(created);
     if (debounce.current) clearTimeout(debounce.current);
     debounce.current = setTimeout(() => void reload(), RELOAD_DEBOUNCE_MS);
   }, [reload]);
