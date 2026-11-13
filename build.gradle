@@ -5,6 +5,10 @@ plugins {
     id 'jacoco'
 }
 
+// Spring Boot 3.4 manages Testcontainers 1.20.x, which talks to Docker with API 1.32 only; recent Docker engines
+// (e.g. the GitHub ubuntu-latest runner) reject that ("client version 1.32 is too old"). 1.21.4 negotiates 1.44.
+ext['testcontainers.version'] = '1.21.4'
+
 group = 'org.readybell'
 version = '1.0-SNAPSHOT'
 
