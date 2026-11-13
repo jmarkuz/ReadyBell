@@ -5,7 +5,7 @@ import org.testcontainers.utility.DockerImageName;
 
 /**
  * One Redis container per test JVM, started on first use and removed by Testcontainers when the JVM exits.
- * Spring test contexts are pointed at it by {@link RedisContainerInitializer}; plain unit tests read the address here.
+ * Spring test contexts are pointed at it by {@link TestContainersInitializer}; plain unit tests read the address here.
  * Keep the image tag in line with docker-compose.yml.
  */
 public final class SharedRedis {

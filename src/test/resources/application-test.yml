@@ -1,12 +1,6 @@
 spring:
-  # Real PostgreSQL in a Testcontainers container (needs Docker). The tc: JDBC URL starts one container per JVM on
-  # first use and every cached Spring context shares it (TC_DAEMON keeps it alive between connections).
-  # Keep the image tag in line with docker-compose.yml.
-  datasource:
-    url: jdbc:tc:postgresql:16:///readybell?TC_DAEMON=true
-    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
-    username: test
-    password: test
+  # The datasource (PostgreSQL) and spring.data.redis.* are set by org.readybell.testsupport.TestContainersInitializer
+  # (Testcontainers, needs Docker; one container of each per run, shared by all cached Spring contexts).
 
   # The real migrations build the schema and Hibernate only checks the entities against it
   flyway:
@@ -15,8 +9,6 @@ spring:
     hibernate:
       ddl-auto: validate
     show-sql: false
-
-  # spring.data.redis.host/port are set by org.readybell.testsupport.RedisContainerInitializer (Testcontainers Redis)
 
 readybell:
   outbox:
