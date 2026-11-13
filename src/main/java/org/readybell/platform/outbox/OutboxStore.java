@@ -46,7 +46,7 @@ public class OutboxStore {
                 """).setParameter("now", now).setParameter("limit", limit).getResultList();
         Instant until = now.plus(lease);
         return rows.stream().map(r -> {
-            UUID id = toUuid(r[0]);
+            UUID id = (UUID) r[0];
             em.createNativeQuery("UPDATE outbox_event SET locked_until = :until WHERE id = :id")
                     .setParameter("until", until).setParameter("id", id).executeUpdate();
             return new Claimed(id, (String) r[1], (String) r[2], ((Number) r[3]).intValue());
@@ -89,18 +89,6 @@ public class OutboxStore {
     public long countFailed() {
         return ((Number) em.createNativeQuery("SELECT count(*) FROM outbox_event WHERE failed_at IS NOT NULL")
                 .getSingleResult()).longValue();
-    }
-
-    /** Postgres returns a native uuid column as UUID, H2 as bytes. */
-    private static UUID toUuid(Object value) {
-        if (value instanceof UUID uuid) {
-            return uuid;
-        }
-        if (value instanceof byte[] bytes && bytes.length == 16) {
-            var buffer = java.nio.ByteBuffer.wrap(bytes);
-            return new UUID(buffer.getLong(), buffer.getLong());
-        }
-        return UUID.fromString(String.valueOf(value));
     }
 
     private static String truncate(String s) {
