@@ -103,6 +103,17 @@ public class ApplicationConfig {
         return new TrackSessionService(sessionRepository, orderRepository, restaurantRepository);
     }
 
+    /** Counter QR flow: claim an order by the number on the receipt. */
+    @Bean
+    public org.readybell.ordering.application.CounterClaimUseCase counterClaimUseCase(
+            RestaurantRepository restaurantRepository,
+            OrderRepository orderRepository,
+            Clock clock,
+            @org.springframework.beans.factory.annotation.Value("${readybell.claim.max-age:4h}")
+            java.time.Duration maxAge) {
+        return new org.readybell.ordering.application.CounterClaimService(restaurantRepository, orderRepository, clock, maxAge);
+    }
+
     /** Application clock; a single bean so ETAs, token expiry and tests share one time source. */
     @Bean
     public Clock clock() {

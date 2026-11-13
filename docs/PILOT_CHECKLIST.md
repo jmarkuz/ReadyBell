@@ -3,7 +3,7 @@
 Field checklist for the first pilot restaurants. It covers BACKLOG items **P1** (Web Push on real devices) and
 **P2** (real host, TLS, stable VAPID pair, platform operator), and turns the MVP success criteria
 ([Pingood_MVP_Definition.md](product/Pingood_MVP_Definition.md), section 9) into measurable pass/fail checks.
-P3 (backups) and P4 (counter QR flow) are separate backlog items, see [section 5](#5-known-limitations).
+P3 (backups) is a separate backlog item; the counter QR flow (P4) is built, see [section 5](#5-known-limitations).
 
 Related: [DEPLOYMENT.md](DEPLOYMENT.md), [API_INTEGRATION.md](API_INTEGRATION.md), [BACKLOG.md](BACKLOG.md).
 
@@ -149,7 +149,7 @@ Browsers do not always revoke the endpoint at once and some push services keep a
 | Outcome per push | table `notification`, columns `status` (`PENDING`, `SENT`, `DELIVERED`, `FAILED`), `created_at` | `select status, count(*) from notification where created_at > now() - interval '1 day' group by 1;` `SENT` means handed to the push service, not shown on the phone. |
 | Stuck events | table `outbox_event` (`processed_at`, `failed_at`, `attempts`, `last_error`) | `select count(*) from outbox_event where processed_at is null and failed_at is null;` should stay near 0 (relay polls every 1 s and retries with backoff). |
 | Rate limiting | `/actuator/metrics/ratelimit.rejected` (tag `endpoint`) | Needs operator credentials. |
-| General | `/actuator/prometheus` (`http_server_requests_*`, JVM), HTTP Basic with the platform operator for scrapers | There are **no custom push counters yet** (BACKLOG R2); push success/failure comes from logs and the `notification` table. |
+| General | `/actuator/prometheus` (`http_server_requests_*`, JVM), HTTP Basic with the platform operator for scrapers | Business metrics (sessions, push results, READY → push latency) and alert rules are described in [MONITORING.md](MONITORING.md). |
 
 Delivery latency has no server-side metric. The 2 s criterion is measured with the stopwatch in 3.1 (tap READY to notification visible). On a failed run, note the time of READY and compare with the log lines above to see whether the delay was before or after the server handed the message to the push service.
 
@@ -217,9 +217,9 @@ Notifications: the `notification` table as in 3.4 (it has `tenant_id`). Complain
 
 ## 5. Known limitations
 
-- **Counter QR flow is not built (BACKLOG P4).** Today the QR is generated **per order** by staff in the **New order** dialog and printed on the receipt. A permanent per-restaurant QR where the customer types the order number from the receipt does not exist; `POST /api/sessions` starts a session from the restaurant identifier, but there is no endpoint yet to attach an existing order to it.
+- **Counter QR claims are first come, first served.** The permanent restaurant QR (Settings page → *Counter QR code*, print it) opens `/r/{identifier}`; the customer types the number from the receipt. Numbers are small and sequential, so a stranger who types a valid number first gets that order's tracking page and the real owner then sees "not found" (the receipt QR of the same order keeps working). Mitigations: 10 tries/min per IP, orders can be claimed only for `CLAIM_MAX_AGE` (default 4 h) after creation and only once. Watch for complaints during the pilot; staff can always show the per-order receipt QR instead.
 - **iOS needs the installed PWA.** Safari on iPhone (16.4+) delivers Web Push only to a site added to the Home Screen and opened from there. Customers must follow the hint on the page; expect some to skip it.
-- **No custom push metrics or alerts (BACKLOG R2).** Watch logs and the `notification` / `outbox_event` tables during the pilot.
+- **Alertmanager is not set up.** The metrics and Prometheus alert rules exist ([MONITORING.md](MONITORING.md)); route them to a channel yourself and watch the `notification` / `outbox_event` tables during the pilot.
 - **No backups (BACKLOG P3).**
 - **Delivery time is not recorded by the system**; measure it by hand (3.1).
 - **Sessions expire**: hourly housekeeping ends sessions older than 24 h with no open orders and deletes their push subscriptions.

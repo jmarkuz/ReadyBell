@@ -50,6 +50,8 @@ public class Order {
     private final Instant estimatedReadyAt;
     private final Instant createdAt;
     private Instant updatedAt;
+    /** When a customer claimed the order at the counter by its number; null while unclaimed. */
+    private Instant claimedAt;
 
     /**
      * Optimistic-lock version counter.
@@ -236,6 +238,27 @@ public class Order {
         pendingEvents.add(event);
     }
 
+    /**
+     * Marks the order as claimed by a customer who typed its number at the counter. An order can be claimed once; the
+     * check and the write are protected by the optimistic lock, so of two concurrent claims only one is stored.
+     *
+     * @throws OrderAlreadyClaimedException if the order was claimed before
+     */
+    public void claim(Clock clock) {
+        if (claimedAt != null) {
+            throw new OrderAlreadyClaimedException(id);
+        }
+        claimedAt = clock.instant();
+    }
+
+    public boolean isClaimed() {
+        return claimedAt != null;
+    }
+
+    public Instant getClaimedAt() {
+        return claimedAt;
+    }
+
     /** Clears the pending events list after they have been published. */
     public void clearPendingEvents() {
         pendingEvents.clear();
@@ -273,8 +296,23 @@ public class Order {
                                      OrderDetails details,
                                      Instant createdAt,
                                      Instant updatedAt) {
+        return reconstitute(id, orderNumber, tenantId, sessionId, status, version, details, createdAt, updatedAt, null);
+    }
+
+    /** Full reconstitution including the counter-claim marker (persistence adapter only). */
+    public static Order reconstitute(OrderId id,
+                                     int orderNumber,
+                                     TenantId tenantId,
+                                     CustomerSessionId sessionId,
+                                     OrderStatus status,
+                                     long version,
+                                     OrderDetails details,
+                                     Instant createdAt,
+                                     Instant updatedAt,
+                                     Instant claimedAt) {
         var order = new Order(id, orderNumber, tenantId, sessionId, status, details, createdAt, updatedAt);
         order.version = version;
+        order.claimedAt = claimedAt;
         return order;
     }
 }

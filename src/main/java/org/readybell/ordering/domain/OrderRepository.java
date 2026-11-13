@@ -63,6 +63,15 @@ public interface OrderRepository {
     List<Order> findByTenantAndSession(TenantId tenantId, CustomerSessionId sessionId);
 
     /**
+     * Finds the restaurant's order with the given sequential number (the number printed on the receipt).
+     *
+     * @param tenantId    the tenant scope (must not be null)
+     * @param orderNumber the per-restaurant order number
+     * @return the order, or {@link Optional#empty()} if the restaurant has none with that number
+     */
+    Optional<Order> findByTenantAndNumber(TenantId tenantId, int orderNumber);
+
+    /**
      * Returns all orders belonging to the given tenant (Req 7.3, 7.7, 10.2, 10.4).
      *
      * <p>Used by the Restaurant Staff panel to list all orders for the authenticated

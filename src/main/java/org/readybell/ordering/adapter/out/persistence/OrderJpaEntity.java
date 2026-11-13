@@ -80,6 +80,9 @@ public class OrderJpaEntity extends TenantScopedEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "claimed_at")
+    private Instant claimedAt;
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
@@ -104,6 +107,7 @@ public class OrderJpaEntity extends TenantScopedEntity {
         entity.items = new ArrayList<>(order.getItems().stream().map(OrderItemEmbeddable::from).toList());
         entity.createdAt = order.getCreatedAt();
         entity.updatedAt = order.getUpdatedAt();
+        entity.claimedAt = order.getClaimedAt();
         return entity;
     }
 
@@ -120,7 +124,8 @@ public class OrderJpaEntity extends TenantScopedEntity {
                         items.stream().map(OrderItemEmbeddable::toDomain).toList(),
                         estimatedReadyAt),
                 createdAt,
-                updatedAt);
+                updatedAt,
+                claimedAt);
     }
 
     // -------------------------------------------------------------------------

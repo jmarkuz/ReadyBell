@@ -17,10 +17,18 @@ Client code: `dashboard-ui/src/utils/api.ts` (staff API, Bearer token) and `dash
 | GET | `/api/sessions/{id}/orders/stream` | SSE, event `order-status-updated` |
 | POST | `/api/sessions/{id}/subscriptions` | `{endpointUrl, p256dhKey, authKey}` Web Push subscription |
 | DELETE | `/api/sessions/{id}/subscriptions/{subscriptionId}` | revoke |
+| GET | `/api/restaurants/{identifier}/public` | counter QR page: `{name}` of an active restaurant; 404 otherwise |
+| POST | `/api/restaurants/{identifier}/claim` | counter QR: `{orderNumber}` (the number on the receipt) → `{sessionId}` for `/track/{sessionId}`. Every failure (unknown restaurant, unknown number, already claimed, finished or older than `readybell.claim.max-age`, default 4 h) is the same generic `404`; each order can be claimed once; 10 tries/min per IP |
 | GET | `/api/push/config` | `{enabled, publicKey}`: the VAPID public key the browser subscribes with |
 | GET | `/actuator/health` | probes (`/liveness`, `/readiness`) |
 
 The session id in the URL is the credential for the customer endpoints; the tenant is derived from it.
+
+**Counter QR.** The restaurant prints one QR (Settings page of the restaurant admin) that opens `/r/{identifier}` in the
+customer app. The customer types the number from the receipt; `POST /api/restaurants/{identifier}/claim` returns the
+session of that order and the app continues on `/track/{sessionId}`. Receipt numbers are small and sequential, so the
+endpoint is throttled per IP, hands an order out only once and only for `CLAIM_MAX_AGE` (default `4h`) after the order
+was created, and never says why a claim failed.
 
 ## Order numbers
 
@@ -71,7 +79,7 @@ the number (with or without `#`, prefix match: `10` finds #10 and #100-#109).
 ## Rate limits (public endpoints)
 
 Per client IP, sliding window (defaults in `application.yml` under `readybell.rate-limit.rules`): session start 20/min,
-push subscribe 20/min, track 120/min, customer poll 240/min, customer stream 30/min. Over the limit: `429` with
+counter claim 10/min (restaurant name 60/min), push subscribe 20/min, track 120/min, customer poll 240/min, customer stream 30/min. Over the limit: `429` with
 `Retry-After` (seconds) and `application/problem+json` (`type: urn:readybell:rate-limit:exceeded`). Behind a reverse
 proxy set `RATE_LIMIT_TRUSTED_PROXIES` (IP/CIDR list) so `X-Forwarded-For` is used; without it the proxy's own address is
 the key and all clients share one budget. `RATE_LIMIT_REDIS_ENABLED=true` shares counters between replicas.

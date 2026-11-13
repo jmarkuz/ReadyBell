@@ -20,6 +20,7 @@ const Settings = lazy(() => import('@/pages/Settings'));
 const Restaurants = lazy(() => import('@/pages/Restaurants'));
 const LoginPage = lazy(() => import('@/pages/Login'));
 const TrackPage = lazy(() => import('@/pages/Track'));
+const CounterClaimPage = lazy(() => import('@/pages/CounterClaim'));
 
 /**
  * App Root Component
@@ -73,6 +74,14 @@ function App() {
                 element={
                   <Suspense fallback={<PageLoader />}>
                     <TrackPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/r/:identifier"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <CounterClaimPage />
                   </Suspense>
                 }
               />
