@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { counterUrl, isLocalOnlyUrl, printCounterQr, qrDataUrl } from '@/utils/receipt';
 import { apiClient } from '@/utils/api';
 import { useRestaurant } from '@/context/restaurantContext';
 import { cardClass, inputClass, primaryButton } from '@/components/ui';
@@ -11,6 +12,16 @@ export default function Settings() {
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
 
   useEffect(() => setName(restaurant.name), [restaurant.name]);
+
+  // The counter QR: one per restaurant, shown at the pickup area
+  const [counterQr, setCounterQr] = useState<{ url: string; qr: string } | null>(null);
+  useEffect(() => {
+    if (!restaurant.identifier) return undefined;
+    let cancelled = false;
+    const url = counterUrl(restaurant.identifier);
+    qrDataUrl(url).then((qr) => { if (!cancelled) setCounterQr({ url, qr }); }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [restaurant.identifier]);
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
@@ -50,6 +61,30 @@ export default function Settings() {
           </div>
         </form>
       </section>
+
+      {counterQr && (
+        <section className={`${cardClass} max-w-xl`} aria-labelledby="counter-qr">
+          <h2 id="counter-qr" className="text-xl mb-2">Counter QR code</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+            Show it at the pickup area. A customer scans it, types the order number from the receipt and gets a
+            notification when the order is ready. Orders can be claimed for a few hours after they are created.
+          </p>
+          <img src={counterQr.qr} alt={`Counter QR code for ${restaurant.name}`} className="w-56 h-56 rounded-lg border border-slate-200 bg-white" />
+          <p className="text-xs text-slate-500 mt-2 break-all">{counterQr.url}</p>
+          {isLocalOnlyUrl(counterQr.url) && (
+            <p role="alert" className="text-sm text-amber-700 mt-2">
+              This link points at this computer, so phones cannot open it. Set VITE_PUBLIC_URL or open the dashboard through a public address.
+            </p>
+          )}
+          <button
+            type="button"
+            className={`${primaryButton} mt-4`}
+            onClick={() => printCounterQr({ restaurant: restaurant.name, qr: counterQr.qr, url: counterQr.url })}
+          >
+            Print sign
+          </button>
+        </section>
+      )}
     </div>
   );
 }

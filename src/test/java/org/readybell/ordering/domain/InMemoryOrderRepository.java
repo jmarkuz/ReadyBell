@@ -48,6 +48,13 @@ public class InMemoryOrderRepository implements OrderRepository {
     }
 
     @Override
+    public Optional<Order> findByTenantAndNumber(TenantId tenantId, int orderNumber) {
+        return store.values().stream()
+                .filter(order -> order.getTenantId().equals(tenantId) && order.getOrderNumber() == orderNumber)
+                .findFirst();
+    }
+
+    @Override
     public List<Order> findAllByTenant(TenantId tenantId) {
         return store.values().stream()
                 .filter(order -> order.getTenantId().equals(tenantId))

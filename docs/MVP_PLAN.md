@@ -14,7 +14,7 @@ Overall status of all improvement tasks: [IMPROVEMENTS.md](IMPROVEMENTS.md).
 | Restaurant onboarding (platform admin), staff accounts | Done |
 | Staff dashboard: create order, change status, mark ready | Done (server-side paging, metrics, SSE) |
 | Multi-tenant, authentication, tenant isolation | Done (structural tenant filter, guard tests) |
-| **QR at the pickup area** ("QR display at pickup area") | **Missing** → M2 (needs readable order numbers → M1) |
+| **QR at the pickup area** ("QR display at pickup area") | Done: M2, counter QR (readable numbers from M1) |
 | **Order identifier** the customer can read out / type | **Weak**: UUID prefix `#3F9A21C0` → M1 |
 | **Basic monitoring** and measurable success criteria (500+ sessions, push < 2 s) | **Partial**: Prometheus endpoint exists, but no business metrics or alert rules → M3 |
 | Reliability of data in a pilot | **Missing**: no backup / restore procedure → M4 |
@@ -59,8 +59,8 @@ M2 starts only after M1 is on `master` because it relies on per-restaurant order
 
 | Task | Status | PR |
 |------|--------|----|
-| M1 | Todo | – |
-| M2 | Todo | – |
-| M3 | Todo | – |
-| M4 | Todo | – |
-| M5 | Todo | – |
+| M1 | Done | [#19](https://github.com/jmarkuz/ReadyBell/pull/19) |
+| M2 | Done, in review (local branch `feat/counter-qr-flow`) | – |
+| M3 | Done | [#18](https://github.com/jmarkuz/ReadyBell/pull/18) |
+| M4 | Done | [#16](https://github.com/jmarkuz/ReadyBell/pull/16) |
+| M5 | Done | [#17](https://github.com/jmarkuz/ReadyBell/pull/17) |

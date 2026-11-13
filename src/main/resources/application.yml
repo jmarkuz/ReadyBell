@@ -43,10 +43,16 @@ readybell:
     trusted-proxies: ${RATE_LIMIT_TRUSTED_PROXIES:}
     rules:
       - {name: session-start, method: POST, path: /api/sessions, limit: 20, window: 1m}
+      # Counter QR: receipt numbers are small, so guessing is throttled hard (10 tries a minute per IP)
+      - {name: counter-claim, method: POST, path: "/api/restaurants/*/claim", limit: 10, window: 1m}
+      - {name: counter-restaurant, method: GET, path: "/api/restaurants/*/public", limit: 60, window: 1m}
       - {name: subscribe, method: POST, path: "/api/sessions/*/subscriptions", limit: 20, window: 1m}
       - {name: track, method: GET, path: "/api/sessions/*/track", limit: 120, window: 1m}
       - {name: customer-poll, method: GET, path: "/api/sessions/*/orders/poll", limit: 240, window: 1m}
       - {name: customer-stream, method: GET, path: "/api/sessions/*/orders/stream", limit: 30, window: 1m}
+  claim:
+    # How long after creation an order can still be claimed at the counter by its number
+    max-age: ${CLAIM_MAX_AGE:4h}
   sse:
     redis:
       # Relay order updates between replicas via Redis pub/sub; enable when running more than one node.

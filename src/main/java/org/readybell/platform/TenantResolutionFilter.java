@@ -59,6 +59,7 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         "/api/login",
         "/api/auth",
         "/api/push",
+        "/api/restaurants",
         "/error"
     };
 

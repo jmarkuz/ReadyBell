@@ -56,11 +56,12 @@ Sign in as `admin` / `admin` and press **New order**, or use the dashboard's *Ge
 
 Backend tests need **Docker** and nothing else running locally: PostgreSQL 16 and Redis 7 are started by Testcontainers
 and removed when the run ends (a local Redis on 6379 is neither needed nor used).
-- PostgreSQL: `jdbc:tc:` URL in `src/test/resources/application-test.yml`. One container is shared by all Spring test
-  contexts of a run; Flyway applies the real migrations and Hibernate only validates the entities. `OrderNumberMigrationTest`
-  starts its own container to test a migration against pre-existing data.
-- Redis: `org.readybell.testsupport.SharedRedis` (one container per run); `RedisContainerInitializer`, registered in
-  `src/test/resources/META-INF/spring.factories`, points every Spring test context at it.
+- PostgreSQL: `org.readybell.testsupport.SharedPostgres` (one container per run, `max_connections=300` because every cached
+  Spring context keeps its own connection pool). Flyway applies the real migrations and Hibernate only validates the
+  entities. `OrderNumberMigrationTest` starts its own container to test a migration against pre-existing data.
+- Redis: `org.readybell.testsupport.SharedRedis` (one container per run).
+- `TestContainersInitializer`, registered in `src/test/resources/META-INF/spring.factories`, points every Spring test
+  context at both containers; no test class has to opt in.
 
 ```bash
 ./gradlew test                                   # backend (JUnit 5 + jqwik)
