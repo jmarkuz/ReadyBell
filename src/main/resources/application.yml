@@ -12,6 +12,13 @@ spring:
       ddl-auto: validate
     open-in-view: false
 
+  task:
+    scheduling:
+      # Boot's default is ONE thread, shared by the SSE heartbeat, the outbox relay poll, the outbox cleanup and
+      # the session housekeeping; a slow push (retries sleep up to ~7.5 s) would stall all of them.
+      pool:
+        size: ${SCHEDULER_POOL_SIZE:4}
+
   flyway:
     enabled: true
     # Databases that predate Flyway (created by ddl-auto) are adopted at V1 instead of failing
