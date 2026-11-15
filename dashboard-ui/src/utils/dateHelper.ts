@@ -133,10 +133,11 @@ export function isInCurrentWeek(date: Date): boolean {
   const dayOfWeek = today.getDay();
   const daysToMonday = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
   const monday = new Date(today.getFullYear(), today.getMonth(), daysToMonday);
-  const sunday = new Date(monday);
-  sunday.setDate(sunday.getDate() + 6);
+  // The week ends where the next one begins; comparing with Sunday 00:00 would drop all of Sunday
+  const nextMonday = new Date(monday);
+  nextMonday.setDate(nextMonday.getDate() + 7);
 
-  return date >= monday && date <= sunday;
+  return date >= monday && date < nextMonday;
 }
 
 /**

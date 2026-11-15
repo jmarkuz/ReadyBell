@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import fc from 'fast-check';
 import {
   formatDate,
@@ -192,8 +192,22 @@ describe('dateHelper utilities', () => {
   });
 
   describe('isInCurrentWeek', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('should return true for today', () => {
       expect(isInCurrentWeek(new Date())).toBe(true);
+    });
+
+    it('should include the whole of Sunday, the last day of the week', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 10, 15, 14, 30)); // Sunday afternoon
+      expect(isInCurrentWeek(new Date())).toBe(true);
+      expect(isInCurrentWeek(new Date(2026, 10, 15, 23, 59, 59))).toBe(true);
+      expect(isInCurrentWeek(new Date(2026, 10, 9, 0, 0))).toBe(true); // Monday 00:00 of the same week
+      expect(isInCurrentWeek(new Date(2026, 10, 16, 0, 0))).toBe(false); // next Monday
+      expect(isInCurrentWeek(new Date(2026, 10, 8, 23, 59))).toBe(false); // previous Sunday
     });
 
     it('should return true for other days in current week', () => {
