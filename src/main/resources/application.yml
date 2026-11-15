@@ -11,6 +11,12 @@ spring:
       # Never use create/create-drop/update outside dev/test.
       ddl-auto: validate
     open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          # The items of an order are inserted in one JDBC batch instead of one round trip each
+          batch_size: 20
+        order_inserts: true
 
   task:
     scheduling:

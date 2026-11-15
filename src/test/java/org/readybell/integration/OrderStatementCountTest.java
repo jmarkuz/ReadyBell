@@ -16,13 +16,14 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 /**
  * Guards the cost of the order hot paths in SQL statements (measured with Hibernate statistics on PostgreSQL). The
- * limits are the current numbers: a change that adds a query to creating an order or changing its status has to
- * raise them on purpose.
+ * limits are the current numbers: a change that adds a query to creating an order, changing its status or listing a
+ * page has to raise them on purpose.
  */
 @SpringBootTest(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
 @AutoConfigureMockMvc
@@ -55,9 +56,9 @@ class OrderStatementCountTest {
 
         createOrder("measured");
 
-        // session insert + its tenant check, order number, order insert, items; no merge SELECT, no UPDATE of the version
+        // session insert + its tenant check, order number, order insert, items in one batch; no merge SELECT, no version UPDATE
         assertThat(stats().getEntityUpdateCount()).as("entity updates while creating").isZero();
-        assertThat(stats().getPrepareStatementCount()).as("statements to create an order").isLessThanOrEqualTo(8);
+        assertThat(stats().getPrepareStatementCount()).as("statements to create an order").isLessThanOrEqualTo(6);
     }
 
     @Test
@@ -70,5 +71,18 @@ class OrderStatementCountTest {
 
         // load order, load its items, insert the outbox event, update the order
         assertThat(stats().getPrepareStatementCount()).as("statements for a status change").isLessThanOrEqualTo(4);
+    }
+
+    @Test
+    void aPageOfOrdersDoesNotQueryItemsOnePerOrder() throws Exception {
+        for (int i = 0; i < 12; i++) {
+            createOrder("page-" + i);
+        }
+        stats().clear();
+
+        mvc.perform(get("/api/orders?pageSize=12").with(httpBasic("admin", "admin")));
+
+        // page query, one batched items query, count
+        assertThat(stats().getPrepareStatementCount()).as("statements for a page of 12 orders").isLessThanOrEqualTo(3);
     }
 }

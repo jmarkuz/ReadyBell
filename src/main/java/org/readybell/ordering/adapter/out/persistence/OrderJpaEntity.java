@@ -1,6 +1,7 @@
 package org.readybell.ordering.adapter.out.persistence;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 import org.readybell.ordering.domain.Order;
 import org.readybell.ordering.domain.OrderDetails;
 import org.readybell.ordering.domain.OrderId;
@@ -68,7 +69,9 @@ public class OrderJpaEntity extends TenantScopedEntity {
     @Column(name = "estimated_ready_at")
     private Instant estimatedReadyAt;
 
+    // One query per page ("where order_id in (...)") instead of one per order; JOIN FETCH would make Hibernate page in memory
     @ElementCollection(fetch = FetchType.EAGER)
+    @BatchSize(size = 50)
     @CollectionTable(name = "order_item", joinColumns = @JoinColumn(name = "order_id"))
     @OrderColumn(name = "position")
     private List<OrderItemEmbeddable> items = new ArrayList<>();
