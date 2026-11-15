@@ -68,4 +68,4 @@ where possible, now enforced by tests. No behaviour changed.
 - Staff JWT is kept in browser storage (XSS exposure) and the SSE stream takes it as `?token=` (shows up in proxy logs). CSP limits
   the first; the second needs a short-lived ticket (BACKLOG S2).
 - Web Push is untested on real devices; iOS only works for a Home-Screen PWA over HTTPS (BACKLOG P1).
-- Single-node assumptions: SSE registry is in memory (Redis relay exists), housekeeping runs on every replica (idempotent, but redundant).
+- Single-node assumptions: SSE registry is in memory (Redis relay exists), housekeeping is scheduled on every replica but runs under a PostgreSQL advisory lock, so one at a time (T19).
