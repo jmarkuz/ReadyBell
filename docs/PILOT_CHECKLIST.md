@@ -2,7 +2,7 @@
 
 Field checklist for the first pilot restaurants. It covers BACKLOG items **P1** (Web Push on real devices) and
 **P2** (real host, TLS, stable VAPID pair, platform operator), and turns the MVP success criteria
-([Pingood_MVP_Definition.md](product/Pingood_MVP_Definition.md), section 9) into measurable pass/fail checks.
+([ReadyBell_MVP_Definition.md](product/ReadyBell_MVP_Definition.md), section 9) into measurable pass/fail checks.
 P3 (backups) is a separate backlog item; the counter QR flow (P4) is built, see [section 5](#5-known-limitations).
 
 Related: [DEPLOYMENT.md](DEPLOYMENT.md), [API_INTEGRATION.md](API_INTEGRATION.md), [BACKLOG.md](BACKLOG.md).

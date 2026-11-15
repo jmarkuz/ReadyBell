@@ -1,7 +1,7 @@
-# Pingood MVP Definition v1.0
+# ReadyBell MVP Definition v1.0
 
 **Document Type:** MVP Scope & Product Boundaries
-**Product:** Pingood
+**Product:** ReadyBell
 **Version:** 1.0
 **Audience:** Product Team, Engineering Team, AI Development Agents (Kiro)
 **Priority:** HIGH
@@ -11,7 +11,7 @@
 
 # 1. MVP Purpose
 
-The purpose of Pingood MVP is to validate the core business hypothesis:
+The purpose of ReadyBell MVP is to validate the core business hypothesis:
 
 > Restaurants are willing to replace physical customer notification devices with a simple digital notification experience using customers' smartphones.
 
@@ -25,7 +25,7 @@ The MVP must prove three things:
 
 # 2. MVP Product Statement
 
-Pingood MVP is a lightweight SaaS platform that enables restaurants to notify customers when their order is ready through a QR-based mobile experience and push notifications.
+ReadyBell MVP is a lightweight SaaS platform that enables restaurants to notify customers when their order is ready through a QR-based mobile experience and push notifications.
 
 The MVP is NOT a complete restaurant management system.
 
@@ -438,7 +438,7 @@ Add:
 
 # 12. AI Agent Instructions
 
-When implementing Pingood MVP:
+When implementing ReadyBell MVP:
 
 The AI agent MUST:
 
@@ -459,7 +459,7 @@ The AI agent MUST NOT:
 
 # Final MVP Definition
 
-Pingood MVP is:
+ReadyBell MVP is:
 
 > A simple, reliable, zero-hardware restaurant notification platform that proves customers and restaurants prefer smartphone-based order readiness communication.
 

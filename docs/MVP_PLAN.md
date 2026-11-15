@@ -1,6 +1,6 @@
 # First MVP: gap analysis and execution plan
 
-Source of truth for scope: [ReadyBell MVP Definition](product/Pingood_MVP_Definition.md) (the file keeps its original name).
+Source of truth for scope: [ReadyBell MVP Definition](product/ReadyBell_MVP_Definition.md).
 Rule from the definition: every feature must answer "does this help replace physical notification devices?" Anything else is deferred.
 Overall status of all improvement tasks: [IMPROVEMENTS.md](IMPROVEMENTS.md).
 
