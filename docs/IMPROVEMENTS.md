@@ -64,7 +64,7 @@ beat and a regression test that keeps it.
 | T16 | Scheduler with several threads | S | Done | – | – | One `taskScheduler` thread shared by SSE heartbeat, outbox poll and housekeeping; push retries sleep on it |
 | T17 | New orders are inserted, not merged | M | Done | – | – | Creating an order took 10 statements: a `SELECT` (merge) and an `UPDATE version` right after the `INSERT` |
 | T18 | Batch-fetch order items, batch JDBC inserts | S | Done | T17 | – | A page of 12 orders took 14 statements (N+1 on `order_item`); items were inserted one by one |
-| T19 | Session housekeeping runs on one replica at a time | S | Todo | – | R3 | Every replica ran the cleanup (idempotent, but redundant); PostgreSQL advisory lock, no new dependency |
+| T19 | Session housekeeping runs on one replica at a time | S | Done | – | R3 | Every replica ran the cleanup (idempotent, but redundant); PostgreSQL advisory lock, no new dependency |
 
 Left out on purpose (still in the backlog or noted in the review): token storage in the browser (S3, needs a threat
 model), retrying a failed push through the outbox instead of `Thread.sleep` on the relay thread, per-aggregate ordering
