@@ -64,7 +64,14 @@ public class JpaOrderRepository implements OrderRepository {
     @CrossTenant("the order carries its own tenant")
     public void save(Order order) {
         var entity = OrderJpaEntity.from(order);
-        springRepo.save(entity);
+        if (order.isNew()) {
+            // A new order is inserted as it is. springRepo.save() would treat the entity as detached (assigned id,
+            // primitive version) and run a SELECT plus an extra UPDATE of the version around the INSERT.
+            entityManager.persist(entity);
+            order.markPersisted();
+        } else {
+            springRepo.save(entity);   // update: merge keeps the optimistic-lock version check
+        }
     }
 
     @Override

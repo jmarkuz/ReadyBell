@@ -11,6 +11,19 @@ spring:
       # Never use create/create-drop/update outside dev/test.
       ddl-auto: validate
     open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          # The items of an order are inserted in one JDBC batch instead of one round trip each
+          batch_size: 20
+        order_inserts: true
+
+  task:
+    scheduling:
+      # Boot's default is ONE thread, shared by the SSE heartbeat, the outbox relay poll, the outbox cleanup and
+      # the session housekeeping; a slow push (retries sleep up to ~7.5 s) would stall all of them.
+      pool:
+        size: ${SCHEDULER_POOL_SIZE:4}
 
   flyway:
     enabled: true

@@ -65,6 +65,9 @@ public class Order {
     /** Pending events to be published by the application layer after transaction commit. */
     private final List<DomainEvent> pendingEvents = new ArrayList<>();
 
+    /** True from {@link #create} until the persistence adapter has stored the order for the first time. */
+    private boolean newlyCreated;
+
     private Order(OrderId id,
                   int orderNumber,
                   TenantId tenantId,
@@ -123,6 +126,7 @@ public class Order {
         Instant now = clock.instant();
         var order = new Order(OrderId.newId(), orderNumber, tenantId, sessionId, OrderStatus.CREATED, details, now, now);
         order.record(OrderCreated.of(order.id, tenantId, sessionId, clock.instant(), orderNumber));
+        order.newlyCreated = true;
         return order;
     }
 
@@ -257,6 +261,19 @@ public class Order {
 
     public Instant getClaimedAt() {
         return claimedAt;
+    }
+
+    /**
+     * Whether this order has never been stored. Lets the persistence adapter insert it directly instead of
+     * looking it up first to decide between insert and update.
+     */
+    public boolean isNew() {
+        return newlyCreated;
+    }
+
+    /** Called by the persistence adapter once the order has been stored; later saves are updates. */
+    public void markPersisted() {
+        newlyCreated = false;
     }
 
     /** Clears the pending events list after they have been published. */

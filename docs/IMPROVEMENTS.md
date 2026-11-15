@@ -51,6 +51,25 @@ subset to do next, plus findings from the latest analysis (T01–T04). "Backlog"
 | T12 | Counter QR flow (customer enters the order number) | M | Done | T08, T11 | P4 | [T12](tasks/T12-counter-qr-flow.md) |
 | T13 | Sound / vibration alert for new orders | S | Done | – | Q6 (part) | [T13](tasks/T13-new-order-alert.md) |
 
+## Wave 4: findings of the technical review (measured, then fixed)
+
+Source: the "weak spots" review of the backend. Three of the findings were first **measured** on PostgreSQL (statement
+counts with Hibernate statistics, scheduler pool size, HTTP session creation), so each task below has a number to
+beat and a regression test that keeps it.
+
+| ID | Task | Size | Status | Depends on | Backlog | Finding |
+|----|------|------|--------|-----------|---------|---------|
+| T14 | Login throttle uses the same client-IP resolver as the rate limiter | S | Done | – | – | `AuthController` read `getRemoteAddr()`: behind a reverse proxy every login looked like one client |
+| T15 | Explicit stateless sessions; fix the stale security Javadoc | S | Done | – | – | No session is created today, but only by default; the Javadoc still described HTTP Basic as the MVP mechanism |
+| T16 | Scheduler with several threads | S | Done | – | – | One `taskScheduler` thread shared by SSE heartbeat, outbox poll and housekeeping; push retries sleep on it |
+| T17 | New orders are inserted, not merged | M | Done | – | – | Creating an order took 10 statements: a `SELECT` (merge) and an `UPDATE version` right after the `INSERT` |
+| T18 | Batch-fetch order items, batch JDBC inserts | S | Done | T17 | – | A page of 12 orders took 14 statements (N+1 on `order_item`); items were inserted one by one |
+| T19 | Session housekeeping runs on one replica at a time | S | Done | – | R3 | Every replica ran the cleanup (idempotent, but redundant); PostgreSQL advisory lock, no new dependency |
+
+Left out on purpose (still in the backlog or noted in the review): token storage in the browser (S3, needs a threat
+model), retrying a failed push through the outbox instead of `Thread.sleep` on the relay thread, per-aggregate ordering
+of outbox events, PostgreSQL Row-Level Security as a second tenant barrier, keyset pagination, Web Push on real devices (P1).
+
 ## Not in this plan (still in the backlog)
 
 Operations before the pilot (P1 push on real devices, P2 deployment, P3 PostgreSQL backups) need a real host and
@@ -64,7 +83,8 @@ Q3 remaining accessibility gaps, Q4 customer page extras, Q5 `.kiro` specs.
 |------|--------------|
 | 1 | 4 / 4 |
 | 2 | 4 / 4 |
-| 3 | 2 / 5 |
+| 3 | 5 / 5 |
+| 4 | 6 / 6 |
 
 ## Log
 
@@ -85,3 +105,4 @@ Q3 remaining accessibility gaps, Q4 customer page extras, Q5 `.kiro` specs.
 | 2026-11-05 | PRs #11 (T05), #12 (T09), #13 (E2E CI fixes) merged; all CI jobs green incl. `e2e` (2 min 16 s). T10 flakiness (< 1 % over 20 runs) is only evidenced by 10 local runs and 3 CI runs so far. Also fixed a test-only race: the scheduled outbox relay of one cached Spring test context stole events of another, so the relay is off in the test profile and tests call `OutboxRelay.drain()`. Wave 3 left: T11, T12, T13. |
 | 2026-11-13 | T12: counter QR flow. `claimed_at` on `order` (Flyway V5, carried by the `Order` aggregate so status changes do not erase it); `CounterClaimService` hands out the session of an order once, only while the order is unfinished and younger than `readybell.claim.max-age` (4 h); `GET /api/restaurants/{identifier}/public` and `POST /api/restaurants/{identifier}/claim` are public, rate limited (claim 10/min per IP) and answer every failure with the same 404; of 8 parallel claims exactly one wins (optimistic lock). UI: `/r/:identifier` page (uk/en) that continues on `/track/:sessionId`, *Counter QR code* card with print on the Settings page, shared `CustomerShell`. Playwright: counter QR -> number -> live tracking -> READY, a second claim of the same number fails. Known trade-off: first come, first served (see PILOT_CHECKLIST section 5). |
 | 2026-11-13 | T13: new-order alert for staff. The backend only pushed status changes, so a new order never reached other staff screens live; it now sends the staff stream an `order-created` SSE event (`OrderCreated` carries the receipt number; sent after commit through `@TransactionalEventListener`; customers never get it; relayed messages from older nodes default to status updates). UI: `useSSE` listens to `order-created`, `useDashboardOrders` reloads and reports it (`onNewOrder`), `AlertProvider` gives a chime + vibration (header speaker toggle, off by default, remembered, audio unlocked by the click), a `(n)` tab title while the tab is in the background and a polite live-region announcement; the screen that entered the order stays quiet (1.5 s grace for the SSE event beating the POST response). Found by the Playwright scenario: `useSSE` ignored named events other than `order-status-updated`, which unit tests with a mocked `useSSE` could not show. Alerts only run while the Dashboard is open (that is where the stream lives). |
+| 2026-11-15 | Wave 4 (T14-T19), findings of the technical review; the ones about SQL, the scheduler and sessions were measured on PostgreSQL first. T14: login throttle keys on `ClientIpResolver` (it used the proxy's address behind a reverse proxy). T15: `SessionCreationPolicy.STATELESS` declared (no session was created before either); stale Javadoc fixed. T16: scheduler pool 1 -> 4 threads (`SCHEDULER_POOL_SIZE`); a failing push sleeps up to ~7.5 s inside the relay and stalled the heartbeat. T17: new orders are persisted, not merged (create 10 -> 8 statements, no `UPDATE version`). T18: `@BatchSize` on the items and JDBC batching (page of 12 orders 14 -> 3 statements, create 8 -> 6). T19: session housekeeping under `pg_try_advisory_xact_lock`. New tests: `LoginThrottleBehindProxyTest`, `StatelessApiTest`, `SchedulerPoolTest`, `OrderStatementCountTest`, `SessionHousekeepingLockTest`. Still open from the review: push retries via the outbox, per-aggregate event order, Row-Level Security, keyset pagination, token storage (S3). |

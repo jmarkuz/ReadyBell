@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.readybell.platform.TenantUser;
+import org.readybell.platform.ratelimit.ClientIpResolver;
 import org.springframework.http.HttpHeaders;
 
 import java.time.Duration;
@@ -41,10 +42,12 @@ public class AuthController {
     private final PasswordEncoder encoder;
     private final JwtService jwt;
     private final LoginAttemptLimiter limiter;
+    private final ClientIpResolver clientIps;
 
     public AuthController(UserDetailsService users, PasswordEncoder encoder, JwtService jwt,
-                          LoginAttemptLimiter limiter) {
+                          LoginAttemptLimiter limiter, ClientIpResolver clientIps) {
         this.limiter = limiter;
+        this.clientIps = clientIps;
         this.users = users;
         this.encoder = encoder;
         this.jwt = jwt;
@@ -53,7 +56,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public TokenResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
-        String address = http.getRemoteAddr();
+        // Behind a reverse proxy the peer is the proxy; the resolver reads the real client from X-Forwarded-For
+        String address = clientIps.resolve(http);
         Duration wait = limiter.retryAfter(request.username(), address);
         if (!wait.isZero()) {
             throw new TooManyLoginAttemptsException(wait);

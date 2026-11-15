@@ -17,12 +17,15 @@ import java.time.Instant;
  * Keeps customer sessions from piling up: a session older than the TTL whose orders are all finished
  * is ENDED (no new orders can join it), and the push subscriptions of ended sessions are deleted —
  * they are personal device endpoints that are useless once the order has been picked up.
- * Orders themselves are kept.
+ * Orders themselves are kept. Safe to schedule on every replica: see {@link #run}.
  */
 @Component
 public class SessionHousekeeping {
 
     private static final Logger log = LoggerFactory.getLogger(SessionHousekeeping.class);
+
+    /** Transaction-level advisory lock key ("READYBLL"): one replica at a time runs the cleanup. */
+    public static final long LOCK_KEY = 0x5245414459424C4CL;
 
     @PersistenceContext private EntityManager em;
     private final Clock clock;
@@ -38,9 +41,21 @@ public class SessionHousekeeping {
         run(ttl);
     }
 
-    /** @return {ended sessions, deleted subscriptions} */
+    /**
+     * Ends old finished sessions and deletes their subscriptions. Every replica schedules this, but the first one to
+     * take a PostgreSQL advisory lock does the work and the others skip the round (the lock is released with the
+     * transaction, and a replica that dies releases it with its connection).
+     *
+     * @return {ended sessions, deleted subscriptions}; zeros when another replica holds the lock
+     */
     @Transactional
     public int[] run(Duration olderThan) {
+        Boolean acquired = (Boolean) em.createNativeQuery("SELECT pg_try_advisory_xact_lock(:key)")
+                .setParameter("key", LOCK_KEY).getSingleResult();
+        if (!Boolean.TRUE.equals(acquired)) {
+            log.debug("Session housekeeping skipped: another replica is running it");
+            return new int[] {0, 0};
+        }
         Instant cutoff = clock.instant().minus(olderThan);
         int ended = em.createQuery("""
                 UPDATE CustomerSessionJpaEntity s SET s.status = org.readybell.session.domain.SessionStatus.ENDED

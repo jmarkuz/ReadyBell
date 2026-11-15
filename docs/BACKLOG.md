@@ -23,7 +23,7 @@ The ordered plan for what to do next, with specifications and status, is in [IMP
 | S3 | Move the staff token out of `localStorage` (httpOnly cookie + CSRF) or shorten TTL/refresh | M | Decide with the threat model |
 | S4 (done, T08) | Rate-limit public endpoints (`POST /api/sessions`, subscriptions) per IP | S | Redis-backed, like the login throttle |
 | R2 | Alerting on the Prometheus metrics (push failures, 5xx, SSE connections) and custom counters (sessions started, pushes sent/failed) | M | Metrics endpoint exists; no custom meters yet |
-| R3 | Run housekeeping on one node only (ShedLock or a Redis lock) | S | Now idempotent but runs everywhere |
+| R3 (done, T19) | Run housekeeping on one node only (PostgreSQL advisory lock) | S | Every replica schedules it; the first to take the lock runs the round |
 
 ## P2: architecture follow-ups (from the review)
 
