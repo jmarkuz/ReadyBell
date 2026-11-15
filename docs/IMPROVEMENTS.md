@@ -60,7 +60,7 @@ beat and a regression test that keeps it.
 | ID | Task | Size | Status | Depends on | Backlog | Finding |
 |----|------|------|--------|-----------|---------|---------|
 | T14 | Login throttle uses the same client-IP resolver as the rate limiter | S | Done | – | – | `AuthController` read `getRemoteAddr()`: behind a reverse proxy every login looked like one client |
-| T15 | Explicit stateless sessions; fix the stale security Javadoc | S | Todo | – | – | No session is created today, but only by default; the Javadoc still described HTTP Basic as the MVP mechanism |
+| T15 | Explicit stateless sessions; fix the stale security Javadoc | S | Done | – | – | No session is created today, but only by default; the Javadoc still described HTTP Basic as the MVP mechanism |
 | T16 | Scheduler with several threads | S | Todo | – | – | One `taskScheduler` thread shared by SSE heartbeat, outbox poll and housekeeping; push retries sleep on it |
 | T17 | New orders are inserted, not merged | M | Todo | – | – | Creating an order took 10 statements: a `SELECT` (merge) and an `UPDATE version` right after the `INSERT` |
 | T18 | Batch-fetch order items, batch JDBC inserts | S | Todo | T17 | – | A page of 12 orders took 14 statements (N+1 on `order_item`); items were inserted one by one |

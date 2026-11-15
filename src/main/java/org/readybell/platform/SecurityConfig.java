@@ -6,6 +6,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.readybell.restaurant.domain.Restaurant;
 import org.readybell.restaurant.domain.RestaurantRepository;
 import org.readybell.restaurant.domain.StaffAccountRepository;
@@ -56,8 +57,9 @@ import org.readybell.platform.auth.StreamTicketStore;
  * </ul>
  *
  * <h2>Authentication mechanism</h2>
- * HTTP Basic auth is used for the MVP (full JWT integration is deferred to a later task).
- * CSRF is disabled because the API is stateless REST (no browser form submissions).
+ * The dashboard signs in at {@code /api/login} and sends the HS256 JWT as a Bearer token; HTTP Basic is kept for
+ * curl and tests. The API is stateless: no HTTP session is ever created, so any replica can serve any request.
+ * CSRF is disabled because credentials travel in the {@code Authorization} header, never in a cookie.
  *
  * <h2>Users</h2>
  * Users come from {@code readybell.security.users} ({@link SecurityProperties}); there are no
@@ -83,8 +85,11 @@ public class SecurityConfig {
             @Value("${readybell.cors.allowed-origin-patterns:}") List<String> corsOriginPatterns)
             throws Exception {
         http
-            // Disable CSRF — REST API, no browser form submissions
+            // Disable CSRF — REST API, credentials are in a header, not a cookie
             .csrf(AbstractHttpConfigurer::disable)
+
+            // Stateless by declaration, not just by default: never create an HttpSession (replicas share nothing)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
             // The UI is normally served from the same origin; CORS is opt-in for a separately hosted UI
             .cors(cors -> cors.configurationSource(request -> {
@@ -196,10 +201,8 @@ public class SecurityConfig {
     }
 
     /**
-     * In-memory user store built from {@link SecurityProperties}.
-     *
-     * <p>Replace with a database-backed {@link UserDetailsService} and JWT authentication when
-     * full auth wiring is done (task 21).
+     * User lookup used by login and token refresh: users configured in {@link SecurityProperties} (platform
+     * admins, dev users) first, then the staff accounts stored in the database.
      */
     @Bean
     public UserDetailsService userDetailsService(PasswordEncoder encoder, SecurityProperties props,
