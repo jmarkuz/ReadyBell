@@ -19,15 +19,21 @@ import java.time.Clock;
 @EnableConfigurationProperties(RateLimitProperties.class)
 public class RateLimitConfig {
 
+    /** One resolver for everything that keys on the client address (rate limits, login throttle). */
+    @Bean
+    public ClientIpResolver clientIpResolver(RateLimitProperties props) {
+        return new ClientIpResolver(props.getTrustedProxies());
+    }
+
     @Bean
     public FilterRegistrationBean<RateLimitFilter> rateLimitFilter(RateLimitProperties props, Clock clock,
-            MeterRegistry meters, ObjectProvider<StringRedisTemplate> redis) {
+            MeterRegistry meters, ObjectProvider<StringRedisTemplate> redis, ClientIpResolver ips) {
         // Redis keeps the limit shared between replicas and falls back to per-node counters if it is down
         var redisTemplate = props.isRedis() ? redis.getIfAvailable() : null;
         FailureStore store = redisTemplate != null
                 ? new RedisFailureStore(redisTemplate, "readybell:rate-limit:")
                 : new InMemoryFailureStore();
-        var filter = new RateLimitFilter(props, new ClientIpResolver(props.getTrustedProxies()), store, clock, meters);
+        var filter = new RateLimitFilter(props, ips, store, clock, meters);
         var registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(props.isEnabled());
         registration.addUrlPatterns("/api/*");
