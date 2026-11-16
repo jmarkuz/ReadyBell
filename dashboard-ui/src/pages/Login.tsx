@@ -17,7 +17,8 @@ export default function Login() {
     setSubmitting(true);
     try {
       await apiClient.login({ username: username.trim(), password });
-      window.location.href = '/';
+      // only the customer display may be returned to; anything else would be an open redirect
+      window.location.href = new URLSearchParams(window.location.search).get('next') === '/display' ? '/display' : '/';
     } catch (e) {
       setError(messageFor(e));
       setSubmitting(false);

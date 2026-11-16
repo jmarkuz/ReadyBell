@@ -99,6 +99,8 @@ export interface OrderRow {
   status: OrderStatus;                  // Backend Order.status
   estimatedWaitTime: number | null;     // (ETA - now) in minutes, null without ETA
   itemCount: number;                    // items.length
+  sessionId?: string;                   // staff only: the customer session whose tracking link the QR code encodes
+  connected?: boolean;                  // true once the customer opened that link (scanned the QR)
 }
 
 /**

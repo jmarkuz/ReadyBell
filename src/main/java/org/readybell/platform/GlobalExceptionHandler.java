@@ -39,7 +39,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.readybell.ordering.adapter.in.web.ClaimUnavailableException;
 import org.readybell.ordering.adapter.in.web.SessionUnknownException;
 
 /**
@@ -152,17 +151,6 @@ public class GlobalExceptionHandler {
                 "https://readybell.org/problems/too-many-subscriptions",
                 "Too Many Subscriptions",
                 ex.getMessage()
-        );
-    }
-
-    @ExceptionHandler(ClaimUnavailableException.class)
-    public ResponseEntity<Map<String, Object>> handleClaimUnavailable(ClaimUnavailableException ex) {
-        // One generic answer for every reason, so the endpoint reveals nothing about which orders exist
-        return problem(
-                HttpStatus.NOT_FOUND,
-                "https://readybell.org/problems/claim-unavailable",
-                "Order Not Found",
-                "We could not find an order with this number. Check the number on your receipt."
         );
     }
 

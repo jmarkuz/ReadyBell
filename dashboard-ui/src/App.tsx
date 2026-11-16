@@ -20,8 +20,8 @@ const Staff = lazy(() => import('@/pages/Staff'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const Restaurants = lazy(() => import('@/pages/Restaurants'));
 const LoginPage = lazy(() => import('@/pages/Login'));
+const Display = lazy(() => import('@/pages/Display'));
 const TrackPage = lazy(() => import('@/pages/Track'));
-const CounterClaimPage = lazy(() => import('@/pages/CounterClaim'));
 
 /**
  * App Root Component
@@ -80,11 +80,13 @@ function App() {
                   }
                 />
                 <Route
-                  path="/r/:identifier"
+                  path="/display"
                   element={
-                    <Suspense fallback={<PageLoader />}>
-                      <CounterClaimPage />
-                    </Suspense>
+                    <RequireRole roles={['STAFF', 'RESTAURANT_ADMIN']}>
+                      <Suspense fallback={<PageLoader />}>
+                        <Display />
+                      </Suspense>
+                    </RequireRole>
                   }
                 />
                 <Route element={<Layout />}>

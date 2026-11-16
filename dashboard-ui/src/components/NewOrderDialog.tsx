@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Check, Copy, Plus, Printer, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { apiClient } from '@/utils/api';
-import { isLocalOnlyUrl, printReceipt, qrDataUrl, trackingUrl } from '@/utils/receipt';
+import { qrDataUrl, trackingUrl } from '@/utils/receipt';
+import OrderQrPanel from './OrderQrPanel';
 import { useRestaurant } from '@/context/restaurantContext';
 
 interface Line { name: string; quantity: number }
-interface Created { orderNumber: string; url: string; qr: string }
+interface Created { id: string; orderNumber: string; url: string; qr: string }
 
 interface Props {
   open: boolean;
   onClose: () => void;
   /** Called with the new order's id once it is saved, so the list can refresh. */
   onCreated: (orderId: string) => void;
+  /** Orders whose customer has opened the tracking link; the QR code of such an order is hidden. */
+  connectedOrderIds?: ReadonlySet<string>;
 }
 
 const ETA_CHIPS = [5, 10, 15, 20];
@@ -21,7 +24,7 @@ const emptyLine = (): Line => ({ name: '', quantity: 1 });
  * Staff order entry (US-S001). Creates the order — the server starts the customer session — and
  * then shows the receipt QR code that opens the customer's tracking page.
  */
-export default function NewOrderDialog({ open, onClose, onCreated }: Props) {
+export default function NewOrderDialog({ open, onClose, onCreated, connectedOrderIds }: Props) {
   const restaurant = useRestaurant();
   const [customer, setCustomer] = useState('');
   const [lines, setLines] = useState<Line[]>([emptyLine()]);
@@ -29,12 +32,11 @@ export default function NewOrderDialog({ open, onClose, onCreated }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<Created | null>(null);
-  const [copied, setCopied] = useState(false);
   const firstField = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    setCustomer(''); setLines([emptyLine()]); setMinutes(10); setError(null); setCreated(null); setCopied(false);
+    setCustomer(''); setLines([emptyLine()]); setMinutes(10); setError(null); setCreated(null);
     const t = setTimeout(() => firstField.current?.focus(), 0);
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
@@ -58,7 +60,7 @@ export default function NewOrderDialog({ open, onClose, onCreated }: Props) {
         items,
       });
       const url = trackingUrl(order.sessionId);
-      setCreated({ orderNumber: order.orderId, url, qr: await qrDataUrl(url) });
+      setCreated({ id: order.id, orderNumber: order.orderId, url, qr: await qrDataUrl(url) });
       onCreated(order.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create the order.');
@@ -78,27 +80,11 @@ export default function NewOrderDialog({ open, onClose, onCreated }: Props) {
         </div>
 
         {created ? (
-          <div className="text-center space-y-3">
-            <p className="text-3xl font-semibold tracking-wide">{created.orderNumber}</p>
-            <img src={created.qr} alt={`QR code for order ${created.orderNumber}`} className="mx-auto w-56 h-56 rounded-lg border border-slate-200" />
-            <p className="text-sm text-slate-600 dark:text-slate-400">Show or print this code. The customer scans it to follow the order and get notified.</p>
-            <p className="text-xs break-all text-slate-500">{created.url}</p>
-            {isLocalOnlyUrl(created.url) && (
-              <p role="alert" className="text-sm text-left rounded-lg bg-amber-50 text-amber-900 border border-amber-200 p-3">
-                This link points to <strong>localhost</strong>, so a customer's phone cannot open it. Open the
-                dashboard through this computer's network address (e.g. <code>npm run dev:lan</code>) or set{' '}
-                <code>VITE_PUBLIC_URL</code>, then create the order again.
-              </p>
-            )}
-            <div className="flex gap-2 justify-center flex-wrap pt-2">
-              <button type="button" onClick={() => printReceipt({ restaurant: restaurant.name, orderNumber: created.orderNumber, qr: created.qr, url: created.url })}
-                className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-stone-800 text-white text-sm font-medium"><Printer className="w-4 h-4" aria-hidden="true" />Print</button>
-              <button type="button" onClick={async () => { try { await navigator.clipboard.writeText(created.url); setCopied(true); } catch { /* clipboard unavailable */ } }}
-                className="inline-flex items-center gap-2 h-10 px-4 rounded-full border border-slate-300 text-sm font-medium">{copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}{copied ? 'Copied' : 'Copy link'}</button>
-              <button type="button" onClick={() => { setCreated(null); setCustomer(''); setLines([emptyLine()]); }}
-                className="h-10 px-4 rounded-full border border-slate-300 text-sm font-medium">New order</button>
-            </div>
-          </div>
+          <OrderQrPanel orderNumber={created.orderNumber} url={created.url} qr={created.qr} restaurantName={restaurant.name}
+            connected={connectedOrderIds?.has(created.id) ?? false}>
+            <button type="button" onClick={() => { setCreated(null); setCustomer(''); setLines([emptyLine()]); }}
+              className="h-10 px-4 rounded-full border border-slate-300 text-sm font-medium">New order</button>
+          </OrderQrPanel>
         ) : (
           <form onSubmit={submit} className="space-y-4">
             <div>

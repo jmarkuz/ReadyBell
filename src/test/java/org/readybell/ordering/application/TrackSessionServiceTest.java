@@ -4,6 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.readybell.ordering.domain.InMemoryOrderRepository;
 import org.readybell.ordering.domain.Order;
+import org.readybell.ordering.domain.OrderConnected;
+import org.readybell.ordering.domain.OrderStatus;
 import org.readybell.restaurant.domain.InMemoryRestaurantRepository;
 import org.readybell.restaurant.domain.Restaurant;
 import org.readybell.restaurant.domain.RestaurantConfig;
@@ -11,6 +13,7 @@ import org.readybell.session.domain.CustomerSession;
 import org.readybell.session.domain.CustomerSessionId;
 import org.readybell.session.domain.InMemoryCustomerSessionRepository;
 import org.readybell.session.domain.SessionStatus;
+import org.readybell.shared.domain.RecordingDomainEventPublisher;
 import org.readybell.shared.domain.TenantId;
 
 import java.time.Clock;
@@ -29,6 +32,8 @@ class TrackSessionServiceTest {
     private InMemoryCustomerSessionRepository sessions;
     private InMemoryOrderRepository orders;
     private InMemoryRestaurantRepository restaurants;
+    private RecordingDomainEventPublisher events;
+    private Clock now;
     private TrackSessionService service;
 
     @BeforeEach
@@ -36,7 +41,9 @@ class TrackSessionServiceTest {
         sessions = new InMemoryCustomerSessionRepository();
         orders = new InMemoryOrderRepository();
         restaurants = new InMemoryRestaurantRepository();
-        service = new TrackSessionService(sessions, orders, restaurants);
+        events = new RecordingDomainEventPublisher();
+        now = Clock.fixed(T0.plus(Duration.ofMinutes(20)), ZoneOffset.UTC);
+        service = new TrackSessionService(sessions, orders, restaurants, events, now);
     }
 
     private Order orderAt(CustomerSession session, Instant createdAt) {
@@ -93,11 +100,61 @@ class TrackSessionServiceTest {
 
     @Test
     void constructorRejectsNulls() {
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new TrackSessionService(null, orders, restaurants))
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new TrackSessionService(null, orders, restaurants, events, now))
                 .isInstanceOf(NullPointerException.class);
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new TrackSessionService(sessions, null, restaurants))
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new TrackSessionService(sessions, null, restaurants, events, now))
                 .isInstanceOf(NullPointerException.class);
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new TrackSessionService(sessions, orders, null))
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new TrackSessionService(sessions, orders, null, events, now))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void theFirstOpenMarksTheOrderConnectedAndTellsTheStaffOnce() {
+        var session = CustomerSession.start(TENANT, Clock.fixed(T0, ZoneOffset.UTC));
+        sessions.save(session);
+        var order = orderAt(session, T0);
+
+        service.track(TENANT, session.getId());
+        service.track(TENANT, session.getId());                 // the page polls every 10 s
+        service.track(TENANT, session.getId());
+
+        assertThat(orders.findByTenantAndId(TENANT, order.getId()).orElseThrow().isConnected()).isTrue();
+        assertThat(events.getPublishedEvents()).hasSize(1).first().isInstanceOf(OrderConnected.class);
+        var event = (OrderConnected) events.getPublishedEvents().get(0);
+        assertThat(event.orderId()).isEqualTo(order.getId());
+        assertThat(event.orderNumber()).isEqualTo(order.getOrderNumber());
+    }
+
+    @Test
+    void anUnknownSessionSignalsNothing() {
+        service.track(TENANT, new CustomerSessionId(UUID.randomUUID()));
+
+        assertThat(events.getPublishedEvents()).isEmpty();
+    }
+
+    @Test
+    void openingTheLinkOfAFinishedOrderSignalsNothingAtTheCounter() {
+        var session = CustomerSession.start(TENANT, Clock.fixed(T0, ZoneOffset.UTC));
+        sessions.save(session);
+        var order = orderAt(session, T0);
+        order.transitionTo(OrderStatus.CANCELLED, Clock.fixed(T0, ZoneOffset.UTC));
+        orders.save(order);
+
+        service.track(TENANT, session.getId());
+
+        assertThat(events.getPublishedEvents()).isEmpty();
+        assertThat(orders.findByTenantAndId(TENANT, order.getId()).orElseThrow().isConnected()).isFalse();
+    }
+
+    @Test
+    void everyOrderOfTheSessionIsConnectedByOneOpen() {
+        var session = CustomerSession.start(TENANT, Clock.fixed(T0, ZoneOffset.UTC));
+        sessions.save(session);
+        orderAt(session, T0);
+        orderAt(session, T0.plusSeconds(60));
+
+        service.track(TENANT, session.getId());
+
+        assertThat(events.getPublishedEvents()).hasSize(2);
     }
 }

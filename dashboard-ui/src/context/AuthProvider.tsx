@@ -94,7 +94,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           
           // Only redirect if we're not already on the login page
           if (window.location.pathname !== '/login') {
-            navigate('/login', { replace: true });
+            // the customer display is opened on its own screen: come back to it after signing in
+            navigate(window.location.pathname === '/display' ? '/login?next=/display' : '/login', { replace: true });
           }
           return;
         }

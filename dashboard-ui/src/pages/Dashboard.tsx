@@ -9,7 +9,10 @@ import { useDashboardOrders, type NewOrderEvent, type OrdersQuery, type OrdersSo
 import { useNewOrderAlerts } from '@/context/alertContext';
 import { apiClient } from '@/utils/api';
 import NewOrderDialog from '@/components/NewOrderDialog';
-import { Plus } from 'lucide-react';
+import OrderQrDialog from '@/components/OrderQrDialog';
+import { useRestaurant } from '@/context/restaurantContext';
+import { Link } from 'react-router-dom';
+import { MonitorSmartphone, Plus } from 'lucide-react';
 
 /** Incoming Orders rows per page. */
 const PAGE_SIZE = 10;
@@ -99,10 +102,16 @@ export default function Dashboard() {
     return () => timers.forEach(clearTimeout);
   }, []);
 
+  // Orders whose customer has opened the tracking link since this screen loaded (the list carries the rest)
+  const [connectedIds, setConnectedIds] = useState<ReadonlySet<string>>(() => new Set());
+  const handleOrderConnected = useCallback((orderId: string) => {
+    setConnectedIds((prev) => new Set(prev).add(orderId));
+  }, []);
+
   // Orders come from the backend (GET /api/orders, one page) and are refreshed on SSE events
   const {
     orders: pageOrders, totalCount, pageCount, metrics: serverMetrics, isLoading, error: loadError, isConnected, reload,
-  } = useDashboardOrders(query, { onNewOrder: handleNewOrder });
+  } = useDashboardOrders(query, { onNewOrder: handleNewOrder, onOrderConnected: handleOrderConnected });
 
   // The page vanished under us (orders deleted elsewhere): step back to the last one that exists
   useEffect(() => {
@@ -110,6 +119,11 @@ export default function Dashboard() {
     if (!isLoading && page > last) handlePageChange(last);
   }, [isLoading, page, pageCount, handlePageChange]);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  const restaurant = useRestaurant();
+  const [qrOrderId, setQrOrderId] = useState<string | null>(null);
+  const closeQr = useCallback(() => setQrOrderId(null), []);
+  const qrOrder = qrOrderId ? pageOrders.find((o) => o.id === qrOrderId) : undefined;
 
   const [newOrderOpen, setNewOrderOpen] = useState(false);
   const closeNewOrder = useCallback(() => setNewOrderOpen(false), []);
@@ -170,6 +184,15 @@ export default function Dashboard() {
           </p>
         </div>
         
+        <Link
+          to="/display"
+          target="_blank"
+          className="inline-flex items-center gap-2 h-10 px-4 whitespace-nowrap rounded-full border border-slate-300 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          <MonitorSmartphone className="w-4 h-4" aria-hidden="true" />
+          Customer display
+        </Link>
+
         <button
           type="button"
           onClick={() => setNewOrderOpen(true)}
@@ -200,7 +223,15 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <NewOrderDialog open={newOrderOpen} onClose={closeNewOrder} onCreated={handleOrderCreated} />
+      <NewOrderDialog open={newOrderOpen} onClose={closeNewOrder} onCreated={handleOrderCreated} connectedOrderIds={connectedIds} />
+      {qrOrder?.sessionId && (
+        <OrderQrDialog
+          order={{ orderNumber: qrOrder.orderId, sessionId: qrOrder.sessionId }}
+          connected={Boolean(qrOrder.connected) || connectedIds.has(qrOrder.id)}
+          restaurantName={restaurant.name}
+          onClose={closeQr}
+        />
+      )}
 
       {/* Order Summary Cards Grid */}
       <section aria-labelledby="order-summary-heading">
@@ -317,6 +348,8 @@ export default function Dashboard() {
               currentPage={page}
               onPageChange={handlePageChange}
               onStatusChange={handleStatusChange}
+              onRowClick={setQrOrderId}
+              connectedIds={connectedIds}
               serverSide={{ totalCount, sort, onSortChange: setSort }}
             />
           </>

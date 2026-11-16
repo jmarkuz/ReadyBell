@@ -124,7 +124,6 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public: customer session endpoints and health/metrics probes
                 .requestMatchers("/api/sessions/**").permitAll()
-                .requestMatchers("/api/restaurants/**").permitAll()   // counter QR: restaurant name + order claim
                 .requestMatchers("/api/push/config").permitAll()
                 .requestMatchers("/api/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
                 // Probes are public; metrics and the rest of actuator are for the platform operator

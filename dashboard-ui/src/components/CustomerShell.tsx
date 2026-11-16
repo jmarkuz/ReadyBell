@@ -1,7 +1,7 @@
 import { Coffee } from 'lucide-react';
 import { displayFont } from '@/components/customerStyles';
 
-/** Frame shared by the customer pages (tracking and counter claim): restaurant header, optional live badge. */
+/** Frame shared by the customer pages (tracking): restaurant header, optional live badge. */
 export function CustomerShell({ children, restaurantName, live, liveLabel }: {
   children: React.ReactNode; restaurantName?: string; live?: boolean; liveLabel?: string;
 }) {

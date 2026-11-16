@@ -18,18 +18,18 @@ Client code: `dashboard-ui/src/utils/api.ts` (staff API, Bearer token) and `dash
 | GET | `/api/sessions/{id}/orders/stream` | SSE, event `order-status-updated` |
 | POST | `/api/sessions/{id}/subscriptions` | `{endpointUrl, p256dhKey, authKey}` Web Push subscription. The server calls `endpointUrl`, so it must be `https`, on the default port, without credentials, and a host of a known push service (FCM, Mozilla, Apple, Windows WNS; more via `readybell.push.extra-allowed-hosts`); anything else is a 400. Lengths: endpoint ≤ 2048, `p256dhKey` ≤ 200, `authKey` ≤ 100. At most 5 devices per session (`429`, `too-many-subscriptions`); re-registering a known device only refreshes its keys |
 | DELETE | `/api/sessions/{id}/subscriptions/{subscriptionId}` | revoke |
-| GET | `/api/restaurants/{identifier}/public` | counter QR page: `{name}` of an active restaurant; 404 otherwise |
-| POST | `/api/restaurants/{identifier}/claim` | counter QR: `{orderNumber}` (the number on the receipt) → `{sessionId}` for `/track/{sessionId}`. Every failure (unknown restaurant, unknown number, already claimed, finished or older than `readybell.claim.max-age`, default 30 min) is the same generic `404`; each order can be claimed once; 10 tries/min per IP |
 | GET | `/api/push/config` | `{enabled, publicKey}`: the VAPID public key the browser subscribes with |
 | GET | `/actuator/health` | probes (`/liveness`, `/readiness`) |
 
 The session id in the URL is the credential for the customer endpoints; the tenant is derived from it.
 
-**Counter QR.** The restaurant prints one QR (Settings page of the restaurant admin) that opens `/r/{identifier}` in the
-customer app. The customer types the number from the receipt; `POST /api/restaurants/{identifier}/claim` returns the
-session of that order and the app continues on `/track/{sessionId}`. Receipt numbers are small and sequential, so the
-endpoint is throttled per IP, hands an order out only once and only for `CLAIM_MAX_AGE` (default `30m`) after the order
-was created, and never says why a claim failed.
+**QR handed over in person.** The only way to the customer's tracking page is the unguessable session id in the
+link. Staff show the QR of the order (right after entering it, or later from the orders list), or the customer-facing
+screen `/display` shows it. There is deliberately no public "receipt number to session" lookup: receipt numbers are
+small and sequential, so such a lookup can be guessed, and whoever got there first would also receive the push.
+The first open of `/track/{sessionId}` marks the order connected (`order.connected_at`); the staff stream then gets
+`order-connected`, and `GET /api/orders` rows carry `sessionId` and `connected` (staff only). The QR is hidden on the
+staff screens once an order is connected, so nobody behind in the queue can scan it.
 
 ## Order numbers
 
