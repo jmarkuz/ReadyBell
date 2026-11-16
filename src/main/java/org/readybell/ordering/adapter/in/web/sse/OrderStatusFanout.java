@@ -1,5 +1,6 @@
 package org.readybell.ordering.adapter.in.web.sse;
 
+import org.readybell.ordering.domain.OrderConnected;
 import org.readybell.ordering.domain.OrderCreated;
 import org.readybell.ordering.domain.OrderStatusUpdated;
 import org.springframework.beans.factory.ObjectProvider;
@@ -43,6 +44,16 @@ public class OrderStatusFanout {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onOrderCreated(OrderCreated event) {
         fanOut(SseMessage.created(
+                event.orderId().value(),
+                event.sessionId().value(),
+                event.tenantId().value(),
+                event.orderNumber()));
+    }
+
+    /** Tells the staff screens that the customer scanned the QR code (they show a tick and hide the code). */
+    @EventListener
+    public void onOrderConnected(OrderConnected event) {
+        fanOut(SseMessage.connected(
                 event.orderId().value(),
                 event.sessionId().value(),
                 event.tenantId().value(),

@@ -23,6 +23,13 @@ function asNewOrderEvent(data: unknown): NewOrderEvent | null {
   return { id: message.id, orderNumber: typeof message.orderNumber === 'string' ? message.orderNumber : undefined };
 }
 
+/** The customer opened an order's tracking link (the QR code was scanned): staff stream only. */
+function asConnectedId(data: unknown): string | null {
+  if (typeof data !== 'object' || data === null) return null;
+  const message = data as { event?: unknown; id?: unknown };
+  return message.event === 'order-connected' && typeof message.id === 'string' ? message.id : null;
+}
+
 export type OrdersSortBy = 'created' | 'eta' | 'status' | 'customerName' | 'orderId';
 
 /** Everything the server needs to produce one page of the Incoming Orders table. */
@@ -93,7 +100,7 @@ const toParams = (q: OrdersQuery) => ({
  */
 export function useDashboardOrders(
   query: OrdersQuery,
-  options: { onNewOrder?: (order: NewOrderEvent) => void } = {}
+  options: { onNewOrder?: (order: NewOrderEvent) => void; onOrderConnected?: (orderId: string) => void } = {}
 ): UseDashboardOrdersState {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -104,8 +111,10 @@ export function useDashboardOrders(
   const mounted = useRef(true);
 
   const onNewOrderRef = useRef(options.onNewOrder);
+  const onOrderConnectedRef = useRef(options.onOrderConnected);
   useEffect(() => {
     onNewOrderRef.current = options.onNewOrder;
+    onOrderConnectedRef.current = options.onOrderConnected;
   });
 
   // The latest query for callbacks that must stay stable (SSE, polling timer)
@@ -169,6 +178,8 @@ export function useDashboardOrders(
   const onMessage = useCallback((data: unknown) => {
     const created = asNewOrderEvent(data);
     if (created) onNewOrderRef.current?.(created);
+    const connectedId = asConnectedId(data);
+    if (connectedId) onOrderConnectedRef.current?.(connectedId);
     if (debounce.current) clearTimeout(debounce.current);
     debounce.current = setTimeout(() => void reload(), RELOAD_DEBOUNCE_MS);
   }, [reload]);

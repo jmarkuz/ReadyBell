@@ -50,8 +50,8 @@ public class Order {
     private final Instant estimatedReadyAt;
     private final Instant createdAt;
     private Instant updatedAt;
-    /** When a customer claimed the order at the counter by its number; null while unclaimed. */
-    private Instant claimedAt;
+    /** When the customer first opened the tracking link (scanned the QR); null until then. */
+    private Instant connectedAt;
 
     /**
      * Optimistic-lock version counter.
@@ -243,24 +243,25 @@ public class Order {
     }
 
     /**
-     * Marks the order as claimed by a customer who typed its number at the counter. An order can be claimed once; the
-     * check and the write are protected by the optimistic lock, so of two concurrent claims only one is stored.
+     * Records that the customer opened the tracking link, so the staff can see that the phone is connected and hide the
+     * QR code. Only the first open counts.
      *
-     * @throws OrderAlreadyClaimedException if the order was claimed before
+     * @return true if this call recorded it, false if the order was already connected
      */
-    public void claim(Clock clock) {
-        if (claimedAt != null) {
-            throw new OrderAlreadyClaimedException(id);
+    public boolean markConnected(Clock clock) {
+        if (connectedAt != null) {
+            return false;
         }
-        claimedAt = clock.instant();
+        connectedAt = clock.instant();
+        return true;
     }
 
-    public boolean isClaimed() {
-        return claimedAt != null;
+    public boolean isConnected() {
+        return connectedAt != null;
     }
 
-    public Instant getClaimedAt() {
-        return claimedAt;
+    public Instant getConnectedAt() {
+        return connectedAt;
     }
 
     /**
@@ -316,7 +317,7 @@ public class Order {
         return reconstitute(id, orderNumber, tenantId, sessionId, status, version, details, createdAt, updatedAt, null);
     }
 
-    /** Full reconstitution including the counter-claim marker (persistence adapter only). */
+    /** Full reconstitution including the first-open marker (persistence adapter only). */
     public static Order reconstitute(OrderId id,
                                      int orderNumber,
                                      TenantId tenantId,
@@ -326,10 +327,10 @@ public class Order {
                                      OrderDetails details,
                                      Instant createdAt,
                                      Instant updatedAt,
-                                     Instant claimedAt) {
+                                     Instant connectedAt) {
         var order = new Order(id, orderNumber, tenantId, sessionId, status, details, createdAt, updatedAt);
         order.version = version;
-        order.claimedAt = claimedAt;
+        order.connectedAt = connectedAt;
         return order;
     }
 }

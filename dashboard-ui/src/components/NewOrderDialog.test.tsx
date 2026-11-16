@@ -41,6 +41,21 @@ describe('NewOrderDialog', () => {
     expect(onCreated).toHaveBeenCalled();
   });
 
+  it('hides the QR code once the customer scans it', async () => {
+    vi.mocked(apiClient.createOrder).mockResolvedValue({
+      id: 'o1', orderId: '#101', sessionId: 'sess-9', status: 'CREATED', version: 0, createdAt: '', updatedAt: '',
+    });
+    const onClose = vi.fn();
+    const onCreated = vi.fn();
+    const { rerender } = render(<NewOrderDialog open onClose={onClose} onCreated={onCreated} connectedOrderIds={new Set()} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Create order' }));
+    expect(await screen.findByAltText('QR code for order #101')).toBeInTheDocument();
+
+    rerender(<NewOrderDialog open onClose={onClose} onCreated={onCreated} connectedOrderIds={new Set(['o1'])} />);
+    expect(screen.queryByAltText('QR code for order #101')).not.toBeInTheDocument();
+    expect(screen.getByText('Customer connected')).toBeInTheDocument();
+  });
+
   it('warns when the QR link points to localhost', async () => {
     (globalThis as { __url?: string }).__url = 'http://localhost:5173/track/s1';
     vi.mocked(apiClient.createOrder).mockResolvedValue({

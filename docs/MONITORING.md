@@ -24,8 +24,7 @@ counted twice, so treat the counters as accurate to a fraction of a percent, not
 | Name | Meaning |
 |------|---------|
 | `outbox_pending`, `outbox_failed` (gauges) | Outbox events waiting / given up after the retry limit |
-| `ratelimit_rejected_total{endpoint}` | Requests answered 429 (`endpoint=counter-claim` is the guess protection of the counter QR) |
-| `claim_failures_total` | Failed counter-QR claims (unknown number, already claimed, too old, malformed); successes are not counted |
+| `ratelimit_rejected_total{endpoint}` | Requests answered 429 (`endpoint` is the rule that matched, for example `track`, `session-start`) |
 | `http_server_requests_seconds_*` | Request count and latency by status and URI (Spring Boot) |
 | `jvm_*`, `hikaricp_*`, `process_*` | JVM, connection pool, process |
 

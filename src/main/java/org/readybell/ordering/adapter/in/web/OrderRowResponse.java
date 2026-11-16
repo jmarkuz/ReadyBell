@@ -19,10 +19,12 @@ import java.util.stream.Collectors;
  * @param deliveryETA        expected ready time; may be {@code null}
  * @param estimatedWaitTime  whole minutes until the ETA, never negative; {@code null} without ETA
  * @param itemCount          total quantity over all items
+ * @param sessionId          the customer session of the order (staff only): its tracking link is what the QR code encodes
+ * @param connected          true once the customer opened that link for the first time (the QR was scanned)
  */
 public record OrderRowResponse(UUID id, String orderId, String customerName, String itemsOrdered,
                                Instant deliveryETA, String status, Long estimatedWaitTime, int itemCount,
-                               Instant createdAt, Instant updatedAt) {
+                               Instant createdAt, Instant updatedAt, UUID sessionId, boolean connected) {
 
     static OrderRowResponse from(Order order, Clock clock) {
         Instant eta = order.getEstimatedReadyAt();
@@ -39,7 +41,9 @@ public record OrderRowResponse(UUID id, String orderId, String customerName, Str
                 wait,
                 order.getItems().stream().mapToInt(OrderItem::quantity).sum(),
                 order.getCreatedAt(),
-                order.getUpdatedAt());
+                order.getUpdatedAt(),
+                order.getSessionId().value(),
+                order.isConnected());
     }
 
     /** {@code #} + the restaurant's sequential order number, e.g. {@code #101}. */

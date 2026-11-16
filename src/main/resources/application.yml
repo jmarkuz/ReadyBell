@@ -54,19 +54,11 @@ readybell:
     redis: ${RATE_LIMIT_REDIS_ENABLED:false}
     # Reverse proxies (IP or CIDR) whose X-Forwarded-For is believed, e.g. RATE_LIMIT_TRUSTED_PROXIES=10.0.0.0/8
     trusted-proxies: ${RATE_LIMIT_TRUSTED_PROXIES:}
-    claim:
-      max-failures-per-address: 10        # failed claims a minute per client address
-      max-failures-per-restaurant: 100    # failed claims a minute per restaurant (distributed guessing)
-      window: 1m
     rules:
       # POST /api/sessions creates a row and no customer flow uses it (the server starts the session with the order):
       # a per-address cap plus one global cap against a distributed flood
       - {name: session-start, method: POST, path: /api/sessions, limit: 30, window: 1m}
       - {name: session-start-all, method: POST, path: /api/sessions, key-by: global, limit: 300, window: 1m}
-      # Counter QR: only a coarse cap on all requests here; guessing is throttled by the failure counters under
-      # `readybell.rate-limit.claim` (failed claims only, per IP and per restaurant)
-      - {name: counter-claim-total, method: POST, path: "/api/restaurants/*/claim", limit: 120, window: 1m}
-      - {name: counter-restaurant, method: GET, path: "/api/restaurants/*/public", limit: 60, window: 1m}
       # Customers of one restaurant share a Wi-Fi (one public address), so what a page may do is limited per session;
       # the per-address rule next to it is only a high ceiling against one machine hammering many sessions
       - {name: subscribe, method: POST, path: "/api/sessions/*/subscriptions", key-by: session, limit: 10, window: 1m}
@@ -77,9 +69,6 @@ readybell:
       - {name: customer-poll-ip, method: GET, path: "/api/sessions/*/orders/poll", limit: 1200, window: 1m}
       - {name: customer-stream, method: GET, path: "/api/sessions/*/orders/stream", key-by: session, limit: 10, window: 1m}
       - {name: customer-stream-ip, method: GET, path: "/api/sessions/*/orders/stream", limit: 120, window: 1m}
-  claim:
-    # How long after creation an order can still be claimed at the counter by its number
-    max-age: ${CLAIM_MAX_AGE:30m}
   sse:
     redis:
       # Relay order updates between replicas via Redis pub/sub; enable when running more than one node.

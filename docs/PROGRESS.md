@@ -47,7 +47,7 @@ Detailed per-task reports were removed; git history keeps them.
 
 ## Open items
 - Web Push has not been verified on real devices (Android Chrome, iOS Safari 16.4+ as an installed PWA) with real VAPID keys.
-- A counter QR (one per restaurant, customer enters the order number) is not built; only the per-receipt QR exists.
+- The QR is handed over in person (staff screen or the `/display` customer screen); a self-service "type your number" counter QR was built and removed because receipt numbers can be guessed.
 - No browser E2E suite (Playwright); `scripts/smoke.sh` covers the API flow only.
 - 7 react-refresh lint warnings (contexts that also export hooks).
 - Real-device mobile and real screen-reader testing (only emulation / automated tests were done).

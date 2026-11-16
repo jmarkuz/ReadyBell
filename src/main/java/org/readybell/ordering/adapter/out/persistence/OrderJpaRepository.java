@@ -36,7 +36,6 @@ public interface OrderJpaRepository extends JpaRepository<OrderJpaEntity, UUID>,
      */
     List<OrderJpaEntity> findByTenantIdAndSessionId(UUID tenantId, UUID sessionId);
 
-    Optional<OrderJpaEntity> findByTenantIdAndOrderNumber(UUID tenantId, int orderNumber);
 
     /**
      * Returns all orders for the given tenant.

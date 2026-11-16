@@ -95,12 +95,14 @@ public class ApplicationConfig {
                 new org.springframework.transaction.support.TransactionTemplate(transactionManager));
     }
 
-    /** Read side of the customer tracking page. */
+    /** The customer tracking page; the first open of a link also tells the staff that the customer is connected. */
     @Bean
     public TrackSessionUseCase trackSessionUseCase(CustomerSessionRepository sessionRepository,
                                                    OrderRepository orderRepository,
-                                                   RestaurantRepository restaurantRepository) {
-        return new TrackSessionService(sessionRepository, orderRepository, restaurantRepository);
+                                                   RestaurantRepository restaurantRepository,
+                                                   DomainEventPublisher eventPublisher,
+                                                   Clock clock) {
+        return new TrackSessionService(sessionRepository, orderRepository, restaurantRepository, eventPublisher, clock);
     }
 
     /**
@@ -112,17 +114,6 @@ public class ApplicationConfig {
             @org.springframework.beans.factory.annotation.Value("${readybell.push.extra-allowed-hosts:}")
             java.util.List<String> extraAllowedHosts) {
         return new org.readybell.subscription.domain.PushEndpointPolicy(extraAllowedHosts);
-    }
-
-    /** Counter QR flow: claim an order by the number on the receipt. */
-    @Bean
-    public org.readybell.ordering.application.CounterClaimUseCase counterClaimUseCase(
-            RestaurantRepository restaurantRepository,
-            OrderRepository orderRepository,
-            Clock clock,
-            @org.springframework.beans.factory.annotation.Value("${readybell.claim.max-age:30m}")
-            java.time.Duration maxAge) {
-        return new org.readybell.ordering.application.CounterClaimService(restaurantRepository, orderRepository, clock, maxAge);
     }
 
     /** Application clock; a single bean so ETAs, token expiry and tests share one time source. */

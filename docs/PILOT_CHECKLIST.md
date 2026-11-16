@@ -3,7 +3,7 @@
 Field checklist for the first pilot restaurants. It covers BACKLOG items **P1** (Web Push on real devices) and
 **P2** (real host, TLS, stable VAPID pair, platform operator), and turns the MVP success criteria
 ([ReadyBell_MVP_Definition.md](product/ReadyBell_MVP_Definition.md), section 9) into measurable pass/fail checks.
-P3 (backups) is a separate backlog item; the counter QR flow (P4) is built, see [section 5](#5-known-limitations).
+P3 (backups) is a separate backlog item; the QR hand-over flow (P4) is built, see [section 5](#5-known-limitations).
 
 Related: [DEPLOYMENT.md](DEPLOYMENT.md), [API_INTEGRATION.md](API_INTEGRATION.md), [BACKLOG.md](BACKLOG.md).
 
@@ -217,7 +217,7 @@ Notifications: the `notification` table as in 3.4 (it has `tenant_id`). Complain
 
 ## 5. Known limitations
 
-- **Counter QR claims are first come, first served.** The permanent restaurant QR (Settings page → *Counter QR code*, print it) opens `/r/{identifier}`; the customer types the number from the receipt. Numbers are small and sequential, so a stranger who types a valid number first gets that order's tracking page and the real owner then sees "not found" (the receipt QR of the same order keeps working). Mitigations: 10 tries/min per IP, orders can be claimed only for `CLAIM_MAX_AGE` (default 30 min) after creation and only once. Watch for complaints during the pilot; staff can always show the per-order receipt QR instead.
+- **The QR is handed over in person.** There is no "type your receipt number" page: numbers are small and sequential, so anyone could guess them. Staff show the QR of an order (the dialog after *New order*, or the QR icon in the orders list) or keep `/display` open on a second screen for the customer. Once the customer's phone opens the link the QR is hidden ("Customer connected") so the next person in the queue cannot scan it; staff can bring it back with one click. The link is the customer's key: if it is photographed by someone else, that person follows the order too.
 - **iOS needs the installed PWA.** Safari on iPhone (16.4+) delivers Web Push only to a site added to the Home Screen and opened from there. Customers must follow the hint on the page; expect some to skip it.
 - **Alertmanager is not set up.** The metrics and Prometheus alert rules exist ([MONITORING.md](MONITORING.md)); route them to a channel yourself and watch the `notification` / `outbox_event` tables during the pilot.
 - **No backups (BACKLOG P3).**

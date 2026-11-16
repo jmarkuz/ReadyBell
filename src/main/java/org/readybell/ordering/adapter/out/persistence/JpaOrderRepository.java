@@ -98,12 +98,6 @@ public class JpaOrderRepository implements OrderRepository {
                 .toList();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<Order> findByTenantAndNumber(TenantId tenantId, int orderNumber) {
-        return springRepo.findByTenantIdAndOrderNumber(tenantId.value(), orderNumber)
-                .map(OrderJpaEntity::toDomain);
-    }
 
     @Override
     @Transactional(readOnly = true)

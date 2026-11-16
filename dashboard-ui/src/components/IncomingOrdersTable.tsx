@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { OrderRow, OrderStatus } from '@/types';
 import { NEXT_STATUSES, STATUS_ACTION_LABEL } from '@/utils/orderStatus';
 import OrderStatusBadge from './OrderStatusBadge';
-import { ChevronUp, ChevronDown, Eye, Edit2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, QrCode, Smartphone, Edit2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface IncomingOrdersTableProps {
@@ -12,7 +12,10 @@ interface IncomingOrdersTableProps {
   pageSize?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
+  /** Called when staff ask to see the order's QR code. */
   onRowClick?: (orderId: string) => void;
+  /** Orders whose customer opened the tracking link (shown with a "connected" mark). */
+  connectedIds?: ReadonlySet<string>;
   /** Called when staff picks a new status from the row's menu (a status the lifecycle allows next). */
   onStatusChange?: (orderId: string, newStatus: OrderStatus) => void;
   sortBy?: 'eta' | 'status' | 'created' | 'id';
@@ -111,6 +114,7 @@ export default memo(function IncomingOrdersTable({
   currentPage: controlledPage,
   onPageChange,
   onRowClick,
+  connectedIds,
   onStatusChange,
   sortOrder: initialSortOrder = 'asc',
   serverSide,
@@ -299,18 +303,25 @@ export default memo(function IncomingOrdersTable({
                   {order.deliveryETA ? formatDistanceToNow(order.deliveryETA, { addSuffix: true }) : '—'}
                 </td>
                 <td className="px-6 py-4">
-                  <OrderStatusBadge status={order.status} />
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <OrderStatusBadge status={order.status} />
+                    {(order.connected || connectedIds?.has(order.id)) && (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-700 dark:text-green-400" title="The customer's phone is connected to this order">
+                        <Smartphone className="w-3.5 h-3.5" aria-hidden="true" />Connected
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onRowClick?.(order.id)}
                       className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
-                      aria-label={`View details for order ${order.orderId}`}
-                      title="View Details"
+                      aria-label={`Show QR code for order ${order.orderId}`}
+                      title="Show QR code"
                       type="button"
                     >
-                      <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" aria-hidden="true" />
+                      <QrCode className="w-4 h-4 text-slate-600 dark:text-slate-400" aria-hidden="true" />
                     </button>
                     <div className="relative">
                       <button
