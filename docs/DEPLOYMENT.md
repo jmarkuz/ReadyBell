@@ -50,6 +50,24 @@ Before the first pilot restaurant, work through [PILOT_CHECKLIST.md](PILOT_CHECK
 `start-dev.sh` / the `dev` profile (`SPRING_PROFILES_ACTIVE=dev`) recreate the schema on every start and seed
 `staff`, `admin` and `platform` users (see `application-dev.yml`) plus a restaurant for them.
 
+## Behind a reverse proxy or tunnel (client IP)
+
+Per-IP rate limits and the login lockout need the real client address. The app trusts `X-Forwarded-For` only from the
+addresses in `RATE_LIMIT_TRUSTED_PROXIES` (IP or CIDR, comma separated); the chain is read from the right and the first
+address that is not a trusted proxy is the client. With the list empty the TCP peer is the client, so **behind a proxy or
+tunnel every visitor looks like one address**: a single visitor can exhaust the limits for everyone, and five failed logins
+from anyone lock login for all. The app logs a warning once when it sees `X-Forwarded-For` from an untrusted peer.
+
+1. Open the public URL through the proxy as the platform operator and call `GET /api/platform/diagnostics/client-ip`
+   (`curl -u platform:… https://your-host/api/platform/diagnostics/client-ip`).
+2. `peer` is the proxy's address as the app sees it (for Docker usually the bridge gateway such as `172.18.0.1`, for a
+   proxy container its container address); `clientIp` must be **your** address, not the proxy's.
+3. If `clientIp` equals `peer`, set `RATE_LIMIT_TRUSTED_PROXIES` to that address or its network (e.g. `172.16.0.0/12` for the
+   Docker bridge ranges), restart and repeat step 1.
+
+Trust only addresses that are really your proxy: anything listed can set any client address. If the app port is also
+reachable directly from outside (not only through the proxy), do not list a range that outside clients can come from.
+
 ## Backup & restore
 
 PostgreSQL holds all state (Redis only carries live-update fan-out and login throttling, so it needs no backup).

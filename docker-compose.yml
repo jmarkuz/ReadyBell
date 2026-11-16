@@ -13,6 +13,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (at least 32 characters)}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-placeholder-public-key}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-placeholder-private-key}
+      # Reverse proxy / tunnel in front of the app (IP or CIDR), so per-IP limits and the login lockout see the real client
+      RATE_LIMIT_TRUSTED_PROXIES: ${RATE_LIMIT_TRUSTED_PROXIES:-}
       SPRING_DATA_REDIS_HOST: redis
       SSE_REDIS_ENABLED: "true"
       LOGIN_REDIS_ENABLED: "true"

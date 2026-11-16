@@ -47,4 +47,27 @@ class ClientIpResolverTest {
         assertThat(resolver.resolve(request("10.1.2.3", null))).isEqualTo("10.1.2.3");
         assertThat(resolver.resolve(request("10.1.2.3", "10.5.5.5"))).isEqualTo("10.1.2.3");
     }
+
+    @Test
+    void warnsOnceWhenAForwardedHeaderComesFromAPeerThatIsNotTrusted() {
+        var resolver = new ClientIpResolver(List.of());
+
+        assertThat(resolver.hasWarnedAboutUntrustedForwarding()).isFalse();
+        resolver.resolve(request("172.18.0.1", null));                    // a plain request: nothing to warn about
+        assertThat(resolver.hasWarnedAboutUntrustedForwarding()).isFalse();
+        resolver.resolve(request("172.18.0.1", "203.0.113.9"));           // behind an unconfigured proxy
+        assertThat(resolver.hasWarnedAboutUntrustedForwarding()).isTrue();
+    }
+
+    @Test
+    void doesNotWarnWhenTheProxyIsTrusted() {
+        var resolver = new ClientIpResolver(List.of("172.16.0.0/12"));
+
+        resolver.resolve(request("172.18.0.1", "203.0.113.9"));
+
+        assertThat(resolver.hasWarnedAboutUntrustedForwarding()).isFalse();
+        assertThat(resolver.hasTrustedProxies()).isTrue();
+        assertThat(resolver.isTrustedProxy("172.18.0.1")).isTrue();
+        assertThat(resolver.isTrustedProxy("198.51.100.7")).isFalse();
+    }
 }
