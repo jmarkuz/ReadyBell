@@ -176,4 +176,17 @@ class ManageSubscriptionServiceTest {
         }
         assertThat(subscriptions.size()).isZero();
     }
+
+    @Test
+    void aSessionCannotCollectMoreThanTheMaximumNumberOfDevices() {
+        for (int i = 0; i < ManageSubscriptionService.MAX_SUBSCRIPTIONS_PER_SESSION; i++) {
+            service.registerSubscription(command("https://fcm.googleapis.com/fcm/send/device-" + i, "key", "auth"));
+        }
+
+        assertThatThrownBy(() -> service.registerSubscription(command("https://fcm.googleapis.com/fcm/send/one-too-many", "key", "auth")))
+                .isInstanceOf(TooManySubscriptionsException.class);
+        // an already registered device can still refresh its keys
+        service.registerSubscription(command("https://fcm.googleapis.com/fcm/send/device-0", "new-key", "auth"));
+        assertThat(subscriptions.size()).isEqualTo(ManageSubscriptionService.MAX_SUBSCRIPTIONS_PER_SESSION);
+    }
 }

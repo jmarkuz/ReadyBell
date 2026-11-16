@@ -33,6 +33,9 @@ public class ManageSubscriptionService implements ManageSubscriptionUseCase {
      * @param subscriptionRepository the repository port for persisting and querying
      *                               device subscriptions (must not be null)
      */
+    /** A customer has a phone, maybe a tablet; anything near this is a script filling the table. */
+    public static final int MAX_SUBSCRIPTIONS_PER_SESSION = 5;
+
     private final PushEndpointPolicy endpointPolicy;
 
     public ManageSubscriptionService(CustomerSessionRepository sessionRepository,
@@ -92,6 +95,12 @@ public class ManageSubscriptionService implements ManageSubscriptionUseCase {
             subscription.updateKeys(newEndpoint);
             subscriptionRepository.save(subscription);
             return subscription;
+        }
+
+        // Step 4b — bound the number of devices per session
+        if (subscriptionRepository.findByTenantAndSession(command.tenantId(), command.sessionId()).size()
+                >= MAX_SUBSCRIPTIONS_PER_SESSION) {
+            throw new TooManySubscriptionsException(MAX_SUBSCRIPTIONS_PER_SESSION);
         }
 
         // Step 5 — new endpoint: register, save, return (Req 3.1, 3.2).

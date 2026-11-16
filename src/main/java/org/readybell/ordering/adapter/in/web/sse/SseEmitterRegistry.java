@@ -20,15 +20,20 @@ import java.util.concurrent.CopyOnWriteArraySet;
 @Component
 public class SseEmitterRegistry {
 
+    /** A customer page opens one stream (a reload or a second tab, a few); more means a script holding connections open. */
+    static final int MAX_CUSTOMER_STREAMS_PER_SESSION = 5;
+    /** Staff screens of one restaurant: tablets in the kitchen, the counter, the office. */
+    static final int MAX_STAFF_STREAMS_PER_RESTAURANT = 50;
+
     private final ConcurrentHashMap<UUID, Set<SseEmitter>> customerEmitters = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Set<SseEmitter>> staffEmitters = new ConcurrentHashMap<>();
 
     public SseEmitter registerCustomer(CustomerSessionId sessionId) {
-        return register(customerEmitters, sessionId.value());
+        return register(customerEmitters, sessionId.value(), MAX_CUSTOMER_STREAMS_PER_SESSION);
     }
 
     public SseEmitter registerStaff(TenantId tenantId) {
-        return register(staffEmitters, tenantId.value());
+        return register(staffEmitters, tenantId.value(), MAX_STAFF_STREAMS_PER_RESTAURANT);
     }
 
     /** Pushes {@code message} to every matching local connection. */
@@ -77,20 +82,32 @@ public class SseEmitterRegistry {
 
     /** Registers an externally created emitter for a customer session (used by tests). */
     public SseEmitter registerCustomer(CustomerSessionId sessionId, SseEmitter emitter) {
-        return attach(customerEmitters, sessionId.value(), emitter);
+        return attach(customerEmitters, sessionId.value(), emitter, MAX_CUSTOMER_STREAMS_PER_SESSION);
     }
 
     /** Registers an externally created emitter for a restaurant's staff panel (used by tests). */
     public SseEmitter registerStaff(TenantId tenantId, SseEmitter emitter) {
-        return attach(staffEmitters, tenantId.value(), emitter);
+        return attach(staffEmitters, tenantId.value(), emitter, MAX_STAFF_STREAMS_PER_RESTAURANT);
     }
 
-    private SseEmitter register(ConcurrentHashMap<UUID, Set<SseEmitter>> registry, UUID key) {
-        return attach(registry, key, new SseEmitter(0L)); // no server-side timeout
+    private SseEmitter register(ConcurrentHashMap<UUID, Set<SseEmitter>> registry, UUID key, int max) {
+        return attach(registry, key, new SseEmitter(0L), max); // no server-side timeout
     }
 
-    private SseEmitter attach(ConcurrentHashMap<UUID, Set<SseEmitter>> registry, UUID key, SseEmitter emitter) {
-        registry.computeIfAbsent(key, k -> new CopyOnWriteArraySet<>()).add(emitter);
+    private SseEmitter attach(ConcurrentHashMap<UUID, Set<SseEmitter>> registry, UUID key, SseEmitter emitter, int max) {
+        Set<SseEmitter> emitters = registry.computeIfAbsent(key, k -> new CopyOnWriteArraySet<>());
+        // Over the cap the oldest stream is closed instead of refusing the new one: the old one is usually a page that
+        // was reloaded or a dead connection that has not been noticed yet, and the newest is the one the user is looking at
+        while (emitters.size() >= max) {
+            SseEmitter oldest = emitters.iterator().next();
+            emitters.remove(oldest);
+            try {
+                oldest.complete();
+            } catch (RuntimeException ignored) {
+                // already closed
+            }
+        }
+        emitters.add(emitter);
         Runnable cleanup = () -> remove(registry, key, emitter);
         emitter.onCompletion(cleanup);
         emitter.onTimeout(cleanup);
