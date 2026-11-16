@@ -11,7 +11,7 @@ COPY dashboard-ui/ ./
 RUN npm run build
 
 # --- 2. Build the backend, with the UI served from its static resources ----
-FROM eclipse-temurin:21-jdk@sha256:0a3f329821dcadf54b2a3033a15e2e9f007069a9db43d7f51897e6b80e726b07 AS build
+FROM eclipse-temurin:25-jdk@sha256:b8705e936964c228dfce359e63dbf08f6c69cb380ed1d576b1f6b1064f15567d AS build
 WORKDIR /src
 COPY gradlew settings.gradle.kts build.gradle ./
 COPY gradle gradle
@@ -21,7 +21,7 @@ COPY --from=ui /ui/dist src/main/resources/static
 RUN ./gradlew --no-daemon bootJar -x test && cp build/libs/*-SNAPSHOT.jar /app.jar
 
 # --- 3. Runtime --------------------------------------------------------------
-FROM eclipse-temurin:21-jre@sha256:18bb4a91a3dea3f03ee31d3755af34dfb40f904fc77ab56cdc2f092e32fff9c2
+FROM eclipse-temurin:25-jre@sha256:a640968ae55027b322cedd5f8228b01a84baff0b9e9360e47601c6a111ba1699
 RUN useradd --system --uid 10001 readybell
 USER readybell
 COPY --from=build /app.jar /app/readybell.jar
