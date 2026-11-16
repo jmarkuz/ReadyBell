@@ -79,9 +79,17 @@ public class RestaurantAdminController {
     public StaffAccountResponse createStaffAccount(@Valid @RequestBody CreateStaffAccountRequest request) {
         TenantId tenantId = TenantContextHolder.require();
         Role role = Role.valueOf(request.role());
+        rejectWeakPassword(request.username(), request.password());
         StaffAccount account = adminUseCase.createStaffAccount(
                 tenantId, request.username(), role, passwordEncoder.encode(request.password()));
         return StaffAccountResponse.from(account);
+    }
+
+    private static void rejectWeakPassword(String username, String password) {
+        String problem = org.readybell.shared.domain.PasswordPolicy.violation(username, password);
+        if (problem != null) {
+            throw new IllegalArgumentException(problem);     // answered as a 400 with this text
+        }
     }
 
     /**

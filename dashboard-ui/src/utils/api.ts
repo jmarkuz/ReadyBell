@@ -948,7 +948,7 @@ export class ApiClient {
    * Onboard a restaurant, optionally with its first admin (PLATFORM_ADMIN only)
    * POST /api/platform/restaurants
    *
-   * `adminUsername` and `adminPassword` (min 8 characters) must be given together.
+   * `adminUsername` and `adminPassword` (min 10 characters, not a common password) must be given together.
    */
   async createRestaurant(data: {
     identifier: string;

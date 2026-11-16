@@ -81,6 +81,10 @@ public class PlatformAdminController {
                 || request.adminPassword() == null || request.adminPassword().isBlank()) {
             throw new IllegalArgumentException("adminUsername and adminPassword must be given together");
         }
+        String weak = org.readybell.shared.domain.PasswordPolicy.violation(request.adminUsername(), request.adminPassword());
+        if (weak != null) {
+            throw new IllegalArgumentException(weak);       // answered as a 400 with this text
+        }
         String hash = passwordEncoder.encode(request.adminPassword());
         // One transaction: a failure must not leave a restaurant without its admin (or the reverse)
         Restaurant restaurant = transaction.execute(status ->

@@ -106,8 +106,8 @@ export default function Staff() {
             <input id="staff-username" className={inputClass} value={username} required autoComplete="off" onChange={(e) => setUsername(e.target.value)} />
           </div>
           <div>
-            <label htmlFor="staff-password" className="block text-sm font-medium mb-1">Password (min. 8 characters)</label>
-            <input id="staff-password" className={inputClass} type="password" value={password} required minLength={8} maxLength={72} autoComplete="new-password" onChange={(e) => setPassword(e.target.value)} />
+            <label htmlFor="staff-password" className="block text-sm font-medium mb-1">Password (min. 10 characters)</label>
+            <input id="staff-password" className={inputClass} type="password" value={password} required minLength={10} maxLength={72} autoComplete="new-password" onChange={(e) => setPassword(e.target.value)} />
           </div>
           <div>
             <label htmlFor="staff-role" className="block text-sm font-medium mb-1">Role</label>
