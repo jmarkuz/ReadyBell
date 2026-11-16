@@ -10,7 +10,8 @@ Client code: `dashboard-ui/src/utils/api.ts` (staff API, Bearer token) and `dash
 | Method | Path | Notes |
 |--------|------|-------|
 | POST | `/api/login` | `{username, password}` → `{token, role, tenantId, username, expiresIn}`; throttled after repeated failures (429) |
-| POST | `/api/auth/refresh` | refresh an expired token within the grace period |
+| POST | `/api/auth/refresh` | exchange a token (valid, or expired by less than `readybell.security.jwt.refresh-grace`, 24 h) for a new one of the same sign-in chain. The old token is retired after 60 s; presenting a retired token again ends the whole chain (it was copied) |
+| POST | `/api/auth/logout` | `204`: ends the sign-in chain of the Bearer token, so that token and every token refreshed from it stop working at once. Harmless without or with an invalid token |
 | POST | `/api/sessions` | `{qrToken}` (the restaurant identifier) → new customer session |
 | GET | `/api/sessions/{id}/track` | tracking page data: restaurant name, `sessionActive`, orders with items and ETA; 404 for an unknown id |
 | GET | `/api/sessions/{id}/orders` | `[{orderId, status}]` |
@@ -89,3 +90,12 @@ distributed guess; deliberately high because it locks the account for everyone).
 `.max-failures-per-address`, `.max-failures-per-account`, `.window`. `READYBELL_SECURITY_PLATFORM_ADMIN_ALLOWED_NETWORKS`
 (IPs/CIDRs) restricts where the platform operator can sign in or refresh a token; from elsewhere the answer is the same as for
 a wrong password.
+
+## Token lifecycle
+
+Staff tokens are HS256 JWTs (1 h) with `jti` (the token) and `sid` (the sign-in chain shared by all refreshed tokens). Every request
+checks that the chain and token are not revoked and, through a short cache (`readybell.security.account-check-cache`, 30 s),
+that the account is still active: a deleted staff member or a deactivated restaurant loses access within that time, not when the
+token expires. Revocations live in memory, or in Redis when `SSE_REDIS_ENABLED=true` so every replica honours them (during a Redis
+outage they apply per node). Tokens issued before chains existed are their own chain.
+

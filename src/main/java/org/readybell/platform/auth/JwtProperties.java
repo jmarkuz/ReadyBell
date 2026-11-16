@@ -16,7 +16,7 @@ public class JwtProperties {
     private String secret;
     private Duration ttl = Duration.ofHours(1);
     /** How long after expiry an old token may still be exchanged at {@code /api/auth/refresh}. */
-    private Duration refreshGrace = Duration.ofDays(7);
+    private Duration refreshGrace = Duration.ofHours(24);
 
     /** Failed-login throttling. */
     private final Login login = new Login();

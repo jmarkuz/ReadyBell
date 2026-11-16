@@ -850,6 +850,21 @@ export class ApiClient {
    * Logout (clear tokens)
    */
   logout(): void {
+    // End the session on the server too, so a copy of the token stops working at once. Best effort: `keepalive` lets
+    // the request finish while the page navigates to /login, and a failure changes nothing for the user.
+    const token = tokenManager.get();
+    if (token && typeof fetch === 'function') {
+      try {
+        void fetch(`${this.baseURL}/api/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          keepalive: true,
+        }).catch(() => undefined);
+      } catch {
+        // fetch unavailable or blocked: nothing to do
+      }
+    }
+
     // Clear token via TokenManager
     tokenManager.clear();
     

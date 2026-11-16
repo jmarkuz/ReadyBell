@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import org.readybell.platform.TenantUser;
 import org.readybell.platform.ratelimit.ClientIpResolver;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 
 import java.time.Duration;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -44,10 +46,13 @@ public class AuthController {
     private final LoginAttemptLimiter limiter;
     private final ClientIpResolver clientIps;
     private final OperatorNetworkPolicy operatorNetworks;
+    private final TokenSessions sessions;
 
     public AuthController(UserDetailsService users, PasswordEncoder encoder, JwtService jwt,
-                          LoginAttemptLimiter limiter, ClientIpResolver clientIps, OperatorNetworkPolicy operatorNetworks) {
+                          LoginAttemptLimiter limiter, ClientIpResolver clientIps, OperatorNetworkPolicy operatorNetworks,
+                          TokenSessions sessions) {
         this.operatorNetworks = operatorNetworks;
+        this.sessions = sessions;
         this.limiter = limiter;
         this.clientIps = clientIps;
         this.users = users;
@@ -72,7 +77,24 @@ public class AuthController {
             throw new InvalidCredentialsException("Invalid username or password");
         }
         limiter.recordSuccess(request.username(), address);
-        return respond(user);
+        return respond(user, TokenSessions.newSessionId());
+    }
+
+    /**
+     * Ends the sign-in: this token and every token refreshed from it stop working at once, so a copy of the token is
+     * useless from now on. Safe to call with an expired or unknown token (nothing to end).
+     */
+    @PostMapping("/auth/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+        if (authorization == null || !authorization.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return;
+        }
+        try {
+            sessions.signOut(jwt.decodeForRefresh(authorization.substring(7).trim()));
+        } catch (JwtException ignored) {
+            // not a token of ours (or too old to matter)
+        }
     }
 
     @PostMapping("/auth/refresh")
@@ -88,10 +110,12 @@ public class AuthController {
             throw new InvalidCredentialsException("Token cannot be refreshed");
         }
         TenantUser user = lookup(old.getSubject());
-        if (user == null || !mayUseFrom(user, clientIps.resolve(http))) {
+        if (user == null || !mayUseFrom(user, clientIps.resolve(http)) || !sessions.allowRefresh(old)) {
             throw new InvalidCredentialsException("Token cannot be refreshed");
         }
-        return respond(user);
+        TokenResponse refreshed = respond(user, TokenSessions.sessionIdOf(old));
+        sessions.retire(old);
+        return refreshed;
     }
 
     private boolean mayUseFrom(TenantUser user, String address) {
@@ -109,8 +133,8 @@ public class AuthController {
         }
     }
 
-    private TokenResponse respond(TenantUser user) {
-        JwtService.IssuedToken issued = jwt.issue(user);
+    private TokenResponse respond(TenantUser user, String sessionId) {
+        JwtService.IssuedToken issued = jwt.issue(user, sessionId);
         return new TokenResponse(issued.token(), issued.role(),
                 user.getTenantId() == null ? null : user.getTenantId().value().toString(),
                 user.getUsername(), issued.expiresInSeconds());

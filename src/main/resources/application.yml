@@ -80,7 +80,7 @@ readybell:
       # HS256 signing key (>= 32 bytes). Required: the app refuses to start without it.
       secret: ${JWT_SECRET:}
       ttl: 1h
-      refresh-grace: 7d
+      refresh-grace: 24h   # an expired token can still be exchanged for a new one for this long
       login:
         # Share the failed-login counters between replicas through Redis
         redis: ${LOGIN_REDIS_ENABLED:false}
