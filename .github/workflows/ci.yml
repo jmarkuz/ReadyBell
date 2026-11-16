@@ -9,7 +9,7 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "21" }
       - uses: gradle/actions/setup-gradle@v4
@@ -23,7 +23,7 @@ jobs:
     defaults:
       run: { working-directory: dashboard-ui }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with: { node-version: "20", cache: npm, cache-dependency-path: dashboard-ui/package-lock.json }
       - run: npm ci --legacy-peer-deps
@@ -54,7 +54,7 @@ jobs:
     defaults:
       run: { working-directory: dashboard-ui }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "21" }
       - uses: gradle/actions/setup-gradle@v4
@@ -77,7 +77,7 @@ jobs:
     needs: [backend, frontend]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: docker build -t readybell:ci .
       # Known vulnerabilities in the shipped image (Java libraries and the OS layer). Fails on any HIGH or CRITICAL finding
       # that has a fix; findings that were assessed and accepted are listed with reasons in .trivyignore.
