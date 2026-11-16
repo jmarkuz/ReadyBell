@@ -55,7 +55,7 @@ dependencies {
     }
     // web-push 5.1.1 also pulls an old jose4j (0.7.0, found by the Trivy scan in CI): a fixed release is forced
     constraints {
-        implementation('org.bitbucket.b_c:jose4j:0.9.6') { because 'web-push 5.1.1 brings 0.7.0 (CVE fixes in 0.9.x)' }
+        implementation('org.bitbucket.b_c:jose4j:0.9.7') { because 'web-push 5.1.1 brings 0.7.0 (CVE fixes in 0.9.x)' }
     }
     // BouncyCastle is required by web-push for EC cryptography (VAPID key operations)
     implementation 'org.bouncycastle:bcprov-jdk18on:1.87'
