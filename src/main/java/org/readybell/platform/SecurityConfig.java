@@ -103,7 +103,19 @@ public class SecurityConfig {
             }))
 
             // Browser hardening: the built UI loads only its own scripts, plus Google Fonts
-            .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(
+            .headers(headers -> headers
+                // The tracking URL /track/{session} is the customer's credential: never hand it to other sites in Referer
+                .referrerPolicy(referrer -> referrer.policy(
+                        org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                // Nothing here needs the camera, microphone, location or payment APIs
+                .permissionsPolicyHeader(permissions -> permissions.policy(
+                        "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=()"))
+                // Spring sends HSTS only on requests it sees as secure; behind a proxy that ends TLS they arrive as http, so
+                // always send it. Browsers ignore it over plain http, which keeps local development unaffected.
+                .httpStrictTransportSecurity(hsts -> hsts.requestMatcher(
+                        org.springframework.security.web.util.matcher.AnyRequestMatcher.INSTANCE)
+                        .maxAgeInSeconds(15_552_000))
+                .contentSecurityPolicy(csp -> csp.policyDirectives(
                     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
                     + "font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; "
                     + "worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'")))
