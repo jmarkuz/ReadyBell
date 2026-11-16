@@ -50,6 +50,13 @@ Before the first pilot restaurant, work through [PILOT_CHECKLIST.md](PILOT_CHECK
 `start-dev.sh` / the `dev` profile (`SPRING_PROFILES_ACTIVE=dev`) recreate the schema on every start and seed
 `staff`, `admin` and `platform` users (see `application-dev.yml`) plus a restaurant for them.
 
+## Startup checks
+
+Outside the `dev` and `test` profiles the app **refuses to start** and lists every problem if it finds: placeholder or missing
+VAPID keys (set `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`, or `VAPID_ENABLED=false` to run without Web Push), a development or example
+`JWT_SECRET`, an example `DB_PASSWORD` (the `change-me` of `.env.example` included), or a configured user with a well-known
+password. Plain-text user passwords only produce a warning; prefer `{bcrypt}` hashes. The `dev` profile prints a warning banner.
+
 ## Behind a reverse proxy or tunnel (client IP)
 
 Per-IP rate limits and the login lockout need the real client address. The app trusts `X-Forwarded-For` only from the
