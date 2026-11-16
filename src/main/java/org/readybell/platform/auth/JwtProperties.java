@@ -24,11 +24,20 @@ public class JwtProperties {
     public Login getLogin() { return login; }
 
     public static class Login {
+        /** Failed logins per account and address in the window before that combination is locked. */
         private int maxFailures = 5;
+        /** Failed logins from one address (any accounts) before the address is locked. */
+        private int maxFailuresPerAddress = 30;
+        /** Failed logins for one account (any addresses) before the account is locked for everyone; deliberately high. */
+        private int maxFailuresPerAccount = 100;
         private Duration window = Duration.ofMinutes(15);
         /** Count failures in Redis so all replicas share one limit (set when running more than one node). */
         private boolean redis = false;
 
+        public int getMaxFailuresPerAddress() { return maxFailuresPerAddress; }
+        public void setMaxFailuresPerAddress(int v) { this.maxFailuresPerAddress = v; }
+        public int getMaxFailuresPerAccount() { return maxFailuresPerAccount; }
+        public void setMaxFailuresPerAccount(int v) { this.maxFailuresPerAccount = v; }
         public int getMaxFailures() { return maxFailures; }
         public void setMaxFailures(int maxFailures) { this.maxFailures = maxFailures; }
         public Duration getWindow() { return window; }

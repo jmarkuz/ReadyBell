@@ -20,6 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest(properties = {
         "readybell.security.jwt.login.max-failures=3",
+        "readybell.security.jwt.login.max-failures-per-address=3",
         "readybell.rate-limit.trusted-proxies=10.0.0.0/8"})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")

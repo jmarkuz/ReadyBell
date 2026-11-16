@@ -43,9 +43,11 @@ public class AuthController {
     private final JwtService jwt;
     private final LoginAttemptLimiter limiter;
     private final ClientIpResolver clientIps;
+    private final OperatorNetworkPolicy operatorNetworks;
 
     public AuthController(UserDetailsService users, PasswordEncoder encoder, JwtService jwt,
-                          LoginAttemptLimiter limiter, ClientIpResolver clientIps) {
+                          LoginAttemptLimiter limiter, ClientIpResolver clientIps, OperatorNetworkPolicy operatorNetworks) {
+        this.operatorNetworks = operatorNetworks;
         this.limiter = limiter;
         this.clientIps = clientIps;
         this.users = users;
@@ -64,16 +66,18 @@ public class AuthController {
         }
         TenantUser user = lookup(request.username());
         boolean ok = encoder.matches(request.password(), user != null ? user.getPassword() : dummyHash);
-        if (user == null || !ok) {
+        // An operator signing in from outside the allowed networks looks exactly like a wrong password
+        if (user == null || !ok || !mayUseFrom(user, address)) {
             limiter.recordFailure(request.username(), address);
             throw new InvalidCredentialsException("Invalid username or password");
         }
-        limiter.recordSuccess(request.username());
+        limiter.recordSuccess(request.username(), address);
         return respond(user);
     }
 
     @PostMapping("/auth/refresh")
-    public TokenResponse refresh(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+    public TokenResponse refresh(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+                                 HttpServletRequest http) {
         if (authorization == null || !authorization.regionMatches(true, 0, "Bearer ", 0, 7)) {
             throw new InvalidCredentialsException("Bearer token required");
         }
@@ -84,10 +88,15 @@ public class AuthController {
             throw new InvalidCredentialsException("Token cannot be refreshed");
         }
         TenantUser user = lookup(old.getSubject());
-        if (user == null) {
+        if (user == null || !mayUseFrom(user, clientIps.resolve(http))) {
             throw new InvalidCredentialsException("Token cannot be refreshed");
         }
         return respond(user);
+    }
+
+    private boolean mayUseFrom(TenantUser user, String address) {
+        boolean operator = user.getAuthorities().stream().anyMatch(a -> "ROLE_PLATFORM_ADMIN".equals(a.getAuthority()));
+        return !operator || operatorNetworks.allows(address);
     }
 
     private TenantUser lookup(String username) {

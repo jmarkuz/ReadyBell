@@ -79,3 +79,13 @@ counter claim: 10 *failed* claims/min per IP and 100/min per restaurant (success
 proxy set `RATE_LIMIT_TRUSTED_PROXIES` (IP/CIDR list) so `X-Forwarded-For` is used; without it the proxy's own address is
 the key and all clients share one budget. `RATE_LIMIT_REDIS_ENABLED=true` shares counters between replicas.
 Metric: `ratelimit.rejected{endpoint}` at `/actuator/metrics`.
+
+## Login throttling
+
+Failed logins are counted per **account + address** (5 in 15 min, locks only that combination, so a stranger cannot lock the
+real owner out from another address), per **address** (30, many accounts from one address) and per **account** (100, a
+distributed guess; deliberately high because it locks the account for everyone). Over a limit: `429`, `Retry-After`,
+`urn:readybell:auth:too-many-attempts`. Properties: `readybell.security.jwt.login.max-failures`,
+`.max-failures-per-address`, `.max-failures-per-account`, `.window`. `READYBELL_SECURITY_PLATFORM_ADMIN_ALLOWED_NETWORKS`
+(IPs/CIDRs) restricts where the platform operator can sign in or refresh a token; from elsewhere the answer is the same as for
+a wrong password.

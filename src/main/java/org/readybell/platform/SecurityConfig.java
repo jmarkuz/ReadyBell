@@ -183,7 +183,15 @@ public class SecurityConfig {
         FailureStore store = redisTemplate != null
                 ? new RedisFailureStore(redisTemplate, "readybell:login-failures:")
                 : new InMemoryFailureStore();
-        return new LoginAttemptLimiter(login.getMaxFailures(), login.getWindow(), clock, store);
+        return new LoginAttemptLimiter(login.getMaxFailures(), login.getMaxFailuresPerAddress(),
+                login.getMaxFailuresPerAccount(), login.getWindow(), clock, store);
+    }
+
+    /** Optional network restriction for the platform operator's sign-in. */
+    @Bean
+    public org.readybell.platform.auth.OperatorNetworkPolicy operatorNetworkPolicy(
+            @Value("${readybell.security.platform-admin-allowed-networks:}") List<String> networks) {
+        return new org.readybell.platform.auth.OperatorNetworkPolicy(networks);
     }
 
     @Bean
