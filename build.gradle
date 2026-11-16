@@ -48,7 +48,7 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
 
     // Web Push / VAPID (kept behind the NotificationSender port; ADR-005)
-    implementation('nl.martijndwars:web-push:5.1.1') {
+    implementation('nl.martijndwars:web-push:5.1.2') {
         // Declared by web-push 5.1.1 but not referenced by any of its classes (checked in the jar); it carries known
         // CVEs whose fixes exist only in the incompatible 3.x line, so it is left out instead of upgraded
         exclude group: 'org.asynchttpclient', module: 'async-http-client'
