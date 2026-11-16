@@ -1,3 +1,8 @@
+# >>> TEMPORARILY PAUSED: every ecosystem below has `open-pull-requests-limit: 0`, which makes Dependabot open no
+# >>> version-update PRs. The rest of the configuration is kept as it was. To resume, delete the "# PAUSED" lines (or set the
+# >>> limits back to 5 for Gradle/npm and the default for the others). PRs that are already open stay open; close them by hand
+# >>> if they are not wanted (comment `@dependabot close`).
+#
 # Weekly update proposals for everything that ships: Gradle and npm dependencies, the base images pinned by
 # digest in Dockerfile and docker-compose.yml, and the GitHub Actions used by CI. Each update is a pull request that
 # runs the normal CI, so a bump is merged only when the suite is green.
@@ -13,7 +18,7 @@ updates:
   - package-ecosystem: gradle
     directory: "/"
     schedule: { interval: weekly }
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0   # PAUSED
     groups:
       spring-boot: { patterns: ["org.springframework.boot*", "org.springframework*"] }
     ignore:
@@ -22,7 +27,7 @@ updates:
   - package-ecosystem: npm
     directory: "/dashboard-ui"
     schedule: { interval: weekly }
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0   # PAUSED
     groups:
       minor-and-patch: { update-types: ["minor", "patch"] }
     ignore:
@@ -31,15 +36,18 @@ updates:
   - package-ecosystem: docker
     directory: "/"
     schedule: { interval: weekly }
+    open-pull-requests-limit: 0   # PAUSED
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: docker-compose
     directory: "/"
     schedule: { interval: weekly }
+    open-pull-requests-limit: 0   # PAUSED
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule: { interval: weekly }
+    open-pull-requests-limit: 0   # PAUSED
