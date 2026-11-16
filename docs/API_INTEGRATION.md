@@ -18,7 +18,7 @@ Client code: `dashboard-ui/src/utils/api.ts` (staff API, Bearer token) and `dash
 | POST | `/api/sessions/{id}/subscriptions` | `{endpointUrl, p256dhKey, authKey}` Web Push subscription |
 | DELETE | `/api/sessions/{id}/subscriptions/{subscriptionId}` | revoke |
 | GET | `/api/restaurants/{identifier}/public` | counter QR page: `{name}` of an active restaurant; 404 otherwise |
-| POST | `/api/restaurants/{identifier}/claim` | counter QR: `{orderNumber}` (the number on the receipt) → `{sessionId}` for `/track/{sessionId}`. Every failure (unknown restaurant, unknown number, already claimed, finished or older than `readybell.claim.max-age`, default 4 h) is the same generic `404`; each order can be claimed once; 10 tries/min per IP |
+| POST | `/api/restaurants/{identifier}/claim` | counter QR: `{orderNumber}` (the number on the receipt) → `{sessionId}` for `/track/{sessionId}`. Every failure (unknown restaurant, unknown number, already claimed, finished or older than `readybell.claim.max-age`, default 30 min) is the same generic `404`; each order can be claimed once; 10 tries/min per IP |
 | GET | `/api/push/config` | `{enabled, publicKey}`: the VAPID public key the browser subscribes with |
 | GET | `/actuator/health` | probes (`/liveness`, `/readiness`) |
 
@@ -27,7 +27,7 @@ The session id in the URL is the credential for the customer endpoints; the tena
 **Counter QR.** The restaurant prints one QR (Settings page of the restaurant admin) that opens `/r/{identifier}` in the
 customer app. The customer types the number from the receipt; `POST /api/restaurants/{identifier}/claim` returns the
 session of that order and the app continues on `/track/{sessionId}`. Receipt numbers are small and sequential, so the
-endpoint is throttled per IP, hands an order out only once and only for `CLAIM_MAX_AGE` (default `4h`) after the order
+endpoint is throttled per IP, hands an order out only once and only for `CLAIM_MAX_AGE` (default `30m`) after the order
 was created, and never says why a claim failed.
 
 ## Order numbers

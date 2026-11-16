@@ -19,6 +19,7 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CounterClaimServiceTest {
 
@@ -121,5 +122,24 @@ class CounterClaimServiceTest {
         assertThat(service.restaurantName("cafe")).contains("Café Aurora");
         assertThat(service.restaurantName("nope")).isEmpty();
         assertThat(service.restaurantName(null)).isEmpty();
+    }
+
+    @Test
+    void thirtyMinuteWindowKeepsOrdersClaimableUntilTheyAreThirtyMinutesOld() {
+        var shortWindow = new CounterClaimService(restaurants, orders, now, Duration.ofMinutes(30));
+        var clockNow = T0.plus(Duration.ofMinutes(10));
+        order(TENANT, 1, clockNow.minus(Duration.ofMinutes(29)));
+        order(TENANT, 2, clockNow.minus(Duration.ofMinutes(31)));
+
+        assertThat(shortWindow.claim("cafe", 1)).isPresent();
+        assertThat(shortWindow.claim("cafe", 2)).isEmpty();
+    }
+
+    @Test
+    void aNonPositiveWindowIsRejectedAtStartup() {
+        assertThatThrownBy(() -> new CounterClaimService(restaurants, orders, now, Duration.ZERO))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("claim.max-age");
+        assertThatThrownBy(() -> new CounterClaimService(restaurants, orders, now, Duration.ofMinutes(-5)))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

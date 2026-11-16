@@ -65,7 +65,7 @@ readybell:
       - {name: customer-stream, method: GET, path: "/api/sessions/*/orders/stream", limit: 30, window: 1m}
   claim:
     # How long after creation an order can still be claimed at the counter by its number
-    max-age: ${CLAIM_MAX_AGE:4h}
+    max-age: ${CLAIM_MAX_AGE:30m}
   sse:
     redis:
       # Relay order updates between replicas via Redis pub/sub; enable when running more than one node.

@@ -9,6 +9,7 @@ import org.readybell.platform.auth.FailureStore;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.web.util.UrlPathHelper;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -30,6 +31,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final Clock clock;
     private final MeterRegistry meters;
     private final AntPathMatcher paths = new AntPathMatcher();
+    /**
+     * Resolves the path the way Spring MVC will route it: percent-decoded, {@code ;params} and doubled slashes removed.
+     * Matching the raw request URI let {@code /api/%73essions} reach the controller without ever meeting a rule.
+     */
+    private final UrlPathHelper pathHelper = new UrlPathHelper();
 
     public RateLimitFilter(RateLimitProperties props, ClientIpResolver ips, FailureStore store, Clock clock,
                            MeterRegistry meters) {
@@ -63,7 +69,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private boolean matches(RateLimitProperties.Rule rule, HttpServletRequest request) {
         return (rule.getMethod().isBlank() || rule.getMethod().equalsIgnoreCase(request.getMethod()))
-                && paths.match(rule.getPath(), request.getRequestURI());
+                && paths.match(rule.getPath(), pathHelper.getPathWithinApplication(request));
     }
 
     private void reject(HttpServletResponse response, RateLimitProperties.Rule rule, long retryAfterSeconds)

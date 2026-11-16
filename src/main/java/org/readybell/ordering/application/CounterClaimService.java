@@ -13,7 +13,7 @@ import java.util.Optional;
 
 /**
  * Implements {@link CounterClaimUseCase}. An order is claimable while it is unclaimed, not finished (completed or
- * cancelled) and younger than {@code maxAge}: receipt numbers are small and sequential, so the window keeps old numbers
+ * cancelled) and younger than {@code maxAge} (30 minutes by default, {@code readybell.claim.max-age}): receipt numbers are small and sequential, so the window keeps old numbers
  * from being guessed long after the customer left.
  */
 public class CounterClaimService implements CounterClaimUseCase {
@@ -28,6 +28,9 @@ public class CounterClaimService implements CounterClaimUseCase {
         this.orders = Objects.requireNonNull(orders, "orders must not be null");
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
         this.maxAge = Objects.requireNonNull(maxAge, "maxAge must not be null");
+        if (maxAge.isZero() || maxAge.isNegative()) {
+            throw new IllegalArgumentException("readybell.claim.max-age must be positive, e.g. 30m");
+        }
     }
 
     @Override

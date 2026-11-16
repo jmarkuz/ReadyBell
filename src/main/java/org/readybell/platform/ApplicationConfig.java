@@ -109,7 +109,7 @@ public class ApplicationConfig {
             RestaurantRepository restaurantRepository,
             OrderRepository orderRepository,
             Clock clock,
-            @org.springframework.beans.factory.annotation.Value("${readybell.claim.max-age:4h}")
+            @org.springframework.beans.factory.annotation.Value("${readybell.claim.max-age:30m}")
             java.time.Duration maxAge) {
         return new org.readybell.ordering.application.CounterClaimService(restaurantRepository, orderRepository, clock, maxAge);
     }
