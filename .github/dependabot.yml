@@ -1,6 +1,13 @@
 # Weekly update proposals for everything that ships: Gradle and npm dependencies, the base images pinned by
 # digest in Dockerfile and docker-compose.yml, and the GitHub Actions used by CI. Each update is a pull request that
 # runs the normal CI, so a bump is merged only when the suite is green.
+#
+# MAJOR versions are ignored for Gradle, npm and the Docker images. A major bump is a migration, not an update, and is
+# planned by hand: Spring Boot 4 (Spring 7, Jackson 3), Java 25 (needs the Gradle toolchain, which pins 21, and the
+# tests to run on it), Node 26 (CI builds the UI on Node 20), Redis 8 (licence change). Minor and patch releases, and
+# new digests of the pinned image tags, keep arriving. GitHub Actions are NOT covered by the ignore rule: they are
+# referenced by major tag (actions/checkout@v4), so ignoring majors would freeze them for good, and CI itself runs on
+# the new version in the PR.
 version: 2
 updates:
   - package-ecosystem: gradle
@@ -9,18 +16,30 @@ updates:
     open-pull-requests-limit: 5
     groups:
       spring-boot: { patterns: ["org.springframework.boot*", "org.springframework*"] }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: "/dashboard-ui"
     schedule: { interval: weekly }
     open-pull-requests-limit: 5
     groups:
       minor-and-patch: { update-types: ["minor", "patch"] }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: docker
     directory: "/"
     schedule: { interval: weekly }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: docker-compose
     directory: "/"
     schedule: { interval: weekly }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule: { interval: weekly }
