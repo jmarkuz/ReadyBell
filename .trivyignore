@@ -1,0 +1,8 @@
+# Accepted findings of the Trivy image scan (CI fails on any other HIGH/CRITICAL that has a fix).
+# Each entry needs a reason and a date to look at it again.
+
+# spring-webmvc 6.2.x: fixed only in Spring Framework 7 (Spring Boot 4), no fix in the 6.2 line. Not reachable here: the app has
+# no view layer at all (REST controllers and a static single-page UI; no XsltView, ViewResolver or template engine).
+# Revisit when moving to Spring Boot 4, or earlier if a 6.2.x fix appears.
+CVE-2026-47884
+CVE-2026-47890

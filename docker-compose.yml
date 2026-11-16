@@ -11,8 +11,12 @@ services:
       DB_USERNAME: readybell
       DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (at least 32 characters)}
+      # Without real keys the app refuses to start (see StartupChecks); VAPID_ENABLED=false runs it without push
+      READYBELL_VAPID_ENABLED: ${VAPID_ENABLED:-true}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-placeholder-public-key}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-placeholder-private-key}
+      # Reverse proxy / tunnel in front of the app (IP or CIDR), so per-IP limits and the login lockout see the real client
+      RATE_LIMIT_TRUSTED_PROXIES: ${RATE_LIMIT_TRUSTED_PROXIES:-}
       SPRING_DATA_REDIS_HOST: redis
       SSE_REDIS_ENABLED: "true"
       LOGIN_REDIS_ENABLED: "true"
@@ -26,7 +30,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:16
+    image: postgres:16@sha256:dd2bf3ce2dc83a81674cf7f217fcfd8a5009a4b325dda5b843bfee82a06cff6f
     environment:
       POSTGRES_DB: readybell
       POSTGRES_USER: readybell
@@ -45,7 +49,7 @@ services:
   #   docker compose --profile backup run --rm backup /scripts/backup-drill.sh
   # Dumps land in ./backups on the host. Copy them off the host too (see docs/DEPLOYMENT.md).
   backup:
-    image: postgres:16
+    image: postgres:16@sha256:dd2bf3ce2dc83a81674cf7f217fcfd8a5009a4b325dda5b843bfee82a06cff6f
     profiles: ["backup"]
     environment:
       PGHOST: postgres
@@ -65,7 +69,7 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

@@ -69,7 +69,13 @@ public class JwtService {
     }
 
     /** Creates a signed access token for the given user. */
+    /** A token of a new sign-in chain. */
     public IssuedToken issue(TenantUser user) {
+        return issue(user, TokenSessions.newSessionId());
+    }
+
+    /** A token of the sign-in chain {@code sessionId} (a refresh keeps the chain). */
+    public IssuedToken issue(TenantUser user, String sessionId) {
         Instant now = clock.instant();
         List<String> roles = user.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -80,6 +86,7 @@ public class JwtService {
                 .issuedAt(now)
                 .expiresAt(now.plus(ttl))
                 .id(UUID.randomUUID().toString())
+                .claim("sid", sessionId)
                 .claim("role", roles.isEmpty() ? "" : roles.get(0))
                 .claim("roles", roles)
                 .claim("tenant_id", user.getTenantId() == null ? "" : user.getTenantId().value().toString())

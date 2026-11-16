@@ -10,15 +10,16 @@ Client code: `dashboard-ui/src/utils/api.ts` (staff API, Bearer token) and `dash
 | Method | Path | Notes |
 |--------|------|-------|
 | POST | `/api/login` | `{username, password}` → `{token, role, tenantId, username, expiresIn}`; throttled after repeated failures (429) |
-| POST | `/api/auth/refresh` | refresh an expired token within the grace period |
+| POST | `/api/auth/refresh` | exchange a token (valid, or expired by less than `readybell.security.jwt.refresh-grace`, 24 h) for a new one of the same sign-in chain. The old token is retired after 60 s; presenting a retired token again ends the whole chain (it was copied) |
+| POST | `/api/auth/logout` | `204`: ends the sign-in chain of the Bearer token, so that token and every token refreshed from it stop working at once. Harmless without or with an invalid token |
 | POST | `/api/sessions` | `{qrToken}` (the restaurant identifier) → new customer session |
 | GET | `/api/sessions/{id}/track` | tracking page data: restaurant name, `sessionActive`, orders with items and ETA; 404 for an unknown id |
 | GET | `/api/sessions/{id}/orders` | `[{orderId, status}]` |
 | GET | `/api/sessions/{id}/orders/stream` | SSE, event `order-status-updated` |
-| POST | `/api/sessions/{id}/subscriptions` | `{endpointUrl, p256dhKey, authKey}` Web Push subscription |
+| POST | `/api/sessions/{id}/subscriptions` | `{endpointUrl, p256dhKey, authKey}` Web Push subscription. The server calls `endpointUrl`, so it must be `https`, on the default port, without credentials, and a host of a known push service (FCM, Mozilla, Apple, Windows WNS; more via `readybell.push.extra-allowed-hosts`); anything else is a 400. Lengths: endpoint ≤ 2048, `p256dhKey` ≤ 200, `authKey` ≤ 100. At most 5 devices per session (`429`, `too-many-subscriptions`); re-registering a known device only refreshes its keys |
 | DELETE | `/api/sessions/{id}/subscriptions/{subscriptionId}` | revoke |
 | GET | `/api/restaurants/{identifier}/public` | counter QR page: `{name}` of an active restaurant; 404 otherwise |
-| POST | `/api/restaurants/{identifier}/claim` | counter QR: `{orderNumber}` (the number on the receipt) → `{sessionId}` for `/track/{sessionId}`. Every failure (unknown restaurant, unknown number, already claimed, finished or older than `readybell.claim.max-age`, default 4 h) is the same generic `404`; each order can be claimed once; 10 tries/min per IP |
+| POST | `/api/restaurants/{identifier}/claim` | counter QR: `{orderNumber}` (the number on the receipt) → `{sessionId}` for `/track/{sessionId}`. Every failure (unknown restaurant, unknown number, already claimed, finished or older than `readybell.claim.max-age`, default 30 min) is the same generic `404`; each order can be claimed once; 10 tries/min per IP |
 | GET | `/api/push/config` | `{enabled, publicKey}`: the VAPID public key the browser subscribes with |
 | GET | `/actuator/health` | probes (`/liveness`, `/readiness`) |
 
@@ -27,7 +28,7 @@ The session id in the URL is the credential for the customer endpoints; the tena
 **Counter QR.** The restaurant prints one QR (Settings page of the restaurant admin) that opens `/r/{identifier}` in the
 customer app. The customer types the number from the receipt; `POST /api/restaurants/{identifier}/claim` returns the
 session of that order and the app continues on `/track/{sessionId}`. Receipt numbers are small and sequential, so the
-endpoint is throttled per IP, hands an order out only once and only for `CLAIM_MAX_AGE` (default `4h`) after the order
+endpoint is throttled per IP, hands an order out only once and only for `CLAIM_MAX_AGE` (default `30m`) after the order
 was created, and never says why a claim failed.
 
 ## Order numbers
@@ -73,9 +74,34 @@ the number (with or without `#`, prefix match: `10` finds #10 and #100-#109).
 
 ## Rate limits (public endpoints)
 
-Per client IP, sliding window (defaults in `application.yml` under `readybell.rate-limit.rules`): session start 20/min,
-counter claim 10/min (restaurant name 60/min), push subscribe 20/min, track 120/min, customer poll 240/min, customer stream 30/min. Over the limit: `429` with
-`Retry-After` (seconds) and `application/problem+json` (`type: urn:readybell:rate-limit:exceeded`). Behind a reverse
+Sliding windows, defaults in `application.yml` under `readybell.rate-limit.rules`. **Every rule that matches a request is
+applied**, and a rule counts per `key-by`: `ip` (default), `session` (the id in `/api/sessions/{id}/...`) or `global`. Customers of
+one restaurant share one public address, so what a customer page does is limited **per session** (track 30/min, poll 60/min,
+stream 10/min, subscribe 10/min) and the per-address rule beside it is only a high ceiling (track 600/min, poll 1200/min,
+stream 120/min, subscribe 60/min). Session start (`POST /api/sessions`, not used by the customer flow): 30/min per address and
+300/min for everybody. Counter claim: only *failed* claims count, 10/min per address and 100/min per restaurant (successful
+claims are free; 120 requests/min per address overall); restaurant name 60/min. Over the limit: `429` with
+`Retry-After` (seconds) and `application/problem+json` (`type: urn:readybell:rate-limit:exceeded`). Paths are matched decoded
+(`/api/%73essions` is `/api/sessions`). Behind a reverse
 proxy set `RATE_LIMIT_TRUSTED_PROXIES` (IP/CIDR list) so `X-Forwarded-For` is used; without it the proxy's own address is
-the key and all clients share one budget. `RATE_LIMIT_REDIS_ENABLED=true` shares counters between replicas.
+the key and all clients share one budget (see DEPLOYMENT.md). `RATE_LIMIT_REDIS_ENABLED=true` shares counters between replicas.
 Metric: `ratelimit.rejected{endpoint}` at `/actuator/metrics`.
+
+## Login throttling
+
+Failed logins are counted per **account + address** (5 in 15 min, locks only that combination, so a stranger cannot lock the
+real owner out from another address), per **address** (30, many accounts from one address) and per **account** (100, a
+distributed guess; deliberately high because it locks the account for everyone). Over a limit: `429`, `Retry-After`,
+`urn:readybell:auth:too-many-attempts`. Properties: `readybell.security.jwt.login.max-failures`,
+`.max-failures-per-address`, `.max-failures-per-account`, `.window`. `READYBELL_SECURITY_PLATFORM_ADMIN_ALLOWED_NETWORKS`
+(IPs/CIDRs) restricts where the platform operator can sign in or refresh a token; from elsewhere the answer is the same as for
+a wrong password.
+
+## Token lifecycle
+
+Staff tokens are HS256 JWTs (1 h) with `jti` (the token) and `sid` (the sign-in chain shared by all refreshed tokens). Every request
+checks that the chain and token are not revoked and, through a short cache (`readybell.security.account-check-cache`, 30 s),
+that the account is still active: a deleted staff member or a deactivated restaurant loses access within that time, not when the
+token expires. Revocations live in memory, or in Redis when `SSE_REDIS_ENABLED=true` so every replica honours them (during a Redis
+outage they apply per node). Tokens issued before chains existed are their own chain.
+

@@ -144,6 +144,17 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(org.readybell.subscription.application.TooManySubscriptionsException.class)
+    public ResponseEntity<Map<String, Object>> handleTooManySubscriptions(
+            org.readybell.subscription.application.TooManySubscriptionsException ex) {
+        return problem(
+                HttpStatus.TOO_MANY_REQUESTS,
+                "https://readybell.org/problems/too-many-subscriptions",
+                "Too Many Subscriptions",
+                ex.getMessage()
+        );
+    }
+
     @ExceptionHandler(ClaimUnavailableException.class)
     public ResponseEntity<Map<String, Object>> handleClaimUnavailable(ClaimUnavailableException ex) {
         // One generic answer for every reason, so the endpoint reveals nothing about which orders exist

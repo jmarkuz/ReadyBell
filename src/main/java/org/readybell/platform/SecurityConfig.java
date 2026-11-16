@@ -80,7 +80,7 @@ public class SecurityConfig {
      * @return the configured {@link SecurityFilterChain} bean
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService, StreamTicketStore ticketStore,
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, org.readybell.platform.auth.TokenGuard tokenGuard, StreamTicketStore ticketStore,
             @Value("${readybell.cors.allowed-origins:}") List<String> corsOrigins,
             @Value("${readybell.cors.allowed-origin-patterns:}") List<String> corsOriginPatterns)
             throws Exception {
@@ -103,7 +103,19 @@ public class SecurityConfig {
             }))
 
             // Browser hardening: the built UI loads only its own scripts, plus Google Fonts
-            .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(
+            .headers(headers -> headers
+                // The tracking URL /track/{session} is the customer's credential: never hand it to other sites in Referer
+                .referrerPolicy(referrer -> referrer.policy(
+                        org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                // Nothing here needs the camera, microphone, location or payment APIs
+                .permissionsPolicyHeader(permissions -> permissions.policy(
+                        "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=()"))
+                // Spring sends HSTS only on requests it sees as secure; behind a proxy that ends TLS they arrive as http, so
+                // always send it. Browsers ignore it over plain http, which keeps local development unaffected.
+                .httpStrictTransportSecurity(hsts -> hsts.requestMatcher(
+                        org.springframework.security.web.util.matcher.AnyRequestMatcher.INSTANCE)
+                        .maxAgeInSeconds(15_552_000))
+                .contentSecurityPolicy(csp -> csp.policyDirectives(
                     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
                     + "font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; "
                     + "worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'")))
@@ -114,7 +126,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/sessions/**").permitAll()
                 .requestMatchers("/api/restaurants/**").permitAll()   // counter QR: restaurant name + order claim
                 .requestMatchers("/api/push/config").permitAll()
-                .requestMatchers("/api/login", "/api/auth/refresh").permitAll()
+                .requestMatchers("/api/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
                 // Probes are public; metrics and the rest of actuator are for the platform operator
                 .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/actuator/**").hasRole("PLATFORM_ADMIN")
@@ -135,7 +147,7 @@ public class SecurityConfig {
             // Bearer JWT for the dashboard (issued by /api/login); HTTP Basic kept for curl/tests
             .oauth2ResourceServer(oauth -> oauth
                     .bearerTokenResolver(bearerTokenResolver(ticketStore))
-                    .jwt(jwt -> jwt.decoder(jwtService::decode)
+                    .jwt(jwt -> jwt.decoder(tokenGuard::decode)
                             .jwtAuthenticationConverter(SecurityConfig::toAuthentication)))
             .httpBasic(Customizer.withDefaults());
 
@@ -157,7 +169,7 @@ public class SecurityConfig {
         DefaultBearerTokenResolver delegate = new DefaultBearerTokenResolver();
         return request -> {
             String path = request.getRequestURI();
-            if ("/api/auth/refresh".equals(path) || "/api/login".equals(path)) {
+            if ("/api/auth/refresh".equals(path) || "/api/auth/logout".equals(path) || "/api/login".equals(path)) {
                 return null;
             }
             String token = delegate.resolve(request);
@@ -183,7 +195,15 @@ public class SecurityConfig {
         FailureStore store = redisTemplate != null
                 ? new RedisFailureStore(redisTemplate, "readybell:login-failures:")
                 : new InMemoryFailureStore();
-        return new LoginAttemptLimiter(login.getMaxFailures(), login.getWindow(), clock, store);
+        return new LoginAttemptLimiter(login.getMaxFailures(), login.getMaxFailuresPerAddress(),
+                login.getMaxFailuresPerAccount(), login.getWindow(), clock, store);
+    }
+
+    /** Optional network restriction for the platform operator's sign-in. */
+    @Bean
+    public org.readybell.platform.auth.OperatorNetworkPolicy operatorNetworkPolicy(
+            @Value("${readybell.security.platform-admin-allowed-networks:}") List<String> networks) {
+        return new org.readybell.platform.auth.OperatorNetworkPolicy(networks);
     }
 
     @Bean
@@ -193,6 +213,31 @@ public class SecurityConfig {
         return redisTemplate != null
                 ? new RedisStreamTicketStore(redisTemplate, "readybell:stream-ticket:", clock)
                 : new InMemoryStreamTicketStore(clock);
+    }
+
+    /** Where revoked tokens are remembered; Redis (when enabled) shares it between replicas. */
+    @Bean
+    public org.readybell.platform.auth.TokenRevocationStore tokenRevocationStore(Clock clock,
+            ObjectProvider<StringRedisTemplate> redis, @Value("${readybell.sse.redis.enabled:false}") boolean redisEnabled) {
+        var redisTemplate = redisEnabled ? redis.getIfAvailable() : null;
+        return redisTemplate != null
+                ? new org.readybell.platform.auth.RedisTokenRevocationStore(redisTemplate, "readybell:revoked-token:", clock)
+                : new org.readybell.platform.auth.InMemoryTokenRevocationStore(clock);
+    }
+
+    @Bean
+    public org.readybell.platform.auth.TokenSessions tokenSessions(org.readybell.platform.auth.TokenRevocationStore store,
+            Clock clock, JwtProperties props) {
+        // A revocation must outlive the longest time a token of the chain could still be used or refreshed
+        return new org.readybell.platform.auth.TokenSessions(store, clock, props.getTtl().plus(props.getRefreshGrace()).plusHours(1));
+    }
+
+    @Bean
+    public org.readybell.platform.auth.TokenGuard tokenGuard(JwtService jwtService,
+            org.readybell.platform.auth.TokenSessions sessions, UserDetailsService users, Clock clock,
+            @Value("${readybell.security.account-check-cache:30s}") java.time.Duration accountCheckCache) {
+        return new org.readybell.platform.auth.TokenGuard(jwtService, sessions,
+                new org.readybell.platform.auth.AccountGuard(users, clock, accountCheckCache));
     }
 
     @Bean

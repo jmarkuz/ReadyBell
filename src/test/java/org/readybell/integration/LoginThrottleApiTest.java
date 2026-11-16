@@ -17,7 +17,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** Own context (different property) so the limiter state is not shared with other tests. */
-@SpringBootTest(properties = "readybell.security.jwt.login.max-failures=3")
+@SpringBootTest(properties = {"readybell.security.jwt.login.max-failures=3",
+        "readybell.security.jwt.login.max-failures-per-address=6", "readybell.security.jwt.login.max-failures-per-account=9"})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class LoginThrottleApiTest {
@@ -35,32 +36,42 @@ class LoginThrottleApiTest {
     }
 
     @Test
-    void blocksAfterRepeatedFailuresEvenWithCorrectPassword() throws Exception {
+    void blocksTheGuessingAddressEvenWithTheCorrectPasswordButNotTheOwnerElsewhere() throws Exception {
         for (int i = 0; i < 3; i++) {
-            login("other", "wrong", "10.0.0." + i).andExpect(status().isUnauthorized());
+            login("other", "wrong", "10.0.0.1").andExpect(status().isUnauthorized());
         }
-        // account is now locked for everyone, from any address, including the right password
-        login("other", "other", "10.0.1.1")
+        // the guessing address is locked out of this account, including with the right password
+        login("other", "other", "10.0.0.1")
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().exists("Retry-After"))
                 .andExpect(jsonPath("$.type").value("urn:readybell:auth:too-many-attempts"));
+        // ... but a stranger could not lock the real owner out: elsewhere the account still works
+        login("other", "other", "10.0.1.1").andExpect(status().isOk());
     }
 
     @Test
-    void otherAccountsAreUnaffectedAndSuccessResetsCounter() throws Exception {
+    void successResetsTheCounter() throws Exception {
         login("admin", "wrong", "10.0.2.1").andExpect(status().isUnauthorized());
-        login("admin", "wrong", "10.0.2.2").andExpect(status().isUnauthorized());
-        login("admin", "admin", "10.0.2.3").andExpect(status().isOk());      // success clears username counter
-        login("admin", "wrong", "10.0.2.4").andExpect(status().isUnauthorized());
-        login("admin", "admin", "10.0.2.5").andExpect(status().isOk());
+        login("admin", "wrong", "10.0.2.1").andExpect(status().isUnauthorized());
+        login("admin", "admin", "10.0.2.1").andExpect(status().isOk());      // success clears the counters
+        login("admin", "wrong", "10.0.2.1").andExpect(status().isUnauthorized());
+        login("admin", "admin", "10.0.2.1").andExpect(status().isOk());
     }
 
     @Test
     void sameAddressIsThrottledAcrossUsernames() throws Exception {
-        for (String u : new String[]{"u1", "u2", "u3"}) {
+        for (String u : new String[]{"u1", "u2", "u3", "u4", "u5", "u6"}) {
             login(u, "x", "10.0.3.1").andExpect(status().isUnauthorized());
         }
         login("platform", "platform", "10.0.3.1").andExpect(status().isTooManyRequests());
         login("platform", "platform", "10.0.3.2").andExpect(status().isOk());
+    }
+
+    @Test
+    void aDistributedGuessAtOneAccountLocksItForEveryoneOnlyAtTheHighLimit() throws Exception {
+        for (int i = 0; i < 9; i++) {
+            login("victim", "wrong", "10.1.0." + i).andExpect(status().isUnauthorized());
+        }
+        login("victim", "wrong", "10.1.9.9").andExpect(status().isTooManyRequests());
     }
 }

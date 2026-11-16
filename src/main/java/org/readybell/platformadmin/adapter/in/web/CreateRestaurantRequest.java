@@ -12,7 +12,7 @@ public record CreateRestaurantRequest(
         String identifier,
         String name,
         String adminUsername,
-        @Size(min = 8, max = 72) String adminPassword) {
+        @Size(min = 10, max = 72) String adminPassword) {
 
     public CreateRestaurantRequest(String identifier, String name) {
         this(identifier, name, null, null);

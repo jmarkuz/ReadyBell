@@ -109,8 +109,8 @@ public class OrderReadyHandler {
         // Req 6.6 — no subscriptions: log "none delivered" and return without error
         if (subscriptions.isEmpty()) {
             LOG.info(() -> String.format(
-                    "OrderReady [orderId=%s, sessionId=%s, tenantId=%s]: no device subscriptions — no notification delivered.",
-                    event.orderId(), event.sessionId(), event.tenantId()));
+                    "OrderReady [orderId=%s, session=%s, tenantId=%s]: no device subscriptions — no notification delivered.",
+                    event.orderId(), shortId(event.sessionId().value()), event.tenantId()));
             return;
         }
 
@@ -206,6 +206,11 @@ public class OrderReadyHandler {
     /**
      * REJECTED outcome: record failure and continue (Req 6.7, 6.8).
      */
+    /** The session id is the customer's credential for the tracking page, so logs carry only a prefix of it. */
+    private static String shortId(java.util.UUID id) {
+        return id.toString().substring(0, 8) + "…";
+    }
+
     private void handleRejected(Notification notification, DeviceSubscription subscription) {
         LOG.warning(() -> String.format(
                 "Notification rejected for subscription %s; recording failure.",

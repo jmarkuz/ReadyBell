@@ -1,0 +1,26 @@
+# Weekly update proposals for everything that ships: Gradle and npm dependencies, the base images pinned by
+# digest in Dockerfile and docker-compose.yml, and the GitHub Actions used by CI. Each update is a pull request that
+# runs the normal CI, so a bump is merged only when the suite is green.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+    groups:
+      spring-boot: { patterns: ["org.springframework.boot*", "org.springframework*"] }
+  - package-ecosystem: npm
+    directory: "/dashboard-ui"
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch: { update-types: ["minor", "patch"] }
+  - package-ecosystem: docker
+    directory: "/"
+    schedule: { interval: weekly }
+  - package-ecosystem: docker-compose
+    directory: "/"
+    schedule: { interval: weekly }
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule: { interval: weekly }

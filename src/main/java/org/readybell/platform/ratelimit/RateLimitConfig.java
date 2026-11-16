@@ -25,19 +25,35 @@ public class RateLimitConfig {
         return new ClientIpResolver(props.getTrustedProxies());
     }
 
+    /** Counters of the per-IP limits and of the claim guess protection; Redis shares them between replicas. */
     @Bean
-    public FilterRegistrationBean<RateLimitFilter> rateLimitFilter(RateLimitProperties props, Clock clock,
-            MeterRegistry meters, ObjectProvider<StringRedisTemplate> redis, ClientIpResolver ips) {
+    public FailureStore rateLimitStore(RateLimitProperties props, ObjectProvider<StringRedisTemplate> redis) {
         // Redis keeps the limit shared between replicas and falls back to per-node counters if it is down
         var redisTemplate = props.isRedis() ? redis.getIfAvailable() : null;
-        FailureStore store = redisTemplate != null
+        return redisTemplate != null
                 ? new RedisFailureStore(redisTemplate, "readybell:rate-limit:")
                 : new InMemoryFailureStore();
-        var filter = new RateLimitFilter(props, ips, store, clock, meters);
+    }
+
+    @Bean
+    public FilterRegistrationBean<RateLimitFilter> rateLimitFilter(RateLimitProperties props, Clock clock,
+            MeterRegistry meters, ClientIpResolver ips, FailureStore rateLimitStore) {
+        var filter = new RateLimitFilter(props, ips, rateLimitStore, clock, meters);
         var registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(props.isEnabled());
         registration.addUrlPatterns("/api/*");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<ClaimFailureFilter> claimFailureFilter(RateLimitProperties props, Clock clock,
+            MeterRegistry meters, ClientIpResolver ips, FailureStore rateLimitStore) {
+        var filter = new ClaimFailureFilter(props.getClaim(), ips, rateLimitStore, clock, meters);
+        var registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(props.isEnabled());
+        registration.addUrlPatterns("/api/restaurants/*");
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 20);
         return registration;
     }
 }

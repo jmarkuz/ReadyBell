@@ -850,6 +850,21 @@ export class ApiClient {
    * Logout (clear tokens)
    */
   logout(): void {
+    // End the session on the server too, so a copy of the token stops working at once. Best effort: `keepalive` lets
+    // the request finish while the page navigates to /login, and a failure changes nothing for the user.
+    const token = tokenManager.get();
+    if (token && typeof fetch === 'function') {
+      try {
+        void fetch(`${this.baseURL}/api/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          keepalive: true,
+        }).catch(() => undefined);
+      } catch {
+        // fetch unavailable or blocked: nothing to do
+      }
+    }
+
     // Clear token via TokenManager
     tokenManager.clear();
     
@@ -933,7 +948,7 @@ export class ApiClient {
    * Onboard a restaurant, optionally with its first admin (PLATFORM_ADMIN only)
    * POST /api/platform/restaurants
    *
-   * `adminUsername` and `adminPassword` (min 8 characters) must be given together.
+   * `adminUsername` and `adminPassword` (min 10 characters, not a common password) must be given together.
    */
   async createRestaurant(data: {
     identifier: string;

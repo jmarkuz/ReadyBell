@@ -120,8 +120,8 @@ export default function Restaurants() {
             <input id="r-admin" className={inputClass} value={adminUsername} autoComplete="off" onChange={(e) => setAdminUsername(e.target.value)} />
           </div>
           <div>
-            <label htmlFor="r-pass" className="block text-sm font-medium mb-1">Admin password (min. 8 characters)</label>
-            <input id="r-pass" className={inputClass} type="password" value={adminPassword} required={!!adminUsername.trim()} minLength={8} maxLength={72} autoComplete="new-password" onChange={(e) => setAdminPassword(e.target.value)} />
+            <label htmlFor="r-pass" className="block text-sm font-medium mb-1">Admin password (min. 10 characters)</label>
+            <input id="r-pass" className={inputClass} type="password" value={adminPassword} required={!!adminUsername.trim()} minLength={10} maxLength={72} autoComplete="new-password" onChange={(e) => setAdminPassword(e.target.value)} />
           </div>
           <div className="sm:col-span-2">
             <button type="submit" className={primaryButton} disabled={busy}>{busy ? 'Adding…' : 'Add restaurant'}</button>

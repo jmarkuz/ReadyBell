@@ -49,18 +49,18 @@ class RedisFailureStoreTest {
     @Test
     void twoNodesShareOneLimit() {
         Clock clock = Clock.fixed(t0, ZoneOffset.UTC);
-        var nodeA = new LoginAttemptLimiter(3, Duration.ofMinutes(10), clock, new RedisFailureStore(redis, prefix));
-        var nodeB = new LoginAttemptLimiter(3, Duration.ofMinutes(10), clock, new RedisFailureStore(redis, prefix));
+        var nodeA = new LoginAttemptLimiter(3, 30, 100, Duration.ofMinutes(10), clock, new RedisFailureStore(redis, prefix));
+        var nodeB = new LoginAttemptLimiter(3, 30, 100, Duration.ofMinutes(10), clock, new RedisFailureStore(redis, prefix));
 
         nodeA.recordFailure("anna", "1.1.1.1");
         nodeB.recordFailure("anna", "1.1.1.1");
-        assertEquals(Duration.ZERO, nodeA.retryAfter("anna", "9.9.9.9"));
+        assertEquals(Duration.ZERO, nodeA.retryAfter("anna", "1.1.1.1"));
         nodeA.recordFailure("anna", "1.1.1.1");
 
-        assertTrue(nodeB.retryAfter("anna", "9.9.9.9").compareTo(Duration.ZERO) > 0, "node B sees node A's failures");
+        assertTrue(nodeB.retryAfter("anna", "1.1.1.1").compareTo(Duration.ZERO) > 0, "node B sees node A's failures");
 
-        nodeB.recordSuccess("anna");
-        assertEquals(Duration.ZERO, nodeA.retryAfter("anna", "9.9.9.9"));
+        nodeB.recordSuccess("anna", "1.1.1.1");
+        assertEquals(Duration.ZERO, nodeA.retryAfter("anna", "1.1.1.1"));
     }
 
     @Test

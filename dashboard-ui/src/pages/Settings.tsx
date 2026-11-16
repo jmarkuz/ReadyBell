@@ -67,7 +67,7 @@ export default function Settings() {
           <h2 id="counter-qr" className="text-xl mb-2">Counter QR code</h2>
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
             Show it at the pickup area. A customer scans it, types the order number from the receipt and gets a
-            notification when the order is ready. Orders can be claimed for a few hours after they are created.
+            notification when the order is ready. An order can be claimed this way only for a short time after it is created (30 minutes by default).
           </p>
           <img src={counterQr.qr} alt={`Counter QR code for ${restaurant.name}`} className="w-56 h-56 rounded-lg border border-slate-200 bg-white" />
           <p className="text-xs text-slate-500 mt-2 break-all">{counterQr.url}</p>

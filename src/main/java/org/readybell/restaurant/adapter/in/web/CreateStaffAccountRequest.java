@@ -13,4 +13,4 @@ import org.readybell.restaurant.domain.Role;
  *                 name (e.g. {@code "STAFF"} or {@code "RESTAURANT_ADMIN"})
  */
 public record CreateStaffAccountRequest(@NotBlank String username, @NotBlank String role,
-                                 @NotBlank @Size(min = 8, max = 72) String password) {}
+                                 @NotBlank @Size(min = 10, max = 72) String password) {}
