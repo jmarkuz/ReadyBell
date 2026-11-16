@@ -54,10 +54,15 @@ readybell:
     redis: ${RATE_LIMIT_REDIS_ENABLED:false}
     # Reverse proxies (IP or CIDR) whose X-Forwarded-For is believed, e.g. RATE_LIMIT_TRUSTED_PROXIES=10.0.0.0/8
     trusted-proxies: ${RATE_LIMIT_TRUSTED_PROXIES:}
+    claim:
+      max-failures-per-address: 10        # failed claims a minute per client address
+      max-failures-per-restaurant: 100    # failed claims a minute per restaurant (distributed guessing)
+      window: 1m
     rules:
       - {name: session-start, method: POST, path: /api/sessions, limit: 20, window: 1m}
-      # Counter QR: receipt numbers are small, so guessing is throttled hard (10 tries a minute per IP)
-      - {name: counter-claim, method: POST, path: "/api/restaurants/*/claim", limit: 10, window: 1m}
+      # Counter QR: only a coarse cap on all requests here; guessing is throttled by the failure counters under
+      # `readybell.rate-limit.claim` (failed claims only, per IP and per restaurant)
+      - {name: counter-claim-total, method: POST, path: "/api/restaurants/*/claim", limit: 120, window: 1m}
       - {name: counter-restaurant, method: GET, path: "/api/restaurants/*/public", limit: 60, window: 1m}
       - {name: subscribe, method: POST, path: "/api/sessions/*/subscriptions", limit: 20, window: 1m}
       - {name: track, method: GET, path: "/api/sessions/*/track", limit: 120, window: 1m}

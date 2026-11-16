@@ -74,7 +74,7 @@ the number (with or without `#`, prefix match: `10` finds #10 and #100-#109).
 ## Rate limits (public endpoints)
 
 Per client IP, sliding window (defaults in `application.yml` under `readybell.rate-limit.rules`): session start 20/min,
-counter claim 10/min (restaurant name 60/min), push subscribe 20/min, track 120/min, customer poll 240/min, customer stream 30/min. Over the limit: `429` with
+counter claim: 10 *failed* claims/min per IP and 100/min per restaurant (successful claims are not counted; 120 requests/min per IP overall), restaurant name 60/min, push subscribe 20/min, track 120/min, customer poll 240/min, customer stream 30/min. Over the limit: `429` with
 `Retry-After` (seconds) and `application/problem+json` (`type: urn:readybell:rate-limit:exceeded`). Behind a reverse
 proxy set `RATE_LIMIT_TRUSTED_PROXIES` (IP/CIDR list) so `X-Forwarded-For` is used; without it the proxy's own address is
 the key and all clients share one budget. `RATE_LIMIT_REDIS_ENABLED=true` shares counters between replicas.

@@ -70,3 +70,18 @@ groups:
         labels: {severity: warning}
         annotations:
           summary: "No SSE connections while orders are being created"
+
+      - alert: CounterClaimGuessing
+        expr: increase(ratelimit_rejected_total{endpoint="counter-claim"}[5m]) > 0
+        for: 0m
+        labels: {severity: warning}
+        annotations:
+          summary: "Someone is guessing receipt numbers at the counter QR (claim attempts are being throttled)"
+
+      - alert: CounterClaimFailuresHigh
+        expr: sum(rate(claim_failures_total[5m])) > 1
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "More than one failed counter-QR claim per second for 10 minutes"
+

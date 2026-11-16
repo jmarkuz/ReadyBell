@@ -16,6 +16,8 @@ public class RateLimitProperties {
     /** Proxies (IP or CIDR) whose {@code X-Forwarded-For} header is believed; empty means it is ignored. */
     private List<String> trustedProxies = new ArrayList<>();
     private List<Rule> rules = new ArrayList<>();
+    /** Guess protection of the counter-QR claim endpoint. */
+    private Claim claim = new Claim();
 
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
@@ -23,6 +25,27 @@ public class RateLimitProperties {
     public void setRedis(boolean redis) { this.redis = redis; }
     public List<String> getTrustedProxies() { return trustedProxies; }
     public void setTrustedProxies(List<String> trustedProxies) { this.trustedProxies = trustedProxies; }
+    public Claim getClaim() { return claim; }
+    public void setClaim(Claim claim) { this.claim = claim; }
+
+    /**
+     * Counter-QR claim: receipt numbers are small and sequential, so only <em>failed</em> claims are counted (a queue of
+     * honest customers behind one restaurant Wi-Fi all succeed and never meet the limit), per client address and, against
+     * a distributed guesser, per restaurant.
+     */
+    public static class Claim {
+        private int maxFailuresPerAddress = 10;
+        private int maxFailuresPerRestaurant = 100;
+        private Duration window = Duration.ofMinutes(1);
+
+        public int getMaxFailuresPerAddress() { return maxFailuresPerAddress; }
+        public void setMaxFailuresPerAddress(int v) { this.maxFailuresPerAddress = v; }
+        public int getMaxFailuresPerRestaurant() { return maxFailuresPerRestaurant; }
+        public void setMaxFailuresPerRestaurant(int v) { this.maxFailuresPerRestaurant = v; }
+        public Duration getWindow() { return window; }
+        public void setWindow(Duration window) { this.window = window; }
+    }
+
     public List<Rule> getRules() { return rules; }
     public void setRules(List<Rule> rules) { this.rules = rules; }
 
