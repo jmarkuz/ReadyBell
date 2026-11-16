@@ -49,7 +49,23 @@ public class RateLimitProperties {
     public List<Rule> getRules() { return rules; }
     public void setRules(List<Rule> rules) { this.rules = rules; }
 
-    /** At most {@code limit} requests per {@code window} and client IP to the matching endpoint. */
+    /** What a rule counts requests per. */
+    public enum KeyBy {
+        /** The client address (default). */
+        IP,
+        /**
+         * The customer session in {@code /api/sessions/{id}/...}. Customers of one restaurant share a Wi-Fi, so an
+         * address limit would throttle them for each other; a session's own polling is what is worth bounding.
+         */
+        SESSION,
+        /** One bucket for everybody: a cap on an endpoint that creates rows and has no legitimate high-volume use. */
+        GLOBAL
+    }
+
+    /**
+     * At most {@code limit} requests per {@code window} per {@code keyBy} (client IP by default) to the matching endpoint.
+     * Every rule that matches a request is applied, so a per-session rule and a looser per-address rule can sit side by side.
+     */
     public static class Rule {
         /** Metric tag and counter key, e.g. {@code session-start}. */
         private String name;
@@ -57,6 +73,7 @@ public class RateLimitProperties {
         private String method = "";
         /** Ant path pattern, e.g. {@code /api/sessions/*}{@code /subscriptions}. */
         private String path;
+        private KeyBy keyBy = KeyBy.IP;
         private int limit = 60;
         private Duration window = Duration.ofMinutes(1);
 
@@ -68,6 +85,8 @@ public class RateLimitProperties {
         public void setPath(String path) { this.path = path; }
         public int getLimit() { return limit; }
         public void setLimit(int limit) { this.limit = limit; }
+        public KeyBy getKeyBy() { return keyBy; }
+        public void setKeyBy(KeyBy keyBy) { this.keyBy = keyBy; }
         public Duration getWindow() { return window; }
         public void setWindow(Duration window) { this.window = window; }
     }

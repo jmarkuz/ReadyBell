@@ -30,6 +30,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final FailureStore store;
     private final Clock clock;
     private final MeterRegistry meters;
+    private static final String SESSION_PATH = "/api/sessions/{sessionId}/**";
     private final AntPathMatcher paths = new AntPathMatcher();
     /**
      * Resolves the path the way Spring MVC will route it: percent-decoded, {@code ;params} and doubled slashes removed.
@@ -49,27 +50,48 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        var rule = props.getRules().stream().filter(r -> matches(r, request)).findFirst().orElse(null);
-        if (rule == null) {
+        String path = pathHelper.getPathWithinApplication(request);
+        var applicable = props.getRules().stream().filter(r -> matches(r, request, path)).toList();
+        if (applicable.isEmpty()) {
             chain.doFilter(request, response);
             return;
         }
-        String key = rule.getName() + ":" + ips.resolve(request);
         Instant now = clock.instant();
-        Duration window = rule.getWindow();
-        var current = store.window(key, now, window);
-        if (current.count() >= rule.getLimit()) {
-            long wait = current.oldest().map(o -> Duration.between(now, o.plus(window)).toSeconds() + 1).orElse(1L);
-            reject(response, rule, Math.max(1, wait));
-            return;
+        // Check every matching rule first; count the request only if all of them let it through
+        var keys = new java.util.ArrayList<String>();
+        for (var rule : applicable) {
+            String key = rule.getName() + ":" + keyFor(rule, request, path);
+            keys.add(key);
+            Duration window = rule.getWindow();
+            var current = store.window(key, now, window);
+            if (current.count() >= rule.getLimit()) {
+                long wait = current.oldest().map(o -> Duration.between(now, o.plus(window)).toSeconds() + 1).orElse(1L);
+                reject(response, rule, Math.max(1, wait));
+                return;
+            }
         }
-        store.add(key, now, window);
+        for (int i = 0; i < applicable.size(); i++) {
+            store.add(keys.get(i), now, applicable.get(i).getWindow());
+        }
         chain.doFilter(request, response);
     }
 
-    private boolean matches(RateLimitProperties.Rule rule, HttpServletRequest request) {
+    private String keyFor(RateLimitProperties.Rule rule, HttpServletRequest request, String path) {
+        return switch (rule.getKeyBy()) {
+            case GLOBAL -> "*";
+            case SESSION -> {
+                if (paths.match(SESSION_PATH, path)) {
+                    yield "session:" + paths.extractUriTemplateVariables(SESSION_PATH, path).get("sessionId").toLowerCase(java.util.Locale.ROOT);
+                }
+                yield ips.resolve(request);      // not a session path: fall back to the address
+            }
+            case IP -> ips.resolve(request);
+        };
+    }
+
+    private boolean matches(RateLimitProperties.Rule rule, HttpServletRequest request, String path) {
         return (rule.getMethod().isBlank() || rule.getMethod().equalsIgnoreCase(request.getMethod()))
-                && paths.match(rule.getPath(), pathHelper.getPathWithinApplication(request));
+                && paths.match(rule.getPath(), path);
     }
 
     private void reject(HttpServletResponse response, RateLimitProperties.Rule rule, long retryAfterSeconds)

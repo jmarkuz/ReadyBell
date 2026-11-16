@@ -74,11 +74,17 @@ the number (with or without `#`, prefix match: `10` finds #10 and #100-#109).
 
 ## Rate limits (public endpoints)
 
-Per client IP, sliding window (defaults in `application.yml` under `readybell.rate-limit.rules`): session start 20/min,
-counter claim: 10 *failed* claims/min per IP and 100/min per restaurant (successful claims are not counted; 120 requests/min per IP overall), restaurant name 60/min, push subscribe 20/min, track 120/min, customer poll 240/min, customer stream 30/min. Over the limit: `429` with
-`Retry-After` (seconds) and `application/problem+json` (`type: urn:readybell:rate-limit:exceeded`). Behind a reverse
+Sliding windows, defaults in `application.yml` under `readybell.rate-limit.rules`. **Every rule that matches a request is
+applied**, and a rule counts per `key-by`: `ip` (default), `session` (the id in `/api/sessions/{id}/...`) or `global`. Customers of
+one restaurant share one public address, so what a customer page does is limited **per session** (track 30/min, poll 60/min,
+stream 10/min, subscribe 10/min) and the per-address rule beside it is only a high ceiling (track 600/min, poll 1200/min,
+stream 120/min, subscribe 60/min). Session start (`POST /api/sessions`, not used by the customer flow): 30/min per address and
+300/min for everybody. Counter claim: only *failed* claims count, 10/min per address and 100/min per restaurant (successful
+claims are free; 120 requests/min per address overall); restaurant name 60/min. Over the limit: `429` with
+`Retry-After` (seconds) and `application/problem+json` (`type: urn:readybell:rate-limit:exceeded`). Paths are matched decoded
+(`/api/%73essions` is `/api/sessions`). Behind a reverse
 proxy set `RATE_LIMIT_TRUSTED_PROXIES` (IP/CIDR list) so `X-Forwarded-For` is used; without it the proxy's own address is
-the key and all clients share one budget. `RATE_LIMIT_REDIS_ENABLED=true` shares counters between replicas.
+the key and all clients share one budget (see DEPLOYMENT.md). `RATE_LIMIT_REDIS_ENABLED=true` shares counters between replicas.
 Metric: `ratelimit.rejected{endpoint}` at `/actuator/metrics`.
 
 ## Login throttling
