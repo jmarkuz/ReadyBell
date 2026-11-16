@@ -48,8 +48,7 @@ Before the first pilot restaurant, work through [PILOT_CHECKLIST.md](PILOT_CHECK
 ## Local development
 
 `start-dev.sh` / the `dev` profile (`SPRING_PROFILES_ACTIVE=dev`) recreate the schema on every start and seed
-`staff`, `admin` and `platform` users (see `application-dev.yml`). The dev profile also exposes
-`/api/dev/test-data` (generate / import / delete sample orders) behind the dashboard's test-data buttons.
+`staff`, `admin` and `platform` users (see `application-dev.yml`) plus a restaurant for them.
 
 ## Backup & restore
 

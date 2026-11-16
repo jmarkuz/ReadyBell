@@ -394,10 +394,12 @@ describe('useSSE Hook', () => {
       .mockRejectedValueOnce(new Error('offline'))
       .mockResolvedValue('ticket-ok');
 
-    const { result } = renderHook(() =>
-      useSSE({ endpoint: '/api/orders/stream', onMessage: vi.fn(), getTicket, initialDelay: 10 }));
-    await waitFor(() => expect(result.current.isRetrying).toBe(true));
+    renderHook(() => useSSE({ endpoint: '/api/orders/stream', onMessage: vi.fn(), getTicket, initialDelay: 10 }));
+
+    // The failed first request is retried and the stream opens with the second ticket. (isRetrying is only true for
+    // the 10 ms between the two attempts, which a polling waitFor can miss on a loaded machine.)
     await waitFor(() => expect((global as any).EventSource).toHaveBeenCalledTimes(1));
+    expect(getTicket).toHaveBeenCalledTimes(2);
     expect((global as any).EventSource.mock.calls[0][0]).toContain('ticket=ticket-ok');
   });
 

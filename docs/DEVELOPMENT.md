@@ -49,8 +49,9 @@ Staff change an order's status from the pencil menu in the orders table (only th
 the change is sent with `PATCH /api/orders/{id}/status` and the list reloads. **Logout** (sidebar and settings menu) clears the stored token and returns to `/login`.
 
 To see data locally: the `dev` profile seeds a restaurant (`dev-restaurant`) for the `staff` / `admin` tenant at startup.
-Sign in as `admin` / `admin` and press **New order**, or use the dashboard's *Generate / Import test data* buttons
-(`dashboard-ui/test-data/test-orders-50.json` holds 50 sample orders). Details of the API: [API_INTEGRATION.md](API_INTEGRATION.md).
+Sign in as `admin` / `admin` and press **New order**; there is no mock-data generator, so every order goes through the same
+flow as in production (the Playwright scenarios create theirs through `POST /api/orders`). Details of the API:
+[API_INTEGRATION.md](API_INTEGRATION.md).
 
 ## Tests
 

@@ -65,11 +65,6 @@ the number (with or without `#`, prefix match: `10` finds #10 and #100-#109).
 | DELETE | `/api/platform/restaurants/{tenantId}` | deactivate (new customer sessions are refused) |
 | GET | `/actuator/prometheus` | metrics |
 
-## Development only (`dev` profile)
-
-`POST /api/dev/test-data?count=n` (generate), `POST /api/dev/test-data/import` (`{orders:[…]}`), `DELETE /api/dev/test-data`
-(removes the orders whose customer name ends with ` (test)`).
-
 ## Conventions
 
 - Status names are the backend's: `CREATED, IN_PROGRESS, READY, COMPLETED, CANCELLED`; the staff UI labels `IN_PROGRESS` "Preparing".

@@ -20,8 +20,7 @@ ReadyBell is a multi-tenant SaaS platform that lets restaurant customers track t
 
 **Staff dashboard, light theme.** Live order summary (total, new, preparing, ready for pickup), status and date
 filters, and the incoming-orders table where staff move an order through its lifecycle. **New order** opens the
-order entry dialog and prints the receipt QR code that customers scan to follow their order. The
-*Generate / Import / Delete test data* buttons only appear in development builds.
+order entry dialog and prints the receipt QR code that customers scan to follow their order.
 
 ![ReadyBell staff dashboard, light theme](docs/screenshots/dashboard-light.png)
 

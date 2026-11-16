@@ -23,7 +23,7 @@ const sampleRows: OrderRow[] = [
 
 vi.mock('@/utils/api', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/utils/api')>();
-  return { ...original, apiClient: { getOrders: vi.fn(), getOrderMetrics: vi.fn(), createStreamTicket: vi.fn().mockResolvedValue("test-ticket"), updateOrderStatus: vi.fn(), generateTestData: vi.fn(), clearTestData: vi.fn(), importTestData: vi.fn() } };
+  return { ...original, apiClient: { getOrders: vi.fn(), getOrderMetrics: vi.fn(), createStreamTicket: vi.fn().mockResolvedValue("test-ticket"), updateOrderStatus: vi.fn() } };
 });
 
 /** Renders the page and waits for the first load, so tests can assert synchronously afterwards. */
@@ -143,59 +143,13 @@ describe('Dashboard server-side paging, filters and sorting', () => {
   });
 });
 
-describe('Dashboard test data tools', () => {
-  it('generates test data and reloads the orders', async () => {
-    vi.mocked(apiClient.generateTestData).mockResolvedValue({ created: 12 });
-    await renderDashboard();
-    const loadsBefore = vi.mocked(apiClient.getOrders).mock.calls.length;
-
-    await userEvent.click(screen.getByRole('button', { name: 'Generate test data' }));
-
-    expect(await screen.findByText('Added 12 test orders.')).toBeInTheDocument();
-    expect(apiClient.generateTestData).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(apiClient.getOrders).mock.calls.length).toBeGreaterThan(loadsBefore);
-  });
-
-  it('deletes test data and reloads the orders', async () => {
-    vi.mocked(apiClient.clearTestData).mockResolvedValue({ deleted: 7 });
+describe('Dashboard without mock data tools', () => {
+  it('offers no way to generate, import or delete test data', async () => {
     await renderDashboard();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Delete test data' }));
-
-    expect(await screen.findByText('Removed 7 test orders.')).toBeInTheDocument();
-    expect(apiClient.clearTestData).toHaveBeenCalledTimes(1);
-  });
-
-  it('imports orders from the chosen file', async () => {
-    vi.mocked(apiClient.importTestData).mockResolvedValue({ created: 2 });
-    await renderDashboard();
-
-    const file = new File(['{"orders":[{"customerName":"A"},{"status":"READY"}]}'], 'orders.json', {
-      type: 'application/json',
-    });
-    await userEvent.upload(screen.getByTestId('test-data-file'), file);
-
-    expect(await screen.findByText('Imported 2 test orders from orders.json.')).toBeInTheDocument();
-    expect(apiClient.importTestData).toHaveBeenCalledWith([{ customerName: 'A' }, { status: 'READY' }]);
-  });
-
-  it('reports an unusable import file without calling the backend', async () => {
-    vi.mocked(apiClient.importTestData).mockClear();
-    await renderDashboard();
-
-    await userEvent.upload(screen.getByTestId('test-data-file'), new File(['nope'], 'bad.json'));
-
-    expect(await screen.findByText('The file is not valid JSON.')).toBeInTheDocument();
-    expect(apiClient.importTestData).not.toHaveBeenCalled();
-  });
-
-  it('shows the error when the backend rejects the request', async () => {
-    vi.mocked(apiClient.generateTestData).mockRejectedValue(new Error('Not found'));
-    await renderDashboard();
-
-    await userEvent.click(screen.getByRole('button', { name: 'Generate test data' }));
-
-    expect(await screen.findByText('Not found')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /test data/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('test-data-file')).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Test data' })).not.toBeInTheDocument();
   });
 });
 
