@@ -15,7 +15,7 @@ Client code: `dashboard-ui/src/utils/api.ts` (staff API, Bearer token) and `dash
 | GET | `/api/sessions/{id}/track` | tracking page data: restaurant name, `sessionActive`, orders with items and ETA; 404 for an unknown id |
 | GET | `/api/sessions/{id}/orders` | `[{orderId, status}]` |
 | GET | `/api/sessions/{id}/orders/stream` | SSE, event `order-status-updated` |
-| POST | `/api/sessions/{id}/subscriptions` | `{endpointUrl, p256dhKey, authKey}` Web Push subscription |
+| POST | `/api/sessions/{id}/subscriptions` | `{endpointUrl, p256dhKey, authKey}` Web Push subscription. The server calls `endpointUrl`, so it must be `https`, on the default port, without credentials, and a host of a known push service (FCM, Mozilla, Apple, Windows WNS; more via `readybell.push.extra-allowed-hosts`); anything else is a 400. Lengths: endpoint ≤ 2048, `p256dhKey` ≤ 200, `authKey` ≤ 100 |
 | DELETE | `/api/sessions/{id}/subscriptions/{subscriptionId}` | revoke |
 | GET | `/api/restaurants/{identifier}/public` | counter QR page: `{name}` of an active restaurant; 404 otherwise |
 | POST | `/api/restaurants/{identifier}/claim` | counter QR: `{orderNumber}` (the number on the receipt) → `{sessionId}` for `/track/{sessionId}`. Every failure (unknown restaurant, unknown number, already claimed, finished or older than `readybell.claim.max-age`, default 30 min) is the same generic `404`; each order can be claimed once; 10 tries/min per IP |

@@ -7,6 +7,7 @@ import org.readybell.session.domain.CustomerSessionId;
 import org.readybell.session.domain.InMemoryCustomerSessionRepository;
 import org.readybell.session.domain.SessionStatus;
 import org.readybell.shared.domain.TenantId;
+import org.readybell.subscription.domain.PushEndpointPolicy;
 import org.readybell.subscription.domain.DeviceSubscriptionId;
 import org.readybell.subscription.domain.InMemoryDeviceSubscriptionRepository;
 
@@ -31,7 +32,7 @@ class ManageSubscriptionServiceTest {
     void setUp() {
         sessions = new InMemoryCustomerSessionRepository();
         subscriptions = new InMemoryDeviceSubscriptionRepository();
-        service = new ManageSubscriptionService(sessions, subscriptions);
+        service = new ManageSubscriptionService(sessions, subscriptions, PushEndpointPolicy.defaults());
         session = CustomerSession.start(TENANT, Clock.systemUTC());
         sessions.save(session);
     }
@@ -44,18 +45,18 @@ class ManageSubscriptionServiceTest {
 
     @Test
     void registersANewDevice() {
-        var subscription = service.registerSubscription(command("https://push/1", "key", "auth"));
+        var subscription = service.registerSubscription(command("https://fcm.googleapis.com/fcm/send/1", "key", "auth"));
 
         assertThat(subscription.getTenantId()).isEqualTo(TENANT);
-        assertThat(subscription.getEndpoint().endpointUrl()).isEqualTo("https://push/1");
+        assertThat(subscription.getEndpoint().endpointUrl()).isEqualTo("https://fcm.googleapis.com/fcm/send/1");
         assertThat(subscriptions.size()).isEqualTo(1);
     }
 
     @Test
     void sameEndpointUpdatesTheKeysInsteadOfAddingADevice() {
-        var first = service.registerSubscription(command("https://push/1", "key-1", "auth-1"));
+        var first = service.registerSubscription(command("https://fcm.googleapis.com/fcm/send/1", "key-1", "auth-1"));
 
-        var second = service.registerSubscription(command("https://push/1", "key-2", "auth-2"));
+        var second = service.registerSubscription(command("https://fcm.googleapis.com/fcm/send/1", "key-2", "auth-2"));
 
         assertThat(second.getId()).isEqualTo(first.getId());
         assertThat(second.getEndpoint().p256dhKey()).isEqualTo("key-2");
@@ -65,8 +66,8 @@ class ManageSubscriptionServiceTest {
 
     @Test
     void differentEndpointsAreSeparateDevices() {
-        service.registerSubscription(command("https://push/1", "key", "auth"));
-        service.registerSubscription(command("https://push/2", "key", "auth"));
+        service.registerSubscription(command("https://fcm.googleapis.com/fcm/send/1", "key", "auth"));
+        service.registerSubscription(command("https://fcm.googleapis.com/fcm/send/2", "key", "auth"));
 
         assertThat(subscriptions.size()).isEqualTo(2);
     }
@@ -74,7 +75,7 @@ class ManageSubscriptionServiceTest {
     @Test
     void unknownSessionIsRejected() {
         var unknown = new RegisterSubscriptionCommand(new CustomerSessionId(UUID.randomUUID()), TENANT,
-                "https://push/1", "key", "auth");
+                "https://fcm.googleapis.com/fcm/send/1", "key", "auth");
 
         assertThatThrownBy(() -> service.registerSubscription(unknown)).isInstanceOf(SessionNotActiveException.class);
         assertThat(subscriptions.size()).isZero();
@@ -87,20 +88,20 @@ class ManageSubscriptionServiceTest {
         sessions.save(ended);
 
         assertThatThrownBy(() -> service.registerSubscription(
-                new RegisterSubscriptionCommand(ended.getId(), TENANT, "https://push/1", "key", "auth")))
+                new RegisterSubscriptionCommand(ended.getId(), TENANT, "https://fcm.googleapis.com/fcm/send/1", "key", "auth")))
                 .isInstanceOf(SessionNotActiveException.class);
     }
 
     @Test
     void anotherTenantsSessionIsRejected() {
         assertThatThrownBy(() -> service.registerSubscription(
-                new RegisterSubscriptionCommand(session.getId(), OTHER, "https://push/1", "key", "auth")))
+                new RegisterSubscriptionCommand(session.getId(), OTHER, "https://fcm.googleapis.com/fcm/send/1", "key", "auth")))
                 .isInstanceOf(SessionNotActiveException.class);
     }
 
     @Test
     void incompleteEndpointIsRejected() {
-        assertThatThrownBy(() -> service.registerSubscription(command("https://push/1", " ", "auth")))
+        assertThatThrownBy(() -> service.registerSubscription(command("https://fcm.googleapis.com/fcm/send/1", " ", "auth")))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(subscriptions.size()).isZero();
     }
@@ -114,7 +115,7 @@ class ManageSubscriptionServiceTest {
 
     @Test
     void ownerCanDeleteASubscription() {
-        var subscription = service.registerSubscription(command("https://push/1", "key", "auth"));
+        var subscription = service.registerSubscription(command("https://fcm.googleapis.com/fcm/send/1", "key", "auth"));
 
         service.deleteSubscription(subscription.getId(), TENANT);
 
@@ -129,7 +130,7 @@ class ManageSubscriptionServiceTest {
 
     @Test
     void anotherTenantsSubscriptionLooksLikeItDoesNotExist() {
-        var subscription = service.registerSubscription(command("https://push/1", "key", "auth"));
+        var subscription = service.registerSubscription(command("https://fcm.googleapis.com/fcm/send/1", "key", "auth"));
 
         assertThatThrownBy(() -> service.deleteSubscription(subscription.getId(), OTHER))
                 .isInstanceOf(SubscriptionNotFoundException.class);
@@ -147,7 +148,7 @@ class ManageSubscriptionServiceTest {
 
     @Test
     void expiredSubscriptionIsRemovedWithoutATenantCheck() {
-        var subscription = service.registerSubscription(command("https://push/1", "key", "auth"));
+        var subscription = service.registerSubscription(command("https://fcm.googleapis.com/fcm/send/1", "key", "auth"));
 
         service.deleteExpiredSubscription(subscription.getId());
 
@@ -161,9 +162,18 @@ class ManageSubscriptionServiceTest {
 
     @Test
     void constructorRejectsNulls() {
-        assertThatThrownBy(() -> new ManageSubscriptionService(null, subscriptions))
+        assertThatThrownBy(() -> new ManageSubscriptionService(null, subscriptions, PushEndpointPolicy.defaults()))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new ManageSubscriptionService(sessions, null))
+        assertThatThrownBy(() -> new ManageSubscriptionService(sessions, null, PushEndpointPolicy.defaults()))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void anEndpointThatIsNotAPushServiceIsRefusedAndNothingIsStored() {
+        for (String bad : new String[] {"http://169.254.169.254/latest/meta-data/", "https://internal/x", "https://evil.example/x"}) {
+            assertThatThrownBy(() -> service.registerSubscription(command(bad, "key", "auth")))
+                    .isInstanceOf(org.readybell.subscription.domain.InvalidPushEndpointException.class);
+        }
+        assertThat(subscriptions.size()).isZero();
     }
 }

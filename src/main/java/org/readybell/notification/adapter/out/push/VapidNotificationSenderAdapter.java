@@ -8,6 +8,7 @@ import org.readybell.notification.domain.NotificationPayload;
 import org.readybell.notification.domain.NotificationSender;
 import org.readybell.notification.domain.SendResult;
 import org.readybell.subscription.domain.PushEndpoint;
+import org.readybell.subscription.domain.PushEndpointPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,12 +42,15 @@ class VapidNotificationSenderAdapter implements NotificationSender {
     private static final Logger log = LoggerFactory.getLogger(VapidNotificationSenderAdapter.class);
 
     private final Optional<PushService> pushService;
+    private final PushEndpointPolicy endpointPolicy;
 
     @org.springframework.beans.factory.annotation.Autowired
     VapidNotificationSenderAdapter(
             @Value("${readybell.vapid.public-key}") String publicKey,
             @Value("${readybell.vapid.private-key}") String privateKey,
-            @Value("${readybell.vapid.subject}") String subject) {
+            @Value("${readybell.vapid.subject}") String subject,
+            PushEndpointPolicy endpointPolicy) {
+        this.endpointPolicy = endpointPolicy;
 
         // Skip initialization if using placeholder keys (development/testing without real VAPID credentials)
         if (isPlaceholder(publicKey) || isPlaceholder(privateKey)) {
@@ -60,7 +64,12 @@ class VapidNotificationSenderAdapter implements NotificationSender {
 
     /** For tests: use the given push service (empty means credentials are not configured). */
     VapidNotificationSenderAdapter(Optional<PushService> pushService) {
+        this(pushService, PushEndpointPolicy.defaults());
+    }
+
+    VapidNotificationSenderAdapter(Optional<PushService> pushService, PushEndpointPolicy endpointPolicy) {
         this.pushService = pushService;
+        this.endpointPolicy = endpointPolicy;
     }
 
     private static Optional<PushService> initializePushService(String publicKey, String privateKey, String subject) {
@@ -95,6 +104,14 @@ class VapidNotificationSenderAdapter implements NotificationSender {
             return SendResult.REJECTED;
         }
 
+        // Subscriptions stored before the policy existed (or edited in the database) are checked again at send time:
+        // this is the call that leaves the server
+        if (!endpointPolicy.isAllowed(endpoint.endpointUrl())) {
+            log.warn("Refusing to send Web Push: endpoint host {} is not an allowed push service",
+                    PushEndpointPolicy.hostForLog(endpoint.endpointUrl()));
+            return SendResult.REJECTED;
+        }
+
         try {
             String json = buildJson(payload);
 
@@ -116,8 +133,8 @@ class VapidNotificationSenderAdapter implements NotificationSender {
         } catch (Exception e) {
             // Any I/O, security, or encoding exception is treated as a transient
             // delivery failure so processing can continue for other subscriptions (Req 6.7)
-            log.warn("Web Push delivery failed for endpoint {}: {}",
-                    endpoint.endpointUrl(), e.getMessage(), e);
+            log.warn("Web Push delivery failed for endpoint host {}: {}",
+                    PushEndpointPolicy.hostForLog(endpoint.endpointUrl()), e.getMessage(), e);
             return SendResult.TRANSIENT_FAILURE;
         }
     }

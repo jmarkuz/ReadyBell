@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.readybell.notification.domain.NotificationPayload;
 import org.readybell.notification.domain.SendResult;
 import org.readybell.subscription.domain.PushEndpoint;
+import org.readybell.subscription.domain.PushEndpointPolicy;
 
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPairGenerator;
@@ -46,7 +47,7 @@ class VapidNotificationSenderAdapterTest {
         var publicKey = (org.bouncycastle.jce.interfaces.ECPublicKey) generator.generateKeyPair().getPublic();
         byte[] auth = new byte[16];
         new SecureRandom().nextBytes(auth);
-        endpoint = new PushEndpoint("https://push.example/device",
+        endpoint = new PushEndpoint("https://fcm.googleapis.com/fcm/send/device",
                 Base64.getUrlEncoder().withoutPadding().encodeToString(Utils.encode(publicKey)),
                 Base64.getUrlEncoder().withoutPadding().encodeToString(auth));
     }
@@ -90,10 +91,10 @@ class VapidNotificationSenderAdapterTest {
 
     @Test
     void placeholderOrBlankKeysDisableThePushService() {
-        var placeholder = new VapidNotificationSenderAdapter("placeholder-public-key", "placeholder-private-key", "mailto:a@b.c");
-        var blank = new VapidNotificationSenderAdapter(" ", "key", "mailto:a@b.c");
+        var placeholder = new VapidNotificationSenderAdapter("placeholder-public-key", "placeholder-private-key", "mailto:a@b.c", PushEndpointPolicy.defaults());
+        var blank = new VapidNotificationSenderAdapter(" ", "key", "mailto:a@b.c", PushEndpointPolicy.defaults());
         var unresolved = new VapidNotificationSenderAdapter("${VAPID_PUBLIC_KEY:placeholder-public-key}",
-                "${VAPID_PRIVATE_KEY:placeholder-private-key}", "mailto:a@b.c");
+                "${VAPID_PRIVATE_KEY:placeholder-private-key}", "mailto:a@b.c", PushEndpointPolicy.defaults());
 
         assertThat(placeholder.send(endpoint, PAYLOAD)).isEqualTo(SendResult.REJECTED);
         assertThat(blank.send(endpoint, PAYLOAD)).isEqualTo(SendResult.REJECTED);
@@ -102,7 +103,7 @@ class VapidNotificationSenderAdapterTest {
 
     @Test
     void unusableCredentialsDoNotBreakStartupAndRejectSends() {
-        var adapter = new VapidNotificationSenderAdapter("not-a-key", "not-a-key", "mailto:a@b.c");
+        var adapter = new VapidNotificationSenderAdapter("not-a-key", "not-a-key", "mailto:a@b.c", PushEndpointPolicy.defaults());
 
         assertThat(adapter.send(endpoint, PAYLOAD)).isEqualTo(SendResult.REJECTED);
     }
@@ -119,7 +120,7 @@ class VapidNotificationSenderAdapterTest {
     @Test
     void invalidDeviceKeysAreATransientFailureAndNothingIsSent() throws Exception {
         var service = mock(PushService.class);
-        var broken = new PushEndpoint("https://push.example/device", "AAAA", "AAAA");
+        var broken = new PushEndpoint("https://fcm.googleapis.com/fcm/send/device", "AAAA", "AAAA");
 
         assertThat(new VapidNotificationSenderAdapter(Optional.of(service)).send(broken, PAYLOAD))
                 .isEqualTo(SendResult.TRANSIENT_FAILURE);
@@ -156,5 +157,15 @@ class VapidNotificationSenderAdapterTest {
         verify(service).send(captor.capture());
         assertThat(new String(captor.getValue().getPayload(), StandardCharsets.UTF_8))
                 .isEqualTo("{\"title\":\"Title\",\"body\":\"Body\"}");
+    }
+
+    @Test
+    void anEndpointOutsideThePushServicesIsNeverCalled() throws Exception {
+        var service = mock(PushService.class);
+        var internal = new PushEndpoint("http://169.254.169.254/latest/meta-data/", "p256dh", "auth");
+
+        assertThat(new VapidNotificationSenderAdapter(Optional.of(service)).send(internal, PAYLOAD))
+                .isEqualTo(SendResult.REJECTED);
+        org.mockito.Mockito.verifyNoInteractions(service);
     }
 }

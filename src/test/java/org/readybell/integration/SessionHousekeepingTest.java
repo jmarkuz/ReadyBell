@@ -51,7 +51,7 @@ class SessionHousekeepingTest {
         String doneOrder = JsonPath.read(doneBody, "$.id");
         mvc.perform(post("/api/sessions/" + doneSession + "/subscriptions")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"endpointUrl\":\"https://push.example/x\",\"p256dhKey\":\"k\",\"authKey\":\"a\"}"))
+                .content("{\"endpointUrl\":\"https://fcm.googleapis.com/fcm/send/x\",\"p256dhKey\":\"k\",\"authKey\":\"a\"}"))
                 .andExpect(status().isCreated());
         move(doneOrder, "IN_PROGRESS");
         move(doneOrder, "READY");

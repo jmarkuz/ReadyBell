@@ -103,6 +103,17 @@ public class ApplicationConfig {
         return new TrackSessionService(sessionRepository, orderRepository, restaurantRepository);
     }
 
+    /**
+     * Which push endpoints the server may call: the known push services, plus any hosts listed in
+     * {@code readybell.push.extra-allowed-hosts} (comma separated, {@code *.} for subdomains).
+     */
+    @Bean
+    public org.readybell.subscription.domain.PushEndpointPolicy pushEndpointPolicy(
+            @org.springframework.beans.factory.annotation.Value("${readybell.push.extra-allowed-hosts:}")
+            java.util.List<String> extraAllowedHosts) {
+        return new org.readybell.subscription.domain.PushEndpointPolicy(extraAllowedHosts);
+    }
+
     /** Counter QR flow: claim an order by the number on the receipt. */
     @Bean
     public org.readybell.ordering.application.CounterClaimUseCase counterClaimUseCase(
@@ -134,8 +145,9 @@ public class ApplicationConfig {
     @Bean
     public ManageSubscriptionUseCase manageSubscriptionUseCase(
             CustomerSessionRepository sessionRepository,
-            DeviceSubscriptionRepository subscriptionRepository) {
-        return new ManageSubscriptionService(sessionRepository, subscriptionRepository);
+            DeviceSubscriptionRepository subscriptionRepository,
+            org.readybell.subscription.domain.PushEndpointPolicy pushEndpointPolicy) {
+        return new ManageSubscriptionService(sessionRepository, subscriptionRepository, pushEndpointPolicy);
     }
 
     // -------------------------------------------------------------------------

@@ -6,6 +6,7 @@ import org.readybell.subscription.domain.DeviceSubscription;
 import org.readybell.subscription.domain.DeviceSubscriptionId;
 import org.readybell.subscription.domain.DeviceSubscriptionRepository;
 import org.readybell.subscription.domain.PushEndpoint;
+import org.readybell.subscription.domain.PushEndpointPolicy;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -32,8 +33,12 @@ public class ManageSubscriptionService implements ManageSubscriptionUseCase {
      * @param subscriptionRepository the repository port for persisting and querying
      *                               device subscriptions (must not be null)
      */
+    private final PushEndpointPolicy endpointPolicy;
+
     public ManageSubscriptionService(CustomerSessionRepository sessionRepository,
-                                     DeviceSubscriptionRepository subscriptionRepository) {
+                                     DeviceSubscriptionRepository subscriptionRepository,
+                                     PushEndpointPolicy endpointPolicy) {
+        this.endpointPolicy = Objects.requireNonNull(endpointPolicy, "endpointPolicy must not be null");
         this.sessionRepository = Objects.requireNonNull(
                 sessionRepository, "sessionRepository must not be null");
         this.subscriptionRepository = Objects.requireNonNull(
@@ -66,7 +71,9 @@ public class ManageSubscriptionService implements ManageSubscriptionUseCase {
             throw new SessionNotActiveException(command.sessionId());
         }
 
-        // Step 2 — validate completeness; PushEndpoint constructor throws if any field is blank.
+        // Step 2 — only real push services over https (the server calls this URL: SSRF otherwise), bounded lengths;
+        // then completeness: the PushEndpoint constructor throws if any field is blank.
+        endpointPolicy.validate(command.endpointUrl(), command.p256dhKey(), command.authKey());
         PushEndpoint newEndpoint = new PushEndpoint(
                 command.endpointUrl(),
                 command.p256dhKey(),
