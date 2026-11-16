@@ -31,7 +31,7 @@ The ordered plan for what to do next, with specifications and status, is in [IMP
 |----|------|------|
 | A1 | `OrderQueryUseCase` for list/poll so no controller touches `OrderRepository` | S |
 | A2 | One place for exception mapping: move the two `PlatformAdminController` handlers into `GlobalExceptionHandler` (check response shapes first) | S |
-| A3 | Give the dev test-data tool a port (or move its deletes into the owning contexts) | S |
+| A3 (gone) | The dev test-data tool was removed together with its endpoints and the dashboard buttons | – |
 | F1 | Per-restaurant sequential order numbers (`#101`) instead of UUID prefixes | M |
 | U1 | Split `api.ts` into HTTP core + endpoint modules | M |
 | U2 | Fix the 7 react-refresh warnings by separating context objects/hooks from providers (as done for the restaurant context) | S |

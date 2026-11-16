@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import OrderMetricsGrid from '@/components/OrderMetricsGrid';
 import IncomingOrdersTable, { type SortField, type SortState } from '@/components/IncomingOrdersTable';
 import StatusFilter from '@/components/StatusFilter';
@@ -7,8 +7,7 @@ import { useSearch } from '@/context/SearchContext';
 import { OrderMetrics, OrderStatus } from '@/types';
 import { useDashboardOrders, type NewOrderEvent, type OrdersQuery, type OrdersSortBy } from '@/hooks/useDashboardOrders';
 import { useNewOrderAlerts } from '@/context/alertContext';
-import { apiClient, ApiError } from '@/utils/api';
-import { parseTestDataFile } from '@/utils/testDataFile';
+import { apiClient } from '@/utils/api';
 import NewOrderDialog from '@/components/NewOrderDialog';
 import { Plus } from 'lucide-react';
 
@@ -119,49 +118,6 @@ export default function Dashboard() {
     void reload();
   }, [reload]);
 
-  // Dev-only test data tools (the backend endpoints exist under the `dev` profile only)
-  const [testDataBusy, setTestDataBusy] = useState(false);
-  const [testDataMessage, setTestDataMessage] = useState<string | null>(null);
-
-  const runTestData = useCallback(async (action: () => Promise<string>) => {
-    setTestDataBusy(true);
-    setTestDataMessage(null);
-    try {
-      setTestDataMessage(await action());
-    } catch (e) {
-      setTestDataMessage(
-        e instanceof ApiError && e.statusCode === 404
-          ? 'Test data endpoints not found: restart the backend with SPRING_PROFILES_ACTIVE=dev.'
-          : e instanceof Error ? e.message : 'Test data request failed.'
-      );
-    } finally {
-      setTestDataBusy(false);
-      await reload();
-    }
-  }, [reload]);
-
-  const handleGenerateTestData = useCallback(
-    () => runTestData(async () => `Added ${(await apiClient.generateTestData()).created} test orders.`),
-    [runTestData]
-  );
-  const importInput = useRef<HTMLInputElement>(null);
-  const handleImportFile = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      e.target.value = ''; // allow importing the same file again
-      if (!file) return;
-      void runTestData(async () => {
-        const orders = parseTestDataFile(await file.text());
-        return `Imported ${(await apiClient.importTestData(orders)).created} test orders from ${file.name}.`;
-      });
-    },
-    [runTestData]
-  );
-  const handleClearTestData = useCallback(
-    () => runTestData(async () => `Removed ${(await apiClient.clearTestData()).deleted} test orders.`),
-    [runTestData]
-  );
-
   const handleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus) => {
     if (newStatus === 'CREATED') return; // no transition leads back to CREATED
     setActionError(null);
@@ -245,50 +201,6 @@ export default function Dashboard() {
       </div>
 
       <NewOrderDialog open={newOrderOpen} onClose={closeNewOrder} onCreated={handleOrderCreated} />
-
-      {/* Dev-only: generate / remove test data */}
-      {import.meta.env.DEV && (
-        <section aria-label="Test data" className="flex items-center gap-3 flex-wrap">
-          <button
-            type="button"
-            onClick={handleGenerateTestData}
-            disabled={testDataBusy}
-            className="px-4 py-2 text-sm font-medium bg-stone-800 text-white dark:bg-stone-100 dark:text-stone-900 rounded-full hover:opacity-90 disabled:opacity-60 transition-opacity focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
-          >
-            Generate test data
-          </button>
-          <button
-            type="button"
-            onClick={() => importInput.current?.click()}
-            disabled={testDataBusy}
-            className="px-4 py-2 text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-60 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
-          >
-            Import test data
-          </button>
-          <input
-            ref={importInput}
-            type="file"
-            accept=".json,application/json"
-            onChange={handleImportFile}
-            className="hidden"
-            aria-label="Test data file"
-            data-testid="test-data-file"
-          />
-          <button
-            type="button"
-            onClick={handleClearTestData}
-            disabled={testDataBusy}
-            className="px-4 py-2 text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-60 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
-          >
-            Delete test data
-          </button>
-          {testDataMessage && (
-            <span className="text-sm text-slate-600 dark:text-slate-400" role="status">
-              {testDataMessage}
-            </span>
-          )}
-        </section>
-      )}
 
       {/* Order Summary Cards Grid */}
       <section aria-labelledby="order-summary-heading">

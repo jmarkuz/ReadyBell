@@ -32,7 +32,7 @@ where possible, now enforced by tests. No behaviour changed.
 | Flyway baseline V1 + `ddl-auto: validate` (dev keeps `create`) | Schema changes need a history; existing DBs are adopted at V1 | Holds; verified on a fresh and an existing PostgreSQL |
 | `OrderStatus.IN_PROGRESS` in the API, "Preparing" in the UI | Keep the backend vocabulary, translate at the edge | Holds |
 | Login throttle shared through Redis, local fallback | Several replicas must apply one limit; Redis outage must not disable it | Holds |
-| Dev-only test-data endpoints behind the `dev` profile | Fast UI testing without a customer flow | Holds; see "Accepted debt" |
+| Dev-only test-data endpoints behind the `dev` profile | Fast UI testing without a customer flow | Removed later: no mock data in the product; orders are created through the normal API |
 | Customer page uses plain `fetch` (no staff token) | A leftover staff token on a shared phone must not be sent | Holds |
 
 ## Fixed in this cleanup
@@ -54,8 +54,7 @@ where possible, now enforced by tests. No behaviour changed.
 
 1. **Read side of ordering** (`OrderController` list/poll, `OrderPollingController`) uses `OrderRepository` directly. It is a
    thin query path; a `OrderQueryUseCase` would be cleaner (BACKLOG A1).
-2. **`DevTestDataController`** (profile `dev`) reaches into other contexts' JPA repositories. Acceptable for a dev tool, but it
-   is the only place that breaks the port rule (BACKLOG A3).
+2. *(Resolved: the dev-only test-data controller was removed.)*
 3. **Exception mapping is split**: 22 handlers in `GlobalExceptionHandler`, 2 local ones in `PlatformAdminController` (BACKLOG A2).
 4. **`enableTenantFilter(...)` is called by hand in 17 repository methods.** Forgetting one leaks across tenants; isolation tests
    cover the main paths, not every method (BACKLOG S1).

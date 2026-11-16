@@ -85,14 +85,6 @@ export interface RestaurantInfo {
   adminUsername: string | null;
 }
 
-/** One record of a test-data import file (see test-data/test-orders-50.json). */
-export interface TestDataOrder {
-  customerName?: string;
-  estimatedMinutes?: number;
-  status?: 'CREATED' | 'IN_PROGRESS' | 'READY' | 'COMPLETED' | 'CANCELLED';
-  items?: Array<{ name: string; quantity: number }>;
-}
-
 /** Response of GET /api/orders/metrics (backend status names). */
 interface RawOrderMetrics {
   totalOrders: number;
@@ -807,30 +799,6 @@ export class ApiClient {
     status: 'IN_PROGRESS' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED'
   ): Promise<{ id: string; status: string; updatedAt: string }> {
     return this.patch(`/api/orders/${orderId}/status`, { status: toBackendStatus(status) });
-  }
-
-  /**
-   * Dev only: fills the restaurant with generated orders.
-   * POST /api/dev/test-data (backend `dev` profile)
-   */
-  async generateTestData(count = 12): Promise<{ created: number }> {
-    return this.post(`/api/dev/test-data?count=${count}`, {});
-  }
-
-  /**
-   * Dev only: imports orders parsed from a test-data file.
-   * POST /api/dev/test-data/import (backend `dev` profile)
-   */
-  async importTestData(orders: TestDataOrder[]): Promise<{ created: number }> {
-    return this.post('/api/dev/test-data/import', { orders });
-  }
-
-  /**
-   * Dev only: removes the generated orders again.
-   * DELETE /api/dev/test-data (backend `dev` profile)
-   */
-  async clearTestData(): Promise<{ deleted: number }> {
-    return this.delete('/api/dev/test-data');
   }
 
   // ============================================================================

@@ -2,10 +2,15 @@ import { expect, test } from '@playwright/test';
 import { apiToken, signInAndWaitForDashboard } from './helpers';
 
 test('incoming orders are paged by the server: 10 rows, Next and Previous', async ({ page, request }) => {
-  // Seed through the dev-profile endpoint: 25 orders on top of whatever earlier scenarios created
+  // 25 orders entered through the normal API, on top of whatever earlier scenarios created
   const token = await apiToken(request);
-  const seeded = await request.post('/api/dev/test-data?count=25', { headers: { Authorization: `Bearer ${token}` } });
-  expect(seeded.ok()).toBeTruthy();
+  for (let i = 1; i <= 25; i++) {
+    const created = await request.post('/api/orders', {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { customerName: `Paging Customer ${i}`, estimatedMinutes: 10, items: [{ name: 'Latte', quantity: 1 }] },
+    });
+    expect(created.ok()).toBeTruthy();
+  }
 
   await signInAndWaitForDashboard(page);
 
