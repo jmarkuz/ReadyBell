@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:16
+    image: postgres:16@sha256:dd2bf3ce2dc83a81674cf7f217fcfd8a5009a4b325dda5b843bfee82a06cff6f
     environment:
       POSTGRES_DB: readybell
       POSTGRES_USER: readybell
@@ -49,7 +49,7 @@ services:
   #   docker compose --profile backup run --rm backup /scripts/backup-drill.sh
   # Dumps land in ./backups on the host. Copy them off the host too (see docs/DEPLOYMENT.md).
   backup:
-    image: postgres:16
+    image: postgres:16@sha256:dd2bf3ce2dc83a81674cf7f217fcfd8a5009a4b325dda5b843bfee82a06cff6f
     profiles: ["backup"]
     environment:
       PGHOST: postgres
@@ -69,7 +69,7 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

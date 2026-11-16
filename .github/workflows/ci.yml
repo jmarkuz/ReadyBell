@@ -79,3 +79,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t readybell:ci .
+      # Known vulnerabilities in the shipped image (Java libraries and the OS layer). Fails on any HIGH or CRITICAL finding
+      # that has a fix; findings that were assessed and accepted are listed with reasons in .trivyignore.
+      # Trivy 0.76.2, pinned by digest (Dependabot proposes updates).
+      - name: Scan the image for known vulnerabilities
+        run: >
+          docker run --rm
+          -v /var/run/docker.sock:/var/run/docker.sock
+          -v "$PWD/.trivyignore:/.trivyignore:ro"
+          aquasec/trivy@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+          image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --ignorefile /.trivyignore
+          --no-progress --exit-code 1 readybell:ci

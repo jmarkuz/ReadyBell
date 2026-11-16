@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.4.1'
+    id 'org.springframework.boot' version '3.5.16'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'jacoco'
 }
@@ -8,6 +8,13 @@ plugins {
 // Spring Boot 3.4 manages Testcontainers 1.20.x, which talks to Docker with API 1.32 only; recent Docker engines
 // (e.g. the GitHub ubuntu-latest runner) reject that ("client version 1.32 is too old"). 1.21.4 negotiates 1.44.
 ext['testcontainers.version'] = '1.21.4'
+
+// Spring Boot's BOM lags behind security fixes of its own dependencies (found by the Trivy image scan in CI).
+// Newer releases of the same lines are forced here; drop an entry once the Boot BOM carries a version at least as new.
+ext['jackson-bom.version'] = '2.21.8'
+ext['netty.version'] = '4.1.140.Final'
+ext['tomcat.version'] = '10.1.62'
+ext['postgresql.version'] = '42.7.14'
 
 group = 'org.readybell'
 version = '1.0-SNAPSHOT'
@@ -41,9 +48,17 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
 
     // Web Push / VAPID (kept behind the NotificationSender port; ADR-005)
-    implementation 'nl.martijndwars:web-push:5.1.1'
+    implementation('nl.martijndwars:web-push:5.1.1') {
+        // Declared by web-push 5.1.1 but not referenced by any of its classes (checked in the jar); it carries known
+        // CVEs whose fixes exist only in the incompatible 3.x line, so it is left out instead of upgraded
+        exclude group: 'org.asynchttpclient', module: 'async-http-client'
+    }
+    // web-push 5.1.1 also pulls an old jose4j (0.7.0, found by the Trivy scan in CI): a fixed release is forced
+    constraints {
+        implementation('org.bitbucket.b_c:jose4j:0.9.6') { because 'web-push 5.1.1 brings 0.7.0 (CVE fixes in 0.9.x)' }
+    }
     // BouncyCastle is required by web-push for EC cryptography (VAPID key operations)
-    implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.87'
 
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
