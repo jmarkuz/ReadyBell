@@ -9,7 +9,7 @@ Client code: `dashboard-ui/src/utils/api.ts` (staff API, Bearer token) and `dash
 
 | Method | Path | Notes |
 |--------|------|-------|
-| POST | `/api/login` | `{username, password}` → `{token, role, tenantId, username, expiresIn}`; throttled after repeated failures (429) |
+| POST | `/api/login` | `{restaurant, username, password}` → `{token, role, tenantId, username, expiresIn}`. `restaurant` is the restaurant's identifier: usernames are unique only **within** a restaurant, so two restaurants can both have an `admin`. Leave it out only for the platform operator. An unknown restaurant, username or password all give the same `401`; throttled after repeated failures (429, counted per restaurant + username) |
 | POST | `/api/auth/refresh` | exchange a token (valid, or expired by less than `readybell.security.jwt.refresh-grace`, 24 h) for a new one of the same sign-in chain. The old token is retired after 60 s; presenting a retired token again ends the whole chain (it was copied) |
 | POST | `/api/auth/logout` | `204`: ends the sign-in chain of the Bearer token, so that token and every token refreshed from it stop working at once. Harmless without or with an invalid token |
 | POST | `/api/sessions` | `{qrToken}` (the restaurant identifier) → new customer session |
@@ -30,6 +30,12 @@ small and sequential, so such a lookup can be guessed, and whoever got there fir
 The first open of `/track/{sessionId}` marks the order connected (`order.connected_at`); the staff stream then gets
 `order-connected`, and `GET /api/orders` rows carry `sessionId` and `connected` (staff only). The QR is hidden on the
 staff screens once an order is connected, so nobody behind in the queue can scan it.
+
+**Sign-in and usernames.** A staff username is unique within its restaurant (`UNIQUE (tenant_id, username)`), stored lower-case,
+and compared case-insensitively together with the restaurant identifier. The token carries the username (`sub`) and the
+restaurant (`tenant_id`); refresh and the per-request "is the account still active" check look the account up by both. HTTP
+Basic (curl, tests) takes `restaurant/username` as the user name, or the bare name for a configured user
+(`readybell.security.users`): `curl -u aurora/admin:... https://host/api/restaurant`.
 
 ## Order numbers
 

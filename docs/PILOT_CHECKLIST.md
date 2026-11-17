@@ -61,17 +61,17 @@ MVP criteria: onboarding < 5 minutes, create order < 10 s, customer session < 10
 
 Platform operator (role `PLATFORM_ADMIN`):
 
-1. [ ] Open `https://<host>/login`, sign in with `PLATFORM_ADMIN_USERNAME` and the plain password. The sidebar shows **Restaurants**.
+1. [ ] Open `https://<host>/login`, leave **Restaurant** empty, sign in with `PLATFORM_ADMIN_USERNAME` and the plain password. The sidebar shows **Restaurants**.
 2. [ ] **Restaurants**, form "add restaurant": **Name**, **Identifier** (e.g. `cafe-aurora`; this is the value the session API takes as `qrToken`), **First admin username**, **Admin password** (min. 8 characters). Press **Add restaurant**.
    The admin fields are optional but must be given together; leave them out only if the account is created another way.
 3. [ ] The restaurant appears in the list. (Deactivating it later refuses new customer sessions.)
 
 Restaurant admin (role `RESTAURANT_ADMIN`):
 
-4. [ ] Sign in as the new admin on a staff device (tablet/phone/PC at the counter).
+4. [ ] Sign in as the new admin on a staff device (tablet/phone/PC at the counter): **Restaurant** is the identifier from step 2 (e.g. `cafe-aurora`), then the admin's username and password. Usernames repeat between restaurants, so the restaurant is always part of the sign-in; the browser remembers it.
 5. [ ] **Staff**: add an account per cashier: **Username**, **Password** (min. 8 characters), **Role** (`STAFF`; `RESTAURANT_ADMIN` for managers). Press **Add account**.
 6. [ ] **Settings**: check or rename the restaurant if needed.
-7. [ ] Sign out, sign in as a `STAFF` account on the cashier device.
+7. [ ] Sign out, sign in as a `STAFF` account on the cashier device (same **Restaurant** code).
 
 First order (staff):
 

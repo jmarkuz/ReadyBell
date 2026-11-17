@@ -23,8 +23,9 @@ HTTPS (localhost excepted), and iPhones need the page added to the Home Screen.
 
 ## First run
 
-1. Sign in as the platform operator, open **Restaurants**, add a restaurant together with its first admin.
-2. That admin signs in, adds staff under **Staff**, and can rename the restaurant under **Settings**.
+1. Sign in as the platform operator (leave **Restaurant** empty), open **Restaurants**, add a restaurant together with its first admin.
+2. That admin signs in with the restaurant's identifier, their username and password (usernames are unique per restaurant, so
+   the identifier is part of every sign-in), adds staff under **Staff**, and can rename the restaurant under **Settings**.
 3. Staff press **New order**: the dialog shows a QR code (print it on the receipt). Customers scan it,
    follow the order and tap **Notify me**.
 

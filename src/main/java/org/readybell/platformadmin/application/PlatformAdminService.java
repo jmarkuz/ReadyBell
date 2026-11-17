@@ -1,6 +1,5 @@
 package org.readybell.platformadmin.application;
 
-import org.readybell.restaurant.application.DuplicateUsernameException;
 import org.readybell.restaurant.application.UsernamePolicy;
 import org.readybell.restaurant.application.RestaurantNotFoundException;
 import org.readybell.restaurant.domain.Restaurant;
@@ -43,10 +42,8 @@ public class PlatformAdminService implements PlatformAdminUseCase {
         if (adminPasswordHash == null || adminPasswordHash.isBlank()) {
             throw new IllegalArgumentException("adminPasswordHash must not be blank");
         }
-        // Fail before anything is written
-        if (staffRepository.findByUsername(name).isPresent()) {
-            throw new DuplicateUsernameException(null, name);
-        }
+        // The restaurant is new, so its first admin's username cannot be taken there; the identifier check below
+        // fails before anything is written
         Restaurant restaurant = createRestaurant(identifier, config);
         staffRepository.save(StaffAccount.create(restaurant.getTenantId(), name, Role.RESTAURANT_ADMIN, adminPasswordHash));
         return restaurant;

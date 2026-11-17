@@ -25,10 +25,10 @@ import java.util.UUID;
 @Table(
         name = "staff_account",
         uniqueConstraints = {
-                // Sign-in takes only a username, so it must identify one account platform-wide (Req 8.4)
+                // Usernames are unique within a restaurant; sign-in names the restaurant too (Req 8.4)
                 @UniqueConstraint(
-                        name = "uq_staff_account_username",
-                        columnNames = {"username"})
+                        name = "uq_staff_account_tenant_username",
+                        columnNames = {"tenant_id", "username"})
         },
         indexes = {
                 @Index(name = "idx_staff_account_tenant_id", columnList = "tenant_id")

@@ -3,6 +3,7 @@ package org.readybell.integration;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.readybell.notification.domain.NotificationSender;
+import org.readybell.testsupport.TestRestaurantSeeder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,7 +39,7 @@ class StatelessApiTest {
     @Test
     void bearerAuthenticationCreatesNoSession() throws Exception {
         String login = mvc.perform(post("/api/login").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"admin\",\"password\":\"admin\"}")).andReturn().getResponse().getContentAsString();
+                .content("{\"restaurant\":\"" + TestRestaurantSeeder.restaurantFor("admin") + "\",\"username\":\"admin\",\"password\":\"admin\"}")).andReturn().getResponse().getContentAsString();
         String token = JsonPath.read(login, "$.token");
 
         MvcResult result = mvc.perform(get("/api/orders").header("Authorization", "Bearer " + token)).andReturn();

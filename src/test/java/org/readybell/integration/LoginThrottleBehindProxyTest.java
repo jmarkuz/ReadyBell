@@ -2,6 +2,7 @@ package org.readybell.integration;
 
 import org.junit.jupiter.api.Test;
 import org.readybell.notification.domain.NotificationSender;
+import org.readybell.testsupport.TestRestaurantSeeder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,7 +37,7 @@ class LoginThrottleBehindProxyTest {
                 .with(request -> { request.setRemoteAddr(PROXY); return request; })
                 .header("X-Forwarded-For", client)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"" + user + "\",\"password\":\"" + pass + "\"}"));
+                .content("{\"restaurant\":\"" + TestRestaurantSeeder.restaurantFor(user) + "\",\"username\":\"" + user + "\",\"password\":\"" + pass + "\"}"));
     }
 
     @Test

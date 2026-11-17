@@ -58,8 +58,8 @@ public class RestaurantAdminService implements RestaurantAdminUseCase {
         Objects.requireNonNull(passwordHash, "passwordHash must not be null");
         String name = UsernamePolicy.normalize(username);
 
-        // Usernames are unique platform-wide because sign-in takes only a username (Req 8.4)
-        staffRepository.findByUsername(name)
+        // Usernames are unique within the restaurant; other restaurants may use the same name (Req 8.4)
+        staffRepository.findByTenantAndUsername(tenantId, name)
                 .ifPresent(existing -> {
                     throw new DuplicateUsernameException(tenantId, name);
                 });

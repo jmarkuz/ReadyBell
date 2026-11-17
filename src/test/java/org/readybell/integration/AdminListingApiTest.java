@@ -42,17 +42,17 @@ class AdminListingApiTest {
                 .andExpect(jsonPath("$[?(@.identifier=='" + id + "')].name").value("Listing Cafe"))
                 .andExpect(jsonPath("$[?(@.identifier=='" + id + "')].status").value("ACTIVE"));
 
-        mvc.perform(get("/api/restaurant").with(httpBasic(admin, "long-enough-pass")))
+        mvc.perform(get("/api/restaurant").with(httpBasic(id + "/" + admin, "long-enough-pass")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Listing Cafe"))
                 .andExpect(jsonPath("$.identifier").value(id));
 
-        mvc.perform(post("/api/admin/staff").with(httpBasic(admin, "long-enough-pass"))
+        mvc.perform(post("/api/admin/staff").with(httpBasic(id + "/" + admin, "long-enough-pass"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"cashier" + id.substring(5) + "\",\"role\":\"STAFF\",\"password\":\"long-enough-pass\"}"))
                 .andExpect(status().isCreated());
 
-        mvc.perform(get("/api/admin/staff").with(httpBasic(admin, "long-enough-pass")))
+        mvc.perform(get("/api/admin/staff").with(httpBasic(id + "/" + admin, "long-enough-pass")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].role").exists());

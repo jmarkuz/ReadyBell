@@ -19,7 +19,7 @@ public class TokenGuard {
     public Jwt decode(String token) {
         Jwt decoded = jwt.decode(token);
         sessions.assertUsable(decoded);
-        if (!accounts.isActive(decoded.getSubject())) {
+        if (!accounts.isActive(JwtService.toPrincipal(decoded).getTenantId(), decoded.getSubject())) {
             throw new BadJwtException("Account is not active");
         }
         return decoded;

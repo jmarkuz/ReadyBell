@@ -2,6 +2,7 @@ package org.readybell.integration;
 
 import org.junit.jupiter.api.Test;
 import org.readybell.notification.domain.NotificationSender;
+import org.readybell.testsupport.TestRestaurantSeeder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -70,7 +71,7 @@ class ApiErrorHandlingTest {
 
     @Test
     void sameOriginBrowserRequestsAreAllowedButForeignOriginsAreNot() throws Exception {
-        String login = "{\"username\":\"admin\",\"password\":\"admin\"}";
+        String login = "{\"restaurant\":\"" + TestRestaurantSeeder.restaurantFor("admin") + "\",\"username\":\"admin\",\"password\":\"admin\"}";
         mvc.perform(post("/api/login").header("Origin", "http://localhost")
                         .contentType(MediaType.APPLICATION_JSON).content(login))
                 .andExpect(status().isOk());

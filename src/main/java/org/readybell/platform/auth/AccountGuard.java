@@ -1,13 +1,13 @@
 package org.readybell.platform.auth;
 
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.readybell.platform.TenantUser;
+import org.readybell.shared.domain.TenantId;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -21,34 +21,31 @@ public class AccountGuard {
 
     private record Verdict(boolean active, Instant checkedAt) {}
 
-    private final UserDetailsService users;
+    private final AccountLookup users;
     private final Clock clock;
     private final Duration cacheFor;
     private final Map<String, Verdict> cache = new ConcurrentHashMap<>();
 
-    public AccountGuard(UserDetailsService users, Clock clock, Duration cacheFor) {
+    public AccountGuard(AccountLookup users, Clock clock, Duration cacheFor) {
         this.users = users;
         this.clock = clock;
         this.cacheFor = cacheFor;
     }
 
-    public boolean isActive(String username) {
+    /** @param tenant the token's tenant ({@code null} for the platform operator): a username is unique per tenant only */
+    public boolean isActive(TenantId tenant, String username) {
+        String key = (tenant == null ? "" : tenant.value().toString()) + "/" + username;
         Instant now = clock.instant();
-        Verdict known = cache.get(username);
+        Verdict known = cache.get(key);
         if (known != null && known.checkedAt().plus(cacheFor).isAfter(now)) {
             return known.active();
         }
-        boolean active;
-        try {
-            UserDetails details = users.loadUserByUsername(username);
-            active = details.isEnabled();
-        } catch (UsernameNotFoundException e) {
-            active = false;
-        }
+        Optional<TenantUser> account = users.find(tenant, username);
+        boolean active = account.map(TenantUser::isEnabled).orElse(false);
         if (cache.size() >= MAX_ENTRIES) {
             cache.clear();
         }
-        cache.put(username, new Verdict(active, now));
+        cache.put(key, new Verdict(active, now));
         return active;
     }
 }

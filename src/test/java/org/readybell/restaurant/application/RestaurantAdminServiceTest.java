@@ -48,12 +48,17 @@ class RestaurantAdminServiceTest {
     }
 
     @Test
-    void usernamesAreUniqueAcrossTenants() {
+    void usernamesAreUniqueWithinARestaurantOnly() {
         service.createStaffAccount(OTHER, "anna", Role.STAFF, "hash");
 
-        assertThatThrownBy(() -> service.createStaffAccount(TENANT, "Anna", Role.STAFF, "hash"))
+        // the same name in another restaurant is fine ...
+        service.createStaffAccount(TENANT, "Anna", Role.STAFF, "hash");
+        assertThat(staff.size()).isEqualTo(2);
+
+        // ... but not twice in the same one
+        assertThatThrownBy(() -> service.createStaffAccount(TENANT, "ANNA", Role.STAFF, "hash"))
                 .isInstanceOf(DuplicateUsernameException.class);
-        assertThat(staff.size()).isEqualTo(1);
+        assertThat(staff.size()).isEqualTo(2);
     }
 
     @Test

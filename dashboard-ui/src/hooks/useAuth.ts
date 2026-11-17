@@ -45,7 +45,7 @@ export interface AuthState {
  * Auth actions returned by useAuth hook
  */
 export interface AuthActions {
-  login: (credentials: { username: string; password: string }) => Promise<void>;
+  login: (credentials: { restaurant?: string; username: string; password: string }) => Promise<void>;
   logout: () => void;
   refreshToken: () => Promise<boolean>;
   clearError: () => void;
@@ -255,7 +255,7 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
    * @throws Error if login fails
    */
   const login = useCallback(
-    async (credentials: { username: string; password: string }): Promise<void> => {
+    async (credentials: { restaurant?: string; username: string; password: string }): Promise<void> => {
       try {
         safeSetState(setLoading, true);
         safeSetState(setError, null);
@@ -265,6 +265,7 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
         
         // Call backend login endpoint
         const response = await apiClient.login({
+          ...(credentials.restaurant && { restaurant: credentials.restaurant }),
           username: credentials.username,
           password: credentials.password,
         });

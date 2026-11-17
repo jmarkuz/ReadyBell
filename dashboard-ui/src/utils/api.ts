@@ -810,6 +810,8 @@ export class ApiClient {
    * POST /api/login
    */
   async login(credentials: {
+    /** The restaurant's identifier: usernames repeat between restaurants. Omitted only for the platform operator. */
+    restaurant?: string;
     username: string;
     password: string;
   }): Promise<{ token: string; role: string; tenantId: string; expiresIn: number }> {

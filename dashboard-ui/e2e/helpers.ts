@@ -1,10 +1,11 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
-/** Staff accounts of the dev profile (application-dev.yml). */
-export const STAFF = { username: 'admin', password: 'admin' };
+/** Staff accounts of the dev profile (application-dev.yml); they belong to the seeded dev restaurant. */
+export const STAFF = { restaurant: 'dev-restaurant', username: 'admin', password: 'admin' };
 
-export async function signIn(page: Page, { username, password } = STAFF) {
+export async function signIn(page: Page, { restaurant, username, password }: { restaurant?: string; username: string; password: string } = STAFF) {
   await page.goto('/login');
+  if (restaurant) await page.getByLabel('Restaurant').fill(restaurant);
   await page.getByLabel('Username').fill(username);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();

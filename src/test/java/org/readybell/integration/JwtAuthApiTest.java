@@ -2,6 +2,7 @@ package org.readybell.integration;
 
 import org.junit.jupiter.api.Test;
 import org.readybell.notification.domain.NotificationSender;
+import org.readybell.testsupport.TestRestaurantSeeder;
 import org.readybell.platform.TenantUser;
 import org.readybell.platform.auth.JwtProperties;
 import org.readybell.platform.auth.JwtService;
@@ -44,7 +45,7 @@ class JwtAuthApiTest {
 
     private String login(String user, String pass) throws Exception {
         String body = mvc.perform(post("/api/login").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"" + user + "\",\"password\":\"" + pass + "\"}"))
+                        .content("{\"restaurant\":\"" + TestRestaurantSeeder.restaurantFor(user) + "\",\"username\":\"" + user + "\",\"password\":\"" + pass + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return body.replaceAll(".*\"token\":\"([^\"]+)\".*", "$1");
@@ -61,7 +62,7 @@ class JwtAuthApiTest {
     @Test
     void loginReturnsDashboardContract() throws Exception {
         mvc.perform(post("/api/login").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"admin\",\"password\":\"admin\"}"))
+                        .content("{\"restaurant\":\"" + TestRestaurantSeeder.restaurantFor("admin") + "\",\"username\":\"admin\",\"password\":\"admin\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty())
                 .andExpect(jsonPath("$.role").value("RESTAURANT_ADMIN"))
@@ -73,7 +74,7 @@ class JwtAuthApiTest {
     @Test
     void platformAdminHasNoTenant() throws Exception {
         mvc.perform(post("/api/login").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"platform\",\"password\":\"platform\"}"))
+                        .content("{\"restaurant\":\"\",\"username\":\"platform\",\"password\":\"platform\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.role").value("PLATFORM_ADMIN"))
                 .andExpect(jsonPath("$.tenantId").doesNotExist());
@@ -81,8 +82,8 @@ class JwtAuthApiTest {
 
     @Test
     void badCredentialsAreRejectedForKnownAndUnknownUsers() throws Exception {
-        for (String body : List.of("{\"username\":\"admin\",\"password\":\"x\"}",
-                                   "{\"username\":\"ghost\",\"password\":\"x\"}")) {
+        for (String body : List.of("{\"restaurant\":\"" + TestRestaurantSeeder.restaurantFor("admin") + "\",\"username\":\"admin\",\"password\":\"x\"}",
+                                   "{\"restaurant\":\"\",\"username\":\"ghost\",\"password\":\"x\"}")) {
             mvc.perform(post("/api/login").contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.type").value("urn:readybell:auth:invalid-credentials"));

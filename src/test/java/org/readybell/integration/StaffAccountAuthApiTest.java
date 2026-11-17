@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -42,14 +43,15 @@ class StaffAccountAuthApiTest {
                 .contentType(MediaType.APPLICATION_JSON).content(body));
     }
 
-    private ResultActions login(String user, String pass) throws Exception {
+    /** Sign-in names the restaurant: usernames are unique only within one. */
+    private ResultActions login(String restaurant, String user, String pass) throws Exception {
         return mvc.perform(post("/api/login").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"" + user + "\",\"password\":\"" + pass + "\"}")
-                .with(r -> { r.setRemoteAddr("10.1." + (Math.abs(user.hashCode()) % 250) + ".1"); return r; }));
+                .content("{\"restaurant\":\"" + restaurant + "\",\"username\":\"" + user + "\",\"password\":\"" + pass + "\"}")
+                .with(r -> { r.setRemoteAddr("10.1." + (Math.abs((restaurant + user).hashCode()) % 250) + ".1"); return r; }));
     }
 
-    private String tokenOf(String user, String pass) throws Exception {
-        return JsonPath.read(login(user, pass).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), "$.token");
+    private String tokenOf(String restaurant, String user, String pass) throws Exception {
+        return JsonPath.read(login(restaurant, user, pass).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), "$.token");
     }
 
     private String createRestaurant(String identifier, String adminUser, String adminPass) throws Exception {
@@ -70,27 +72,33 @@ class StaffAccountAuthApiTest {
     @Test
     void firstAdminCanSignInAndIsBoundToTheNewTenant() throws Exception {
         String admin = uniq("owner");
-        String tenant = createRestaurant(uniq("cafe-"), admin, "s3cret-pass");
+        String cafe = uniq("cafe-");
+        String tenant = createRestaurant(cafe, admin, "s3cret-pass");
 
-        login(admin, "s3cret-pass").andExpect(status().isOk())
+        login(cafe, admin, "s3cret-pass").andExpect(status().isOk())
                 .andExpect(jsonPath("$.role").value("RESTAURANT_ADMIN"))
                 .andExpect(jsonPath("$.tenantId").value(tenant));
-        login(admin, "wrong-pass").andExpect(status().isUnauthorized());
+        login(cafe, admin, "wrong-pass").andExpect(status().isUnauthorized());
+        login(uniq("elsewhere-"), admin, "s3cret-pass").andExpect(status().isUnauthorized());   // another (unknown) restaurant
+        login("", admin, "s3cret-pass").andExpect(status().isUnauthorized());                    // no restaurant: operator only
     }
 
     @Test
     void usernamesAreCaseInsensitiveAndNormalised() throws Exception {
         String name = uniq("Mixed");
-        createRestaurant(uniq("cafe-"), "  " + name + "  ", "s3cret-pass");
-        login(name.toUpperCase(), "s3cret-pass").andExpect(status().isOk());
-        login(name.toLowerCase(), "s3cret-pass").andExpect(status().isOk());
+        String cafe = uniq("cafe-");
+        createRestaurant(cafe, "  " + name + "  ", "s3cret-pass");
+        login(cafe, name.toUpperCase(), "s3cret-pass").andExpect(status().isOk());
+        login(cafe, name.toLowerCase(), "s3cret-pass").andExpect(status().isOk());
+        login(cafe.toUpperCase(), name, "s3cret-pass").andExpect(status().isOk());              // the identifier too
     }
 
     @Test
     void adminCreatesStaffWhoSignsInAndSeesOnlyOwnTenant() throws Exception {
         String admin = uniq("owner");
-        String tenant = createRestaurant(uniq("cafe-"), admin, "s3cret-pass");
-        String adminToken = tokenOf(admin, "s3cret-pass");
+        String cafe = uniq("cafe-");
+        String tenant = createRestaurant(cafe, admin, "s3cret-pass");
+        String adminToken = tokenOf(cafe, admin, "s3cret-pass");
 
         String staff = uniq("waiter");
         adminCreateStaff(adminToken, staff, "STAFF", "waiter-pass1").andExpect(status().isCreated())
@@ -98,9 +106,9 @@ class StaffAccountAuthApiTest {
                 .andExpect(jsonPath("$.password").doesNotExist())
                 .andExpect(jsonPath("$.passwordHash").doesNotExist());
 
-        login(staff, "waiter-pass1").andExpect(status().isOk())
+        login(cafe, staff, "waiter-pass1").andExpect(status().isOk())
                 .andExpect(jsonPath("$.role").value("STAFF")).andExpect(jsonPath("$.tenantId").value(tenant));
-        String staffToken = tokenOf(staff, "waiter-pass1");
+        String staffToken = tokenOf(cafe, staff, "waiter-pass1");
         mvc.perform(get("/api/orders").header("Authorization", "Bearer " + staffToken))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.totalCount").value(0));
         // the legacy header cannot move a user to another tenant
@@ -112,48 +120,74 @@ class StaffAccountAuthApiTest {
     @Test
     void staffCannotManageAccounts_adminsCan() throws Exception {
         String admin = uniq("owner");
-        createRestaurant(uniq("cafe-"), admin, "s3cret-pass");
-        String adminToken = tokenOf(admin, "s3cret-pass");
+        String cafe = uniq("cafe-");
+        createRestaurant(cafe, admin, "s3cret-pass");
+        String adminToken = tokenOf(cafe, admin, "s3cret-pass");
         String staff = uniq("waiter");
         adminCreateStaff(adminToken, staff, "STAFF", "waiter-pass1").andExpect(status().isCreated());
 
-        adminCreateStaff(tokenOf(staff, "waiter-pass1"), uniq("x"), "STAFF", "another-pass1")
+        adminCreateStaff(tokenOf(cafe, staff, "waiter-pass1"), uniq("x"), "STAFF", "another-pass1")
                 .andExpect(status().isForbidden());
         adminCreateStaff(adminToken, uniq("manager"), "RESTAURANT_ADMIN", "manager-pass1")
                 .andExpect(status().isCreated());
     }
 
     @Test
-    void usernamesAreUniqueAcrossTenants() throws Exception {
-        String taken = uniq("shared");
-        createRestaurant(uniq("a-"), taken, "s3cret-pass");
+    void sameUsernameInTwoRestaurantsAreTwoSeparateAccounts() throws Exception {
+        String name = uniq("shared");
+        String cafeA = uniq("a-");
+        String cafeB = uniq("b-");
+        String tenantA = createRestaurant(cafeA, name, "pass-for-a-1");
+        String tenantB = createRestaurant(cafeB, name, "pass-for-b-2");        // the same username, another restaurant
+        assertThat(tenantA).isNotEqualTo(tenantB);
 
-        // another restaurant cannot reuse it for its first admin ...
-        platformCreate("{\"identifier\":\"" + uniq("b-") + "\",\"name\":\"R\",\"adminUsername\":\"" + taken.toUpperCase()
-                + "\",\"adminPassword\":\"s3cret-pass\"}").andExpect(status().isConflict());
-        // ... nor for a staff member
-        String otherAdmin = uniq("owner");
-        createRestaurant(uniq("c-"), otherAdmin, "s3cret-pass");
-        adminCreateStaff(tokenOf(otherAdmin, "s3cret-pass"), taken, "STAFF", "waiter-pass1").andExpect(status().isConflict());
+        // each signs in to its own restaurant with its own password and lands in its own tenant
+        login(cafeA, name, "pass-for-a-1").andExpect(status().isOk()).andExpect(jsonPath("$.tenantId").value(tenantA));
+        login(cafeB, name, "pass-for-b-2").andExpect(status().isOk()).andExpect(jsonPath("$.tenantId").value(tenantB));
+        login(cafeA, name, "pass-for-b-2").andExpect(status().isUnauthorized());
+        login(cafeB, name, "pass-for-a-1").andExpect(status().isUnauthorized());
+
+        // the staff of one restaurant can use a name another restaurant already has, but not twice in the same one
+        String adminToken = tokenOf(cafeA, name, "pass-for-a-1");
+        String waiter = uniq("waiter");
+        adminCreateStaff(adminToken, waiter, "STAFF", "waiter-pass1").andExpect(status().isCreated());
+        adminCreateStaff(adminToken, waiter.toUpperCase(), "STAFF", "waiter-pass1").andExpect(status().isConflict());
+        adminCreateStaff(tokenOf(cafeB, name, "pass-for-b-2"), waiter, "STAFF", "waiter-pass2").andExpect(status().isCreated());
+    }
+
+    @Test
+    void aTokenStaysWithItsOwnRestaurantWhenTheNameRepeats() throws Exception {
+        String name = uniq("shared");
+        String cafeA = uniq("a-");
+        String cafeB = uniq("b-");
+        createRestaurant(cafeA, name, "pass-for-a-1");
+        String tenantB = createRestaurant(cafeB, name, "pass-for-b-2");
+        String tokenB = tokenOf(cafeB, name, "pass-for-b-2");
+
+        // refresh looks the account up by the token's restaurant, not by the bare name
+        mvc.perform(post("/api/auth/refresh").header("Authorization", "Bearer " + tokenB))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.tenantId").value(tenantB));
+        mvc.perform(get("/api/orders").header("Authorization", "Bearer " + tokenB))
+                .andExpect(status().isOk());
     }
 
     @Test
     void failedCreateWithAdminLeavesNoRestaurantBehind() throws Exception {
-        String taken = uniq("shared");
-        createRestaurant(uniq("a-"), taken, "s3cret-pass");
-        String identifier = uniq("retry-");
+        String cafe = uniq("taken-");
+        createRestaurant(cafe, uniq("owner"), "s3cret-pass");
 
-        platformCreate("{\"identifier\":\"" + identifier + "\",\"name\":\"R\",\"adminUsername\":\"" + taken
+        platformCreate("{\"identifier\":\"" + cafe + "\",\"name\":\"R\",\"adminUsername\":\"" + uniq("o")
                 + "\",\"adminPassword\":\"s3cret-pass\"}").andExpect(status().isConflict());
-        // the identifier is still free, so the retry with a different admin succeeds
-        createRestaurant(identifier, uniq("owner"), "s3cret-pass");
+        // nothing of the failed attempt was left behind: the same admin name works in a restaurant that is free
+        createRestaurant(uniq("free-"), uniq("owner"), "s3cret-pass");
     }
 
     @Test
     void invalidInputIsRejected() throws Exception {
         String admin = uniq("owner");
-        createRestaurant(uniq("cafe-"), admin, "s3cret-pass");
-        String token = tokenOf(admin, "s3cret-pass");
+        String cafe = uniq("cafe-");
+        createRestaurant(cafe, admin, "s3cret-pass");
+        String token = tokenOf(cafe, admin, "s3cret-pass");
 
         adminCreateStaff(token, uniq("w"), "STAFF", "short").andExpect(status().isBadRequest());           // password < 8
         adminCreateStaff(token, "ab", "STAFF", "long-enough1").andExpect(status().isBadRequest());         // username too short
@@ -168,17 +202,18 @@ class StaffAccountAuthApiTest {
     @Test
     void deactivatedStaffCannotSignInOrRefresh() throws Exception {
         String admin = uniq("owner");
-        createRestaurant(uniq("cafe-"), admin, "s3cret-pass");
-        String adminToken = tokenOf(admin, "s3cret-pass");
+        String cafe = uniq("cafe-");
+        createRestaurant(cafe, admin, "s3cret-pass");
+        String adminToken = tokenOf(cafe, admin, "s3cret-pass");
         String staff = uniq("waiter");
         String accountId = JsonPath.read(adminCreateStaff(adminToken, staff, "STAFF", "waiter-pass1")
                 .andReturn().getResponse().getContentAsString(), "$.accountId");
-        String staffToken = tokenOf(staff, "waiter-pass1");
+        String staffToken = tokenOf(cafe, staff, "waiter-pass1");
 
         mvc.perform(delete("/api/admin/staff/{id}", accountId).header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("DEACTIVATED"));
 
-        login(staff, "waiter-pass1").andExpect(status().isUnauthorized());
+        login(cafe, staff, "waiter-pass1").andExpect(status().isUnauthorized());
         mvc.perform(post("/api/auth/refresh").header("Authorization", "Bearer " + staffToken))
                 .andExpect(status().isUnauthorized());
     }
@@ -186,17 +221,18 @@ class StaffAccountAuthApiTest {
     @Test
     void deactivatedRestaurantLocksItsUsersOut() throws Exception {
         String admin = uniq("owner");
-        String tenant = createRestaurant(uniq("cafe-"), admin, "s3cret-pass");
-        login(admin, "s3cret-pass").andExpect(status().isOk());
+        String cafe = uniq("cafe-");
+        String tenant = createRestaurant(cafe, admin, "s3cret-pass");
+        login(cafe, admin, "s3cret-pass").andExpect(status().isOk());
 
         mvc.perform(delete("/api/platform/restaurants/{id}", tenant).with(httpBasic("platform", "platform")))
                 .andExpect(status().isOk());
 
-        login(admin, "s3cret-pass").andExpect(status().isUnauthorized());
+        login(cafe, admin, "s3cret-pass").andExpect(status().isUnauthorized());
     }
 
     @Test
     void unknownUserIsRejected() throws Exception {
-        login(uniq("ghost"), "whatever-pass").andExpect(status().isUnauthorized());
+        login(uniq("nowhere-"), uniq("ghost"), "whatever-pass").andExpect(status().isUnauthorized());
     }
 }

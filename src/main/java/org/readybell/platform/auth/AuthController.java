@@ -9,9 +9,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 
 import java.time.Duration;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import java.util.Locale;
+import java.util.Optional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtException;
@@ -40,7 +39,7 @@ public class AuthController {
     /** Pre-computed hash compared against when the user is unknown, to equalise timing. */
     private final String dummyHash;
 
-    private final UserDetailsService users;
+    private final AccountDirectory users;
     private final PasswordEncoder encoder;
     private final JwtService jwt;
     private final LoginAttemptLimiter limiter;
@@ -48,7 +47,7 @@ public class AuthController {
     private final OperatorNetworkPolicy operatorNetworks;
     private final TokenSessions sessions;
 
-    public AuthController(UserDetailsService users, PasswordEncoder encoder, JwtService jwt,
+    public AuthController(AccountDirectory users, PasswordEncoder encoder, JwtService jwt,
                           LoginAttemptLimiter limiter, ClientIpResolver clientIps, OperatorNetworkPolicy operatorNetworks,
                           TokenSessions sessions) {
         this.operatorNetworks = operatorNetworks;
@@ -65,18 +64,20 @@ public class AuthController {
     public TokenResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
         // Behind a reverse proxy the peer is the proxy; the resolver reads the real client from X-Forwarded-For
         String address = clientIps.resolve(http);
-        Duration wait = limiter.retryAfter(request.username(), address);
+        // The limits count per restaurant and username, whatever the letter case, so varying it does not reset them
+        String account = accountKey(request.restaurant(), request.username());
+        Duration wait = limiter.retryAfter(account, address);
         if (!wait.isZero()) {
             throw new TooManyLoginAttemptsException(wait);
         }
-        TenantUser user = lookup(request.username());
+        TenantUser user = lookup(users.findInRestaurant(request.restaurant(), request.username()));
         boolean ok = encoder.matches(request.password(), user != null ? user.getPassword() : dummyHash);
         // An operator signing in from outside the allowed networks looks exactly like a wrong password
         if (user == null || !ok || !mayUseFrom(user, address)) {
-            limiter.recordFailure(request.username(), address);
+            limiter.recordFailure(account, address);
             throw new InvalidCredentialsException("Invalid username or password");
         }
-        limiter.recordSuccess(request.username(), address);
+        limiter.recordSuccess(account, address);
         return respond(user, TokenSessions.newSessionId());
     }
 
@@ -109,7 +110,7 @@ public class AuthController {
         } catch (JwtException e) {
             throw new InvalidCredentialsException("Token cannot be refreshed");
         }
-        TenantUser user = lookup(old.getSubject());
+        TenantUser user = lookup(users.find(JwtService.toPrincipal(old).getTenantId(), old.getSubject()));
         if (user == null || !mayUseFrom(user, clientIps.resolve(http)) || !sessions.allowRefresh(old)) {
             throw new InvalidCredentialsException("Token cannot be refreshed");
         }
@@ -123,14 +124,14 @@ public class AuthController {
         return !operator || operatorNetworks.allows(address);
     }
 
-    private TenantUser lookup(String username) {
-        try {
-            UserDetails details = users.loadUserByUsername(username);
-            // Disabled = deactivated account/restaurant or no password set: indistinguishable from "unknown"
-            return details instanceof TenantUser tu && tu.isEnabled() ? tu : null;
-        } catch (UsernameNotFoundException e) {
-            return null;
-        }
+    /** Disabled = deactivated account/restaurant or no password set: indistinguishable from "unknown". */
+    private static TenantUser lookup(Optional<TenantUser> account) {
+        return account.filter(TenantUser::isEnabled).orElse(null);
+    }
+
+    private static String accountKey(String restaurant, String username) {
+        String name = username.strip().toLowerCase(Locale.ROOT);
+        return restaurant == null || restaurant.isBlank() ? name : restaurant.strip().toLowerCase(Locale.ROOT) + "/" + name;
     }
 
     private TokenResponse respond(TenantUser user, String sessionId) {
@@ -140,7 +141,11 @@ public class AuthController {
                 user.getUsername(), issued.expiresInSeconds());
     }
 
-    public record LoginRequest(@NotBlank String username, @NotBlank String password) {}
+    /**
+     * @param restaurant the restaurant's identifier; usernames repeat between restaurants. Empty only for the
+     *                   platform operator
+     */
+    public record LoginRequest(String restaurant, @NotBlank String username, @NotBlank String password) {}
 
     public record TokenResponse(String token, String role, String tenantId, String username, long expiresIn) {}
 }

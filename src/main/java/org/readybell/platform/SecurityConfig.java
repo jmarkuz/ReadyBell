@@ -233,7 +233,7 @@ public class SecurityConfig {
 
     @Bean
     public org.readybell.platform.auth.TokenGuard tokenGuard(JwtService jwtService,
-            org.readybell.platform.auth.TokenSessions sessions, UserDetailsService users, Clock clock,
+            org.readybell.platform.auth.TokenSessions sessions, org.readybell.platform.auth.AccountDirectory users, Clock clock,
             @Value("${readybell.security.account-check-cache:30s}") java.time.Duration accountCheckCache) {
         return new org.readybell.platform.auth.TokenGuard(jwtService, sessions,
                 new org.readybell.platform.auth.AccountGuard(users, clock, accountCheckCache));
@@ -245,11 +245,11 @@ public class SecurityConfig {
     }
 
     /**
-     * User lookup used by login and token refresh: users configured in {@link SecurityProperties} (platform
-     * admins, dev users) first, then the staff accounts stored in the database.
+     * Accounts that can sign in: users configured in {@link SecurityProperties} (platform admins, dev users) and the
+     * staff accounts stored in the database. Also the {@link UserDetailsService} for HTTP Basic.
      */
     @Bean
-    public UserDetailsService userDetailsService(PasswordEncoder encoder, SecurityProperties props,
+    public org.readybell.platform.auth.AccountDirectory accountDirectory(PasswordEncoder encoder, SecurityProperties props,
                                                  StaffAccountRepository staffAccounts,
                                                  RestaurantRepository restaurants) {
         // InMemoryUserDetailsManager would return a plain User and drop the tenant, so keep our own map.
@@ -264,26 +264,7 @@ public class SecurityConfig {
                                         .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
                                         .toList(),
                                 u.getTenantId() == null ? null : new TenantId(u.getTenantId()))));
-        return username -> {
-            String key = username == null ? "" : username.strip().toLowerCase(Locale.ROOT);
-            TenantUser user = configured.get(key);
-            if (user != null) {
-                // Fresh instance per lookup: Spring Security erases credentials on the returned object.
-                return new TenantUser(user.getUsername(), user.getPassword(), user.getAuthorities(), user.getTenantId());
-            }
-            return staffAccounts.findByUsername(key)
-                    .map(account -> {
-                        boolean restaurantActive = restaurants.findByTenantId(account.getTenantId())
-                                .map(Restaurant::isActive).orElse(false);
-                        return new TenantUser(
-                                account.getUsername(),
-                                account.getPasswordHash() == null ? "" : account.getPasswordHash(),
-                                account.canSignIn() && restaurantActive,
-                                List.of(new SimpleGrantedAuthority("ROLE_" + account.getRole().name())),
-                                account.getTenantId());
-                    })
-                    .orElseThrow(() -> new UsernameNotFoundException(key));
-        };
+        return new org.readybell.platform.auth.AccountDirectory(configured, staffAccounts, restaurants);
     }
 
     /** Configured passwords are plain text (dev) or pre-hashed with the {@code {bcrypt}} prefix (production). */
