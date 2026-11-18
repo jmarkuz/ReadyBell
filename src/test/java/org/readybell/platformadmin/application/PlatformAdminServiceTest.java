@@ -2,7 +2,6 @@ package org.readybell.platformadmin.application;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.readybell.restaurant.application.DuplicateUsernameException;
 import org.readybell.restaurant.application.RestaurantNotFoundException;
 import org.readybell.restaurant.domain.InMemoryRestaurantRepository;
 import org.readybell.restaurant.domain.InMemoryStaffAccountRepository;
@@ -72,7 +71,7 @@ class PlatformAdminServiceTest {
     void createsARestaurantTogetherWithItsFirstAdmin() {
         Restaurant restaurant = service.createRestaurant("cafe", RestaurantConfig.of("Café"), " Owner ", "hash");
 
-        StaffAccount admin = staff.findByUsername("owner").orElseThrow();
+        StaffAccount admin = staff.findByTenantAndUsername(restaurant.getTenantId(), "owner").orElseThrow();
         assertThat(admin.getTenantId()).isEqualTo(restaurant.getTenantId());
         assertThat(admin.getRole()).isEqualTo(Role.RESTAURANT_ADMIN);
         assertThat(admin.getPasswordHash()).isEqualTo("hash");
@@ -89,12 +88,13 @@ class PlatformAdminServiceTest {
     }
 
     @Test
-    void takenAdminUsernameIsRejectedBeforeTheRestaurantIsWritten() {
+    void anotherRestaurantsAdminMayUseTheSameUsername() {
         staff.save(StaffAccount.create(new TenantId(UUID.randomUUID()), "owner", Role.STAFF, "hash"));
 
-        assertThatThrownBy(() -> service.createRestaurant("cafe", RestaurantConfig.of("Café"), "Owner", "hash"))
-                .isInstanceOf(DuplicateUsernameException.class);
-        assertThat(restaurants.size()).isZero();
+        Restaurant restaurant = service.createRestaurant("cafe", RestaurantConfig.of("Café"), "Owner", "hash");
+
+        assertThat(staff.findByTenantAndUsername(restaurant.getTenantId(), "owner")).isPresent();
+        assertThat(staff.size()).isEqualTo(2);
     }
 
     // ---- update / deactivate / list ---------------------------------------------------------

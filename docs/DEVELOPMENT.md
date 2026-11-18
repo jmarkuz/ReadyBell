@@ -32,14 +32,16 @@ then `createdb -U postgres readybell` once.
 - API users come from `readybell.security.users` (no built-in credentials). `dev` profile: `staff:password` and `admin:admin`
   (tenant `00000000-0000-0000-0000-000000000001`), `platform:platform` (PLATFORM_ADMIN). The tenant is bound to the user on the server;
   an `X-Tenant-Id` header is never trusted (a different tenant in it → 403).
-  `curl -u staff:password http://localhost:8080/api/orders` (Basic) or log in for a Bearer token:
-  `curl -s -X POST localhost:8080/api/login -H 'Content-Type: application/json' -d '{"username":"staff","password":"password"}'`.
+  `curl -u staff:password http://localhost:8080/api/orders` (Basic, configured users by their bare name; database accounts as
+  `restaurant/username`) or log in for a Bearer token. Signing in names the restaurant (usernames repeat between restaurants), the
+  dev users belong to `dev-restaurant`, the operator has none:
+  `curl -s -X POST localhost:8080/api/login -H 'Content-Type: application/json' -d '{"restaurant":"dev-restaurant","username":"staff","password":"password"}'`.
 - `JWT_SECRET` (≥ 32 bytes) is **required** outside the `dev`/`test` profiles; the app refuses to start without it.
 
 ### Frontend
 `npm run dev` talks to the **real backend**: the browser calls the Vite origin and the dev proxy forwards `/api/*` to `BACKEND_URL`
 (default `http://localhost:8080`; e.g. `BACKEND_URL=http://localhost:8089 npm run dev` if 8080 is taken). Sign in on `/login` with a configured user
-(`staff` / `password` in the `dev` profile). Do **not** set `VITE_API_BASE_URL` in dev: it makes the browser call the backend directly, which fails on CORS
+(Restaurant `dev-restaurant`, `staff` / `password` in the `dev` profile; the operator `platform` leaves Restaurant empty). Do **not** set `VITE_API_BASE_URL` in dev: it makes the browser call the backend directly, which fails on CORS
 (use it only when the UI is deployed on a different origin than the API and the backend has CORS configured).
 
 The dashboard lists the 100 newest orders and refreshes on SSE events (`/api/orders/stream?ticket=…`, a single-use ticket from `POST /api/orders/stream/ticket`; the badge shows Live/Offline) and every 30 s while offline.
@@ -49,7 +51,7 @@ Staff change an order's status from the pencil menu in the orders table (only th
 the change is sent with `PATCH /api/orders/{id}/status` and the list reloads. **Logout** (sidebar and settings menu) clears the stored token and returns to `/login`.
 
 To see data locally: the `dev` profile seeds a restaurant (`dev-restaurant`) for the `staff` / `admin` tenant at startup.
-Sign in as `admin` / `admin` and press **New order**; there is no mock-data generator, so every order goes through the same
+Sign in as Restaurant `dev-restaurant`, `admin` / `admin` and press **New order**; there is no mock-data generator, so every order goes through the same
 flow as in production (the Playwright scenarios create theirs through `POST /api/orders`). Details of the API:
 [API_INTEGRATION.md](API_INTEGRATION.md).
 

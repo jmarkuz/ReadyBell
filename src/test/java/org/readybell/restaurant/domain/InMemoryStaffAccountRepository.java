@@ -46,13 +46,6 @@ public class InMemoryStaffAccountRepository implements StaffAccountRepository {
                 .findFirst();
     }
 
-    @Override
-    public Optional<StaffAccount> findByUsername(String username) {
-        return store.values().stream()
-                .filter(account -> account.getUsername().equals(username))
-                .findFirst();
-    }
-
     /** Convenience helper — returns the total number of stored accounts. */
     @Override
     public java.util.List<StaffAccount> findAllByTenant(TenantId tenantId) {

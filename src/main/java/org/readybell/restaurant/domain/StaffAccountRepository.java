@@ -51,21 +51,14 @@ public interface StaffAccountRepository {
     /**
      * Finds a staff account by username within a specific tenant (Req 8.4).
      *
-     * <p>Used to enforce uniqueness of usernames within a tenant before creating a
-     * new account.
+     * <p>Usernames are unique per tenant (not platform-wide). Used for sign-in, which names the
+     * restaurant, and to enforce uniqueness before creating a new account.
      *
      * @param tenantId the tenant scope (must not be null)
      * @param username the account username to look up (must not be null)
      * @return the account, or empty if no account with that username exists in the tenant
      */
     Optional<StaffAccount> findByTenantAndUsername(TenantId tenantId, String username);
-
-    /**
-     * Finds an account by username across all tenants. Usernames are globally unique because
-     * sign-in takes only a username; this is used for authentication and duplicate checks, never
-     * for tenant-scoped data access.
-     */
-    Optional<StaffAccount> findByUsername(String username);
 
     /** All accounts of the tenant, oldest username first. */
     List<StaffAccount> findAllByTenant(TenantId tenantId);

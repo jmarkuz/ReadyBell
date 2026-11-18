@@ -114,6 +114,7 @@ export default function Restaurants() {
           <div>
             <label htmlFor="r-identifier" className="block text-sm font-medium mb-1">Identifier (e.g. cafe-aurora)</label>
             <input id="r-identifier" className={inputClass} value={identifier} required onChange={(e) => setIdentifier(e.target.value)} />
+            <p className="mt-1 text-xs text-slate-500">Staff sign in with this code together with their username, so the same username can be used in other restaurants.</p>
           </div>
           <div>
             <label htmlFor="r-admin" className="block text-sm font-medium mb-1">First admin username <span className="font-normal text-slate-500">(optional)</span></label>

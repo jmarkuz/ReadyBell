@@ -2,6 +2,7 @@ package org.readybell.integration;
 
 import org.junit.jupiter.api.Test;
 import org.readybell.notification.domain.NotificationSender;
+import org.readybell.testsupport.TestRestaurantSeeder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,7 +33,7 @@ class LoginThrottleApiTest {
 
     private org.springframework.test.web.servlet.ResultActions login(String user, String pass, String address) throws Exception {
         return mvc.perform(post("/api/login").with(from(address)).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"" + user + "\",\"password\":\"" + pass + "\"}"));
+                .content("{\"restaurant\":\"" + TestRestaurantSeeder.restaurantFor(user) + "\",\"username\":\"" + user + "\",\"password\":\"" + pass + "\"}"));
     }
 
     @Test

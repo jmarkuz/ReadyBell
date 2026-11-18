@@ -1,11 +1,33 @@
 import { FormEvent, useState } from 'react';
 import { apiClient, ApiError } from '@/utils/api';
 
+const RESTAURANT_KEY = 'readybell.login.restaurant';
+
+function rememberedRestaurant(): string {
+  try {
+    return window.localStorage.getItem(RESTAURANT_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function rememberRestaurant(value: string) {
+  try {
+    if (value) window.localStorage.setItem(RESTAURANT_KEY, value);
+    else window.localStorage.removeItem(RESTAURANT_KEY);
+  } catch {
+    /* private window or blocked storage: the field is just empty next time */
+  }
+}
+
 /**
- * Login page: exchanges username/password for a Bearer token via POST /api/login.
+ * Login page: exchanges restaurant + username + password for a Bearer token via POST /api/login.
+ * Usernames repeat between restaurants, so the restaurant (its identifier) is part of the sign-in; the platform
+ * operator leaves it empty. The last restaurant is remembered in this browser.
  * The token is stored by the API client; a full reload then lets AuthProvider restore the session.
  */
 export default function Login() {
+  const [restaurant, setRestaurant] = useState(rememberedRestaurant);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +38,9 @@ export default function Login() {
     setError(null);
     setSubmitting(true);
     try {
-      await apiClient.login({ username: username.trim(), password });
+      const restaurantId = restaurant.trim();
+      await apiClient.login({ ...(restaurantId && { restaurant: restaurantId }), username: username.trim(), password });
+      rememberRestaurant(restaurantId);
       // only the customer display may be returned to; anything else would be an open redirect
       window.location.href = new URLSearchParams(window.location.search).get('next') === '/display' ? '/display' : '/';
     } catch (e) {
@@ -35,6 +59,26 @@ export default function Login() {
         <h1 id="login-heading" className="text-3xl text-center text-slate-900 mb-4">
           ReadyBell Dashboard
         </h1>
+
+        <div>
+          <label htmlFor="restaurant" className="block text-sm font-medium text-slate-700 mb-1">
+            Restaurant
+          </label>
+          <input
+            id="restaurant"
+            name="restaurant"
+            autoComplete="organization"
+            autoCapitalize="none"
+            spellCheck={false}
+            value={restaurant}
+            onChange={(e) => setRestaurant(e.target.value)}
+            aria-describedby="restaurant-hint"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <p id="restaurant-hint" className="mt-1 text-xs text-slate-500">
+            The restaurant's code, as given to you. Leave empty only for the platform operator.
+          </p>
+        </div>
 
         <div>
           <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-1">
@@ -87,7 +131,7 @@ export default function Login() {
 
 function messageFor(e: unknown): string {
   if (e instanceof ApiError) {
-    if (e.statusCode === 401) return 'Invalid username or password.';
+    if (e.statusCode === 401) return 'Invalid restaurant, username or password.';
     if (e.statusCode === 429) return 'Too many failed attempts. Please wait a few minutes and try again.';
   }
   return 'Sign-in failed. Check your connection and try again.';

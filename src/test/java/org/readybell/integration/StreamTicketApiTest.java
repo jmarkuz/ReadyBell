@@ -3,6 +3,7 @@ package org.readybell.integration;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.readybell.notification.domain.NotificationSender;
+import org.readybell.testsupport.TestRestaurantSeeder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,7 +29,7 @@ class StreamTicketApiTest {
 
     private String bearerLogin(String user) throws Exception {
         String body = mvc.perform(post("/api/login").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"" + user + "\",\"password\":\"" + user + "\"}"))
+                        .content("{\"restaurant\":\"" + TestRestaurantSeeder.restaurantFor(user) + "\",\"username\":\"" + user + "\",\"password\":\"" + user + "\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.token");
     }

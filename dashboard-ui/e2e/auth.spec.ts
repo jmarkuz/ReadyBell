@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { signIn, signInAndWaitForDashboard } from './helpers';
+import { STAFF, signIn, signInAndWaitForDashboard } from './helpers';
 
 test.describe('sign in', () => {
   test('staff sign in and land on the dashboard', async ({ page }) => {
@@ -13,6 +13,15 @@ test.describe('sign in', () => {
 
     await expect(page.getByRole('alert')).toBeVisible();
     await expect(page).toHaveURL(/\/login/);
+  });
+
+  test('the username belongs to a restaurant: the same name without it or in another one is refused', async ({ page }) => {
+    await signIn(page, { username: STAFF.username, password: STAFF.password });
+    await expect(page.getByRole('alert')).toContainText('Invalid restaurant, username or password');
+    await expect(page).toHaveURL(/\/login/);
+
+    await signIn(page, { ...STAFF, restaurant: 'some-other-restaurant' });
+    await expect(page.getByRole('alert')).toContainText('Invalid restaurant, username or password');
   });
 
   test('the dashboard is not reachable without signing in', async ({ page }) => {

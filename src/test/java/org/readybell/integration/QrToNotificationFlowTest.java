@@ -105,14 +105,15 @@ class QrToNotificationFlowTest {
         // Create a test restaurant and tenant
         // Must match the tenant of the configured 'admin' user in application-test.yml
         tenantId = new TenantId(UUID.fromString("00000000-0000-0000-0000-0000000000a1"));
-        restaurantIdentifier = "test-restaurant-" + UUID.randomUUID();
-        
-        Restaurant restaurant = Restaurant.create(
-            tenantId,
-            restaurantIdentifier,
-            RestaurantConfig.of("Test Restaurant")
-        );
-        restaurantRepository.save(restaurant);
+        // The restaurant row is shared by every test (they sign in to it by its identifier), so it is used as it is
+        // and only created when no other test has yet
+        Restaurant restaurant = restaurantRepository.findByTenantId(tenantId).orElseGet(() -> {
+            Restaurant created = Restaurant.create(tenantId, "test-restaurant-" + UUID.randomUUID(),
+                    RestaurantConfig.of("Test Restaurant"));
+            restaurantRepository.save(created);
+            return created;
+        });
+        restaurantIdentifier = restaurant.getIdentifier();
 
         // Create a QR token that encodes the restaurant identifier
         // In a real scenario, this would be a properly encoded QR payload

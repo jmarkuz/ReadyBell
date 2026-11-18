@@ -30,7 +30,7 @@ curl -fsS -X POST "$BASE_URL/api/platform/restaurants" -H "$J" -H "Authorization
   -d "{\"identifier\":\"$ID\",\"name\":\"Smoke $ID\",\"adminUsername\":\"$ADMIN\",\"adminPassword\":\"$ADMIN_PASS\"}" >/dev/null
 
 step "restaurant admin signs in and sees the restaurant"
-AT=$(curl -fsS -X POST "$BASE_URL/api/login" -H "$J" -d "{\"username\":\"$ADMIN\",\"password\":\"$ADMIN_PASS\"}" | json "d['token']")
+AT=$(curl -fsS -X POST "$BASE_URL/api/login" -H "$J" -d "{\"restaurant\":\"$ID\",\"username\":\"$ADMIN\",\"password\":\"$ADMIN_PASS\"}" | json "d['token']")
 NAME=$(curl -fsS "$BASE_URL/api/restaurant" -H "Authorization: Bearer $AT" | json "d['name']")
 [ "$NAME" = "Smoke $ID" ] || fail "unexpected restaurant name: $NAME"
 

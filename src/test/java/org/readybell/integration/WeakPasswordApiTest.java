@@ -51,7 +51,7 @@ class WeakPasswordApiTest {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         createRestaurant(suffix, "owner" + suffix, "correct-horse-battery").andExpect(status().isCreated());
         String body = mvc.perform(post("/api/login").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"owner" + suffix + "\",\"password\":\"correct-horse-battery\"}"))
+                        .content("{\"restaurant\":\"cafe-" + suffix + "\",\"username\":\"owner" + suffix + "\",\"password\":\"correct-horse-battery\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         String token = JsonPath.read(body, "$.token");
 

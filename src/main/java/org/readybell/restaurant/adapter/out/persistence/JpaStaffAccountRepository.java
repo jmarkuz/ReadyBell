@@ -60,14 +60,6 @@ public class JpaStaffAccountRepository implements StaffAccountRepository {
 
     @Override
     @Transactional(readOnly = true)
-    @CrossTenant("login: the tenant is not known yet")
-    public Optional<StaffAccount> findByUsername(String username) {
-        // Deliberately no tenant filter: usernames are unique platform-wide (used for sign-in)
-        return springRepo.findByUsername(username).map(StaffAccountJpaEntity::toDomain);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<StaffAccount> findAllByTenant(TenantId tenantId) {
         return springRepo.findByTenantIdOrderByUsernameAsc(tenantId.value()).stream()
                 .map(StaffAccountJpaEntity::toDomain).toList();

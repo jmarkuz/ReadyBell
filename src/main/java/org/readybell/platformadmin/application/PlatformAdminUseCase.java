@@ -33,9 +33,8 @@ public interface PlatformAdminUseCase {
      * can sign in and manage it. The caller should run this in one transaction so that a failure
      * leaves neither behind.
      *
-     * @param adminUsername     username of the first admin (platform-wide unique)
+     * @param adminUsername     username of the first admin (unique within the new restaurant, so it cannot be taken)
      * @param adminPasswordHash encoded password of the first admin
-     * @throws org.readybell.restaurant.application.DuplicateUsernameException if the username is taken
      */
     Restaurant createRestaurant(String identifier, RestaurantConfig config,
                                 String adminUsername, String adminPasswordHash);

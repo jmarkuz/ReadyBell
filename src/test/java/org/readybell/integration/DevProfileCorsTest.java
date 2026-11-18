@@ -27,7 +27,7 @@ class DevProfileCorsTest {
     @Test
     void devProfileAcceptsTheViteDevServerOrigin() throws Exception {
         mvc.perform(post("/api/login").header("Origin", "http://localhost:5173")
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"username\":\"admin\",\"password\":\"admin\"}"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"restaurant\":\"dev-restaurant\",\"username\":\"admin\",\"password\":\"admin\"}"))
                 .andExpect(status().isOk());
     }
 

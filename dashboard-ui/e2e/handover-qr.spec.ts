@@ -54,6 +54,7 @@ test('an order not yet connected can show its QR from the list, and the customer
   const display = await displayContext.newPage();
   await display.goto('/display');
   await expect(display).toHaveURL(/\/login\?next=\/display$/);
+  await display.getByLabel('Restaurant').fill(STAFF.restaurant);
   await display.getByLabel('Username').fill(STAFF.username);
   await display.getByLabel('Password').fill(STAFF.password);
   await display.getByRole('button', { name: 'Sign in' }).click();

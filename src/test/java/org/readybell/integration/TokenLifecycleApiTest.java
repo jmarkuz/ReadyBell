@@ -3,6 +3,7 @@ package org.readybell.integration;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.readybell.notification.domain.NotificationSender;
+import org.readybell.testsupport.TestRestaurantSeeder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,8 +31,13 @@ class TokenLifecycleApiTest {
     @MockBean private NotificationSender notificationSender;
 
     private String login(String user, String pass) throws Exception {
+        return login(TestRestaurantSeeder.restaurantFor(user), user, pass);
+    }
+
+    private String login(String restaurant, String user, String pass) throws Exception {
+        String restaurantField = restaurant == null || restaurant.isEmpty() ? "" : "\"restaurant\":\"" + restaurant + "\",";
         String body = mvc.perform(post("/api/login").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"" + user + "\",\"password\":\"" + pass + "\"}"))
+                        .content("{" + restaurantField + "\"username\":\"" + user + "\",\"password\":\"" + pass + "\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.token");
     }
@@ -93,21 +99,22 @@ class TokenLifecycleApiTest {
                         .content("{\"identifier\":\"cafe-" + suffix + "\",\"name\":\"R\",\"adminUsername\":\"" + owner
                                 + "\",\"adminPassword\":\"s3cret-pass\"}"))
                 .andExpect(status().isCreated());
-        String admin = login(owner, "s3cret-pass");
+        String cafe = "cafe-" + suffix;
+        String admin = login(cafe, owner, "s3cret-pass");
         String username = "staff" + suffix;
         String created = mvc.perform(post("/api/admin/staff").header("Authorization", "Bearer " + admin)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"" + username + "\",\"password\":\"a-good-password-1\",\"role\":\"STAFF\"}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         String id = JsonPath.read(created, "$.accountId");
-        String staffToken = login(username, "a-good-password-1");
+        String staffToken = login(cafe, username, "a-good-password-1");
         canListOrders(staffToken, 200);
 
         mvc.perform(delete("/api/admin/staff/" + id).header("Authorization", "Bearer " + admin)).andExpect(status().isOk());
 
         canListOrders(staffToken, 401);     // not "until the token expires"
         mvc.perform(post("/api/login").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"" + username + "\",\"password\":\"a-good-password-1\"}"))
+                .content("{\"restaurant\":\"" + cafe + "\",\"username\":\"" + username + "\",\"password\":\"a-good-password-1\"}"))
                 .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.detail").value("Invalid username or password"));
     }
 }
