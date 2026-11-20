@@ -56,21 +56,23 @@ class OrderStatementCountTest {
 
         createOrder("measured");
 
-        // session insert + its tenant check, order number, order insert, items in one batch; no merge SELECT, no version UPDATE
+        // session insert + its tenant check, order number, order insert, items in one batch, and the first row of the order's
+        // status history; no merge SELECT, no version UPDATE
         assertThat(stats().getEntityUpdateCount()).as("entity updates while creating").isZero();
-        assertThat(stats().getPrepareStatementCount()).as("statements to create an order").isLessThanOrEqualTo(6);
+        assertThat(stats().getPrepareStatementCount()).as("statements to create an order").isLessThanOrEqualTo(7);
     }
 
     @Test
-    void changingTheStatusTakesFourStatements() throws Exception {
+    void changingTheStatusTakesFiveStatements() throws Exception {
         String id = createOrder("status");
         stats().clear();
 
         mvc.perform(patch("/api/orders/{id}/status", id).with(httpBasic("admin", "admin"))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"IN_PROGRESS\"}"));
 
-        // load order, load its items, insert the outbox event, update the order
-        assertThat(stats().getPrepareStatementCount()).as("statements for a status change").isLessThanOrEqualTo(4);
+        // load order, load its items, insert the outbox event, update the order, append the status history row (a finished
+        // order also writes its one fact row, a sixth statement the budget leaves out: most changes do not finish the order)
+        assertThat(stats().getPrepareStatementCount()).as("statements for a status change").isLessThanOrEqualTo(5);
     }
 
     @Test

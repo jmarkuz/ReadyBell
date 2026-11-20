@@ -13,6 +13,8 @@ Tags are always low-cardinality enums. Tenant ids and session ids are never used
 | `readybell_orders_created_total` | counter | Orders created |
 | `readybell_orders_transitions_total{status}` | counter | Status changes by the status entered (`CREATED`, `IN_PROGRESS`, `READY`, `COMPLETED`, `CANCELLED`) |
 | `readybell_push_attempts_total{result}` | counter | Web Push send attempts: `sent` (accepted by the push service), `failed` (rejected, transient error, exception), `expired` (404/410, subscription removed). Each retry is an attempt (retries are separate delivery attempts later in time, not sleeps) |
+| `readybell_retention_rows_total{task,dry_run}` | counter | Rows changed by the retention tasks (`backfill-facts`, `anonymize-orders`, `scrub-notifications`, `purge-sessions`); in a dry run, rows that would change |
+| `readybell_retention_last_success_timestamp` | gauge | Unix time of the last retention run without an error (starts at the application start); the run log is the `retention_run` table |
 | `readybell_push_pending` | gauge | Pushes waiting for a delivery attempt or a retry (queued, or scheduled after a transient failure). Stays near 0; a rising value means the push service is slow or down |
 | `readybell_push_ready_latency_seconds` | histogram | Time from the order becoming READY to the push service accepting a push (buckets 0.25, 0.5, 1, 2, 5, 10, 30 s) |
 | `readybell_sse_connections{audience}` | gauge | Open SSE connections on this node, `audience` = `staff` or `customer` (sum over instances for the total) |
@@ -51,6 +53,7 @@ counted twice, so treat the counters as accurate to a fraction of a percent, not
 | `PushNotSendingAtAll` | orders turned READY, pushes were attempted, none accepted (check VAPID keys) |
 | `ReadyToPushLatencySlow` | p95 READY to push above 2 s for 10 min |
 | `OutboxFailedEvents` | `outbox_failed > 0` (events gave up; investigate and requeue) |
+| `RetentionNotRunning` | no successful data retention run for two days (customer names are not being removed) |
 | `OutboxBacklogGrowing` | pending outbox events never drain and are growing |
 | `SseConnectionsDroppedToZero` | optional: no SSE connection although orders are created |
 

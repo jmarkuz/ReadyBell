@@ -156,15 +156,7 @@ public class RetentionService {
                 WHERE o.status IN ('COMPLETED', 'CANCELLED') AND o.anonymized_at IS NULL AND o.updated_at < :cutoff
                   AND NOT EXISTS (SELECT 1 FROM order_fact f WHERE f.order_id = o.id)%s
                 ORDER BY o.updated_at, o.id LIMIT :batch OFFSET :offset""", "o", cutoff),
-                ids -> em.createNativeQuery("""
-                        INSERT INTO order_fact (order_id, tenant_id, created_at, in_progress_at, ready_at, finished_at,
-                                                outcome, item_count, quantity, connected, approximate)
-                        SELECT o.id, o.tenant_id, o.created_at, NULL, NULL, o.updated_at, o.status,
-                               (SELECT count(*) FROM order_item i WHERE i.order_id = o.id),
-                               COALESCE((SELECT sum(i.quantity) FROM order_item i WHERE i.order_id = o.id), 0),
-                               o.connected_at IS NOT NULL, true
-                        FROM "order" o WHERE o.id IN (:ids)
-                        ON CONFLICT (order_id) DO NOTHING""").setParameter("ids", ids).executeUpdate());
+                this::writeFacts);
     }
 
     /** Removes the customer name, the item names and the link to the session from finished orders that have a fact row. */
@@ -174,14 +166,32 @@ public class RetentionService {
                 WHERE o.status IN ('COMPLETED', 'CANCELLED') AND o.anonymized_at IS NULL AND o.updated_at < :cutoff
                   AND EXISTS (SELECT 1 FROM order_fact f WHERE f.order_id = o.id)%s
                 ORDER BY o.updated_at, o.id LIMIT :batch OFFSET :offset""", "o", cutoff),
-                ids -> {
-                    // the session id is replaced by a random one, so the tracking link of the customer stops working
-                    int orders = em.createNativeQuery("""
-                            UPDATE "order" SET customer_name = NULL, session_id = gen_random_uuid(), anonymized_at = :now
-                            WHERE id IN (:ids)""").setParameter("now", now).setParameter("ids", ids).executeUpdate();
-                    em.createNativeQuery("DELETE FROM order_item WHERE order_id IN (:ids)").setParameter("ids", ids).executeUpdate();
-                    return orders;
-                });
+                ids -> anonymize(ids, now));
+    }
+
+    /** Fact rows for these finished orders when they have none (timings estimated: no history was recorded). Runs in the caller's transaction. */
+    int writeFacts(List<UUID> ids) {
+        return em.createNativeQuery("""
+                INSERT INTO order_fact (order_id, tenant_id, created_at, in_progress_at, ready_at, finished_at,
+                                        outcome, item_count, quantity, connected, approximate)
+                SELECT o.id, o.tenant_id, o.created_at, NULL, NULL, o.updated_at, o.status,
+                       (SELECT count(*) FROM order_item i WHERE i.order_id = o.id),
+                       COALESCE((SELECT sum(i.quantity) FROM order_item i WHERE i.order_id = o.id), 0),
+                       o.connected_at IS NOT NULL, true
+                FROM "order" o WHERE o.id IN (:ids)
+                ON CONFLICT (order_id) DO NOTHING""").setParameter("ids", ids).executeUpdate();
+    }
+
+    /**
+     * Removes the personal data of these finished orders. The session id is replaced by a random one, so the customer's
+     * tracking link stops working; the items go, the fact row stays. Runs in the caller's transaction.
+     */
+    int anonymize(List<UUID> ids, Instant now) {
+        int orders = em.createNativeQuery("""
+                UPDATE "order" SET customer_name = NULL, session_id = gen_random_uuid(), anonymized_at = :now
+                WHERE id IN (:ids)""").setParameter("now", now).setParameter("ids", ids).executeUpdate();
+        em.createNativeQuery("DELETE FROM order_item WHERE order_id IN (:ids)").setParameter("ids", ids).executeUpdate();
+        return orders;
     }
 
     /** Empties the texts of notifications that are no longer waiting for delivery; the status and times stay. */

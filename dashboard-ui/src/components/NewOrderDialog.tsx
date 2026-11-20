@@ -90,6 +90,7 @@ export default function NewOrderDialog({ open, onClose, onCreated, connectedOrde
             <div>
               <label htmlFor="no-customer" className="block text-sm font-medium mb-1">Customer name <span className="text-slate-500 font-normal">(optional)</span></label>
               <input id="no-customer" ref={firstField} className={input} value={customer} maxLength={80} onChange={(e) => setCustomer(e.target.value)} />
+              <p className="mt-1 text-xs text-slate-500">A first name or initials is enough. It is removed from the order a few weeks after pick-up.</p>
             </div>
 
             <fieldset className="space-y-2">

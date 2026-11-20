@@ -58,6 +58,19 @@ public class DeviceSubscriptionJpaEntity extends TenantScopedEntity {
     @Column(name = "auth_key", nullable = false)
     private String authKey;
 
+    /**
+     * When the customer agreed to the push ("Notify me"), and under which version of the notice. Written once, with the
+     * row; a later save of the same subscription never changes them ({@code updatable = false}).
+     */
+    @Column(name = "consent_at", updatable = false)
+    private java.time.Instant consentAt;
+
+    @Column(name = "consent_notice", updatable = false, length = 32)
+    private String consentNotice;
+
+    /** Version of the privacy notice the customer is shown; change it together with the text (docs/privacy). */
+    public static final String CONSENT_NOTICE = "2026-11-draft";
+
     /** Required by JPA. */
     protected DeviceSubscriptionJpaEntity() {}
 
@@ -74,6 +87,8 @@ public class DeviceSubscriptionJpaEntity extends TenantScopedEntity {
         entity.endpointUrl = subscription.getEndpoint().endpointUrl();
         entity.p256dhKey   = subscription.getEndpoint().p256dhKey();
         entity.authKey     = subscription.getEndpoint().authKey();
+        entity.consentAt     = java.time.Instant.now();
+        entity.consentNotice = CONSENT_NOTICE;
         return entity;
     }
 

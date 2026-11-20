@@ -61,6 +61,15 @@ groups:
         annotations:
           summary: "Outbox pending events never drain; the relay is stuck or too slow"
 
+      # The nightly retention run removes personal data (customer names, old texts); it must keep succeeding.
+      # The gauge starts at the application start time, so a node that never manages a run fires after two days.
+      - alert: RetentionNotRunning
+        expr: time() - max(readybell_retention_last_success_timestamp) > 2 * 24 * 3600
+        for: 30m
+        labels: {severity: warning}
+        annotations:
+          summary: "No successful data retention run for two days (customer names are not being removed; see the retention_run table)"
+
       # Optional: no SSE connection at all although orders keep being created.
       - alert: SseConnectionsDroppedToZero
         expr: |
