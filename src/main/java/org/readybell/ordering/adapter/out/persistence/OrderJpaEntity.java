@@ -52,6 +52,13 @@ public class OrderJpaEntity extends TenantScopedEntity {
     @Column(name = "session_id", nullable = false, updatable = false)
     private UUID sessionId;
 
+    /**
+     * Set by the retention job when the personal data of this finished order was removed. Read-only here: a save of the
+     * order from the domain must never clear it.
+     */
+    @Column(name = "anonymized_at", insertable = false, updatable = false)
+    private Instant anonymizedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private OrderStatus status;

@@ -11,6 +11,8 @@ spring:
     show-sql: false
 
 readybell:
+  retention:
+    enabled: false        # the nightly run would touch the data of other tests; tests call RetentionService with a tenant
   outbox:
     # Test contexts are cached and share one in-memory database; a live relay in one of them would steal the
     # events of another test. Tests that need delivery call OutboxRelay.drain() themselves.
