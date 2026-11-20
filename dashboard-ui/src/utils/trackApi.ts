@@ -55,3 +55,25 @@ export async function registerSubscription(
   });
   if (!res.ok) throw new Error(`Subscription failed (${res.status})`);
 }
+
+export interface ErasedData {
+  subscriptions: number;
+  ordersAnonymized: number;
+  ordersKeptUntilFinished: number;
+}
+
+/** The customer's own data as a JSON file (access and portability); the link is the credential, as for tracking. */
+export async function downloadMyData(sessionId: string): Promise<Blob> {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/data`);
+  if (res.status === 404) throw new UnknownSessionError();
+  if (!res.ok) throw new Error(`Data request failed (${res.status})`);
+  return res.blob();
+}
+
+/** Deletes the push subscriptions and the personal data in the orders of this link. */
+export async function eraseMyData(sessionId: string): Promise<ErasedData> {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/data`, { method: 'DELETE' });
+  if (res.status === 404) throw new UnknownSessionError();
+  if (!res.ok) throw new Error(`Erase request failed (${res.status})`);
+  return res.json();
+}

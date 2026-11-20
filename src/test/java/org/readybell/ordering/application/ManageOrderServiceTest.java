@@ -3,6 +3,7 @@ package org.readybell.ordering.application;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.readybell.ordering.domain.InMemoryOrderNumberGenerator;
+import org.readybell.ordering.domain.InMemoryOrderTimelineRepository;
 import org.readybell.ordering.domain.InMemoryOrderRepository;
 import org.readybell.ordering.domain.InvalidTransitionException;
 import org.readybell.ordering.domain.Order;
@@ -36,6 +37,7 @@ class ManageOrderServiceTest {
     private InMemoryCustomerSessionRepository sessions;
     private InMemoryOrderRepository orders;
     private RecordingDomainEventPublisher events;
+    private InMemoryOrderTimelineRepository timeline;
     private ManageOrderService service;
 
     @BeforeEach
@@ -43,7 +45,8 @@ class ManageOrderServiceTest {
         sessions = new InMemoryCustomerSessionRepository();
         orders = new InMemoryOrderRepository();
         events = new RecordingDomainEventPublisher();
-        service = new ManageOrderService(sessions, orders, new InMemoryOrderNumberGenerator(), events, CLOCK);
+        timeline = new InMemoryOrderTimelineRepository();
+        service = new ManageOrderService(sessions, orders, new InMemoryOrderNumberGenerator(), timeline, events, CLOCK);
     }
 
     private CustomerSession activeSession(TenantId tenant) {
@@ -143,6 +146,56 @@ class ManageOrderServiceTest {
     void createOrderWithNewSessionRejectsNullTenant() {
         assertThatThrownBy(() -> service.createOrderWithNewSession(null, OrderDetails.NONE))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void creatingAnOrderStartsItsHistory() {
+        var order = service.createOrder(new CreateOrderCommand(TENANT, activeSession(TENANT).getId()));
+
+        assertThat(timeline.transitions).singleElement().satisfies(t -> {
+            assertThat(t.orderId()).isEqualTo(order.getId());
+            assertThat(t.from()).isNull();
+            assertThat(t.to()).isEqualTo(OrderStatus.CREATED);
+        });
+        assertThat(timeline.finished).isEmpty();
+    }
+
+    @Test
+    void everyStatusChangeIsRecordedAndOnlyTheEndWritesTheFactRow() {
+        var order = service.createOrder(new CreateOrderCommand(TENANT, activeSession(TENANT).getId()));
+        service.transitionOrderStatus(new TransitionOrderCommand(TENANT, order.getId(), OrderStatus.IN_PROGRESS));
+        service.transitionOrderStatus(new TransitionOrderCommand(TENANT, order.getId(), OrderStatus.READY));
+        assertThat(timeline.finished).isEmpty();                    // still open: no fact yet
+
+        service.transitionOrderStatus(new TransitionOrderCommand(TENANT, order.getId(), OrderStatus.COMPLETED));
+
+        assertThat(timeline.transitions).extracting(InMemoryOrderTimelineRepository.Transition::to)
+                .containsExactly(OrderStatus.CREATED, OrderStatus.IN_PROGRESS, OrderStatus.READY, OrderStatus.COMPLETED);
+        assertThat(timeline.transitions).extracting(InMemoryOrderTimelineRepository.Transition::from)
+                .containsExactly(null, OrderStatus.CREATED, OrderStatus.IN_PROGRESS, OrderStatus.READY);
+        assertThat(timeline.finished).containsExactly(order.getId());
+    }
+
+    @Test
+    void aCancelledOrderIsAFactToo() {
+        var order = service.createOrder(new CreateOrderCommand(TENANT, activeSession(TENANT).getId()));
+
+        service.transitionOrderStatus(new TransitionOrderCommand(TENANT, order.getId(), OrderStatus.CANCELLED));
+
+        assertThat(timeline.finished).containsExactly(order.getId());
+    }
+
+    @Test
+    void aRejectedTransitionRecordsNothing() {
+        var order = service.createOrder(new CreateOrderCommand(TENANT, activeSession(TENANT).getId()));
+        int before = timeline.transitions.size();
+
+        assertThatThrownBy(() -> service.transitionOrderStatus(
+                new TransitionOrderCommand(TENANT, order.getId(), OrderStatus.COMPLETED)))
+                .isInstanceOf(RuntimeException.class);
+
+        assertThat(timeline.transitions).hasSize(before);
+        assertThat(timeline.finished).isEmpty();
     }
 
     // ---- transitionOrderStatus --------------------------------------------------------------

@@ -65,6 +65,9 @@ readybell:
       - {name: subscribe-ip, method: POST, path: "/api/sessions/*/subscriptions", limit: 60, window: 1m}
       - {name: track, method: GET, path: "/api/sessions/*/track", key-by: session, limit: 30, window: 1m}
       - {name: track-ip, method: GET, path: "/api/sessions/*/track", limit: 600, window: 1m}
+      # What a customer may do with their own data: a few times a minute is plenty for a person
+      - {name: customer-data, path: "/api/sessions/*/data", key-by: session, limit: 6, window: 1m}
+      - {name: customer-data-ip, path: "/api/sessions/*/data", limit: 60, window: 1m}
       - {name: customer-poll, method: GET, path: "/api/sessions/*/orders/poll", key-by: session, limit: 60, window: 1m}
       - {name: customer-poll-ip, method: GET, path: "/api/sessions/*/orders/poll", limit: 1200, window: 1m}
       - {name: customer-stream, method: GET, path: "/api/sessions/*/orders/stream", key-by: session, limit: 10, window: 1m}

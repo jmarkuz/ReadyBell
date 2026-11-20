@@ -6,7 +6,9 @@ import Track from './Track';
 import * as trackApi from '@/utils/trackApi';
 import * as push from '@/utils/push';
 
-vi.mock('@/utils/trackApi', async (orig) => ({ ...(await orig<typeof trackApi>()), fetchTrack: vi.fn() }));
+vi.mock('@/utils/trackApi', async (orig) => ({
+  ...(await orig<typeof trackApi>()), fetchTrack: vi.fn(), downloadMyData: vi.fn(), eraseMyData: vi.fn(),
+}));
 vi.mock('@/utils/push', () => ({
   pushSupport: vi.fn(() => 'supported'),
   registerServiceWorker: vi.fn(),
@@ -80,5 +82,59 @@ describe('Track page', () => {
     renderPage();
     expect(await screen.findByText(/Add to Home Screen/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Notify me' })).not.toBeInTheDocument();
+  });
+
+  describe('your data', () => {
+    const load = async () => {
+      vi.mocked(trackApi.fetchTrack).mockResolvedValue({ restaurantName: 'Café Aurora', sessionActive: true, orders: [order('IN_PROGRESS')] });
+      renderPage();
+      await screen.findByText('#101');
+    };
+
+    it('erases on confirmation, forgets the local notification flag and says so', async () => {
+      localStorage.setItem('readybell-notify-s-1', '1');
+      vi.mocked(trackApi.eraseMyData).mockResolvedValue({ subscriptions: 1, ordersAnonymized: 0, ordersKeptUntilFinished: 1 });
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      await load();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Delete my data' }));
+
+      expect(trackApi.eraseMyData).toHaveBeenCalledWith('s-1');
+      expect(await screen.findByText(/your name is removed/i)).toBeInTheDocument();
+      expect(localStorage.getItem('readybell-notify-s-1')).toBeNull();
+    });
+
+    it('does nothing when the confirmation is declined', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      await load();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Delete my data' }));
+
+      expect(trackApi.eraseMyData).not.toHaveBeenCalled();
+    });
+
+    it('shows an error when erasing fails', async () => {
+      vi.mocked(trackApi.eraseMyData).mockRejectedValue(new Error('boom'));
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      await load();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Delete my data' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/something went wrong/i);
+    });
+
+    it('downloads the data as a file', async () => {
+      vi.mocked(trackApi.downloadMyData).mockResolvedValue(new Blob(['{}'], { type: 'application/json' }));
+      const createUrl = vi.fn(() => 'blob:x');
+      Object.assign(URL, { createObjectURL: createUrl, revokeObjectURL: vi.fn() });
+      const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+      await load();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Download my data' }));
+
+      await waitFor(() => expect(click).toHaveBeenCalled());
+      expect(trackApi.downloadMyData).toHaveBeenCalledWith('s-1');
+      expect(createUrl).toHaveBeenCalled();
+    });
   });
 });

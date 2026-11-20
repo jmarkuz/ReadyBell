@@ -88,12 +88,13 @@ public class ApplicationConfig {
             CustomerSessionRepository sessionRepository,
             OrderRepository orderRepository,
             org.readybell.ordering.domain.OrderNumberGenerator orderNumberGenerator,
+            org.readybell.ordering.domain.OrderTimelineRepository orderTimeline,
             DomainEventPublisher eventPublisher,
             Clock clock,
             org.springframework.transaction.PlatformTransactionManager transactionManager) {
         // One transaction per use case: the order and its outbox events commit together
         return new org.readybell.platform.outbox.TransactionalManageOrderUseCase(
-                new ManageOrderService(sessionRepository, orderRepository, orderNumberGenerator, eventPublisher, clock),
+                new ManageOrderService(sessionRepository, orderRepository, orderNumberGenerator, orderTimeline, eventPublisher, clock),
                 new org.springframework.transaction.support.TransactionTemplate(transactionManager));
     }
 

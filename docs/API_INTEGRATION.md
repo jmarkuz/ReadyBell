@@ -18,6 +18,10 @@ Client code: `dashboard-ui/src/utils/api.ts` (staff API, Bearer token) and `dash
 | GET | `/api/sessions/{id}/orders/stream` | SSE, event `order-status-updated` |
 | POST | `/api/sessions/{id}/subscriptions` | `{endpointUrl, p256dhKey, authKey}` Web Push subscription. The server calls `endpointUrl`, so it must be `https`, on the default port, without credentials, and a host of a known push service (FCM, Mozilla, Apple, Windows WNS; more via `readybell.push.extra-allowed-hosts`); anything else is a 400. Lengths: endpoint ≤ 2048, `p256dhKey` ≤ 200, `authKey` ≤ 100. At most 5 devices per session (`429`, `too-many-subscriptions`); re-registering a known device only refreshes its keys |
 | DELETE | `/api/sessions/{id}/subscriptions/{subscriptionId}` | revoke |
+| GET | `/api/sessions/{id}/data` | the customer's own data as a downloadable JSON document: orders of this link (number, status, customer name, items, times, `anonymized`) and push subscriptions (push service host, time and notice version of the consent; never the device address or keys). 404 for an unknown link; 6 per minute per session |
+| DELETE | `/api/sessions/{id}/data` | erase: push subscriptions deleted, the customer name of every order of the link removed, finished orders anonymized at once (name, items, link to the session; the fact row stays); an order still being prepared keeps its items for the kitchen and is anonymized by the retention run when finished. Answer `{subscriptions, ordersAnonymized, ordersKeptUntilFinished}`. Logged in `erasure_log` under a keyed hash |
+| POST | `/api/platform/erasures/replay` | platform operator: after restoring a backup, repeat the erasures recorded in `erasure_log` (every session of the restored database is hashed and matched); answer `{sessionsErasedAgain}` |
+| POST | `/api/platform/retention/run` | platform operator: run the retention tasks now; answer rows changed per task (rows that would change in a dry run) |
 | GET | `/api/push/config` | `{enabled, publicKey}`: the VAPID public key the browser subscribes with |
 | GET | `/actuator/health` | probes (`/liveness`, `/readiness`) |
 

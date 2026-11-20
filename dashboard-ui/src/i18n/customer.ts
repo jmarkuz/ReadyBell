@@ -26,6 +26,13 @@ const dictionary = {
     readyBanner: 'Your order is ready for pickup!',
     live: 'Live',
     offline: 'Reconnecting…',
+    dataTitle: 'Your data',
+    dataHint: 'We keep your name and items only for a short time after pick-up, then remove them.',
+    dataDownload: 'Download my data',
+    dataErase: 'Delete my data',
+    dataEraseConfirm: 'Delete your notification subscription and your name from your orders? This cannot be undone.',
+    dataErased: 'Done. Your notifications are off and your name is removed.',
+    dataError: 'Something went wrong. Please try again.',
   },
   uk: {
     loading: 'Завантажуємо ваше замовлення…',
@@ -53,6 +60,13 @@ const dictionary = {
     readyBanner: 'Ваше замовлення готове до видачі!',
     live: 'На зв’язку',
     offline: 'Відновлюємо зв’язок…',
+    dataTitle: 'Ваші дані',
+    dataHint: 'Ми зберігаємо ваше ім’я й позиції лише недовго після видачі, потім видаляємо.',
+    dataDownload: 'Завантажити мої дані',
+    dataErase: 'Видалити мої дані',
+    dataEraseConfirm: 'Видалити підписку на сповіщення й ваше ім’я із замовлень? Це неможливо скасувати.',
+    dataErased: 'Готово. Сповіщення вимкнено, ваше ім’я видалено.',
+    dataError: 'Щось пішло не так. Спробуйте ще раз.',
   },
 };
 

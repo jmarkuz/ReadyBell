@@ -3,6 +3,7 @@ package org.readybell.ordering.application;
 import org.readybell.ordering.domain.Order;
 import org.readybell.ordering.domain.OrderNumberGenerator;
 import org.readybell.ordering.domain.OrderRepository;
+import org.readybell.ordering.domain.OrderTimelineRepository;
 import org.readybell.session.domain.CustomerSessionRepository;
 import org.readybell.shared.domain.DomainEventPublisher;
 
@@ -30,6 +31,7 @@ public class ManageOrderService implements ManageOrderUseCase {
     private final CustomerSessionRepository sessionRepository;
     private final OrderRepository orderRepository;
     private final OrderNumberGenerator orderNumbers;
+    private final OrderTimelineRepository timeline;
     private final DomainEventPublisher eventPublisher;
     private final Clock clock;
 
@@ -38,6 +40,7 @@ public class ManageOrderService implements ManageOrderUseCase {
      *                          customer session
      * @param orderRepository   repository port for persisting the new order
      * @param orderNumbers      port allocating the restaurant's next sequential order number
+     * @param timeline          port recording the order's status history and, at the end, its fact row
      * @param eventPublisher    outbound port for publishing domain events
      * @param clock             clock used to timestamp the order and its events;
      *                          injectable for deterministic testing
@@ -45,6 +48,7 @@ public class ManageOrderService implements ManageOrderUseCase {
     public ManageOrderService(CustomerSessionRepository sessionRepository,
                               OrderRepository orderRepository,
                               OrderNumberGenerator orderNumbers,
+                              OrderTimelineRepository timeline,
                               DomainEventPublisher eventPublisher,
                               Clock clock) {
         this.sessionRepository = Objects.requireNonNull(sessionRepository,
@@ -53,6 +57,8 @@ public class ManageOrderService implements ManageOrderUseCase {
                 "orderRepository must not be null");
         this.orderNumbers      = Objects.requireNonNull(orderNumbers,
                 "orderNumbers must not be null");
+        this.timeline          = Objects.requireNonNull(timeline,
+                "timeline must not be null");
         this.eventPublisher    = Objects.requireNonNull(eventPublisher,
                 "eventPublisher must not be null");
         this.clock             = Objects.requireNonNull(clock,
@@ -104,6 +110,7 @@ public class ManageOrderService implements ManageOrderUseCase {
 
         // Step 5 — persist
         orderRepository.save(order);
+        timeline.recordTransition(order, null, order.getCreatedAt());
 
         // Step 6 — publish pending domain events (Req 4.3)
         eventPublisher.publishAll(order.getPendingEvents());
@@ -152,10 +159,16 @@ public class ManageOrderService implements ManageOrderUseCase {
                 .orElseThrow(() -> new OrderNotFoundException(command.tenantId(), command.orderId()));
 
         // Step 2 — apply transition; domain enforces invariants (Req 5.1–5.7)
+        var from = order.getStatus();
         order.transitionTo(command.targetStatus(), clock);
 
-        // Step 3 — persist under optimistic locking (Req 5.8)
+        // Step 3 — persist under optimistic locking (Req 5.8), then record the change and, when it ends, the fact row
         orderRepository.save(order);
+        var at = clock.instant();
+        timeline.recordTransition(order, from, at);
+        if (order.getStatus().isTerminal()) {
+            timeline.recordFinished(order, at);
+        }
 
         // Step 4 — publish pending events (Req 5.5, 5.6)
         eventPublisher.publishAll(order.getPendingEvents());

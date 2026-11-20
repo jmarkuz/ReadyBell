@@ -49,6 +49,16 @@ Before the first pilot restaurant, work through [PILOT_CHECKLIST.md](PILOT_CHECK
   example `READYBELL_PUSH_DEADLINE`): `readybell.push.retry-delays-ms` (`1000,5000,30000,120000`; empty = no retries),
   `.deadline` (`10m`), `.send-timeout` (`5s`, per request), `.workers` (`8`), `.batch-size` (`20`), `.lease` (`2m`),
   `.poll-interval` (`1s`). Several replicas can run it: each notification is leased to one.
+- **Data retention**: every night at 02:30 (`readybell.retention.cron`) personal data older than the retention period is
+  removed: a finished order loses its customer name, item names and link to its session after `order-days` (default 30,
+  allowed 7-365; the customer's tracking link stops working), notification texts after `notification-days` (30), ended
+  sessions that no order refers to are deleted after `session-days` (30). What analytics needs (timings, outcome, size)
+  stays in `order_fact` and `order_status_history`, which hold nothing personal. Properties: `readybell.retention.enabled`
+  (`true`), `.dry-run` (`false`: only report), `.batch-size` (`500`), `.cron`. Environment variables follow Spring's naming,
+  for example `READYBELL_RETENTION_ORDER_DAYS`. Every task run is a row in `retention_run`; the alert `RetentionNotRunning`
+  fires when none succeeded for two days. **Backups keep what the database has already forgotten for their whole life
+  (14 days by default); after a restore, run `select * from erasure_log` and repeat the erasures before opening the
+  service** (see docs/privacy/RETENTION_AND_BACKUPS.md).
 - **Housekeeping**: hourly, sessions older than `readybell.session.ttl` (24h) with no open orders are ended and
   their push subscriptions deleted. Orders are kept.
 - **Logs**: unexpected errors are logged with a stack trace; clients only see a generic 500.

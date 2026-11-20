@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Bell, BellRing, CheckCircle2, Clock } from 'lucide-react';
 import { customerStrings } from '@/i18n/customer';
-import { fetchTrack, UnknownSessionError, type TrackedOrder, type TrackResult } from '@/utils/trackApi';
+import { downloadMyData, eraseMyData, fetchTrack, UnknownSessionError, type TrackedOrder, type TrackResult } from '@/utils/trackApi';
 import { pushSupport, registerServiceWorker, subscribeToPush } from '@/utils/push';
 import { CustomerShell as Shell } from '@/components/CustomerShell';
 import { displayFont } from '@/components/customerStyles';
@@ -10,6 +10,7 @@ import { displayFont } from '@/components/customerStyles';
 const POLL_MS = 10_000;
 const STEPS: TrackedOrder['status'][] = ['CREATED', 'IN_PROGRESS', 'READY'];
 type NotifyState = 'idle' | 'busy' | 'on' | 'denied' | 'error' | 'unavailable';
+type DataState = 'idle' | 'busy' | 'erased' | 'error';
 
 function notifiedKey(sessionId: string) {
   return `readybell-notify-${sessionId}`;
@@ -26,6 +27,7 @@ export default function Track() {
   const [invalid, setInvalid] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [live, setLive] = useState(false);
+  const [dataState, setDataState] = useState<DataState>('idle');
   const [notify, setNotify] = useState<NotifyState>(() => {
     try {
       return localStorage.getItem(notifiedKey(sessionId)) ? 'on' : 'idle';
@@ -105,6 +107,35 @@ export default function Track() {
     );
   }
 
+  const downloadData = async () => {
+    setDataState('busy');
+    try {
+      const blob = await downloadMyData(sessionId);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'my-readybell-data.json';
+      link.click();
+      URL.revokeObjectURL(url);
+      setDataState('idle');
+    } catch {
+      setDataState('error');
+    }
+  };
+
+  const eraseData = async () => {
+    if (!window.confirm(t.dataEraseConfirm)) return;
+    setDataState('busy');
+    try {
+      await eraseMyData(sessionId);
+      try { localStorage.removeItem(notifiedKey(sessionId)); } catch { /* storage may be blocked */ }
+      setNotify('idle');
+      setDataState('erased');
+    } catch {
+      setDataState('error');
+    }
+  };
+
   const anyReady = data?.orders.some((o) => o.status === 'READY') ?? false;
   const allDone = !!data && data.orders.length > 0 && data.orders.every((o) => o.status === 'COMPLETED' || o.status === 'CANCELLED');
   const pushUsable = support === 'supported' || support === 'ios-needs-install';
@@ -160,6 +191,19 @@ export default function Track() {
       )}
       {data && !anyReady && !allDone && support === 'unsupported' && (
         <p className="mt-6 text-center text-sm text-stone-500">{t.notifyUnsupported}</p>
+      )}
+
+      {data && (
+        <section className="mt-8 text-center text-sm text-stone-500" aria-label={t.dataTitle}>
+          <h2 className="font-medium text-stone-600">{t.dataTitle}</h2>
+          <p className="mt-1">{t.dataHint}</p>
+          <div className="mt-2 flex justify-center gap-4">
+            <button type="button" onClick={downloadData} disabled={dataState === 'busy'} className="underline disabled:opacity-60">{t.dataDownload}</button>
+            <button type="button" onClick={eraseData} disabled={dataState === 'busy'} className="underline disabled:opacity-60">{t.dataErase}</button>
+          </div>
+          {dataState === 'erased' && <p className="mt-2 text-stone-700" role="status">{t.dataErased}</p>}
+          {dataState === 'error' && <p className="mt-2 text-red-700" role="alert">{t.dataError}</p>}
+        </section>
       )}
     </Shell>
   );

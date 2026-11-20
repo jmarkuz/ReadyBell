@@ -224,6 +224,7 @@ Notifications: the `notification` table as in 3.4 (it has `tenant_id`). Complain
 - **Delivery time is not recorded by the system**; measure it by hand (3.1).
 - **Sessions expire**: hourly housekeeping ends sessions older than 24 h with no open orders and deletes their push subscriptions.
 - **Push TTL is 1 hour**: a phone that stays offline longer never gets the "ready" ping. Our own retries stop earlier: a push the push service could not take within 10 minutes of READY is dropped (`readybell.push.deadline`).
+- **Personal data is removed automatically**: a finished order loses the customer name, item names and the link to its session after 30 days (configurable 7-365), the customer can erase it earlier on the order page, and anonymous timings stay. The privacy notice, the processing agreement and the consent text are drafts in [privacy/](privacy/) that a lawyer must finish **before a pilot with real customers**.
 - **Staff tokens live in browser `localStorage`** (BACKLOG S3); use staff-only devices.
 - The staff panel is English only (BACKLOG Q2); the customer page has English and Ukrainian.
 - This document was written from the code and docs, not from a pilot run; nothing here has been verified on real devices or a real host.
