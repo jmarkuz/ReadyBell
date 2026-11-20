@@ -5,6 +5,7 @@ import org.readybell.shared.domain.TenantId;
 import org.readybell.subscription.domain.DeviceSubscriptionId;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -21,6 +22,10 @@ import java.util.UUID;
  *           SENT ──▶ FAILED
  * </pre>
  *
+ * <p>A PENDING notification is a delivery task: it is due at {@link #nextAttemptAt()}, each attempt that fails
+ * transiently moves that time forward ({@link #scheduleRetry}), and it is given up on after {@link #expiresAt()}.
+ * Nothing waits in a thread between attempts.
+ *
  * <p>State changes are recorded as domain events via {@link #pendingEvents()} so that the
  * application layer can publish them through the {@code DomainEventPublisher} port after the
  * transaction commits.
@@ -36,6 +41,18 @@ public class Notification {
     private final UUID orderId;
 
     private final List<DomainEvent> pendingEvents = new ArrayList<>();
+
+    /** Title and click target of the push; the body is {@link #payload}. Null for notifications stored before retries existed. */
+    private String title;
+    private String url;
+    /** When the order became READY (latency metric); may be null. */
+    private Instant readyAt;
+    private int attempts;
+    /** When the next attempt is due; null once the notification is no longer waiting for one. */
+    private Instant nextAttemptAt;
+    /** After this instant a delivery is pointless ("ready" a quarter of an hour late is noise); null means no deadline. */
+    private Instant expiresAt;
+    private String lastError;
 
     private Notification(NotificationId id,
                          TenantId tenantId,
@@ -78,6 +95,47 @@ public class Notification {
     }
 
     /**
+     * Composes a delivery task for a push that is due at once: it is attempted as soon as a worker picks it up, retried
+     * with backoff if the push service is unavailable, and abandoned after {@code expiresAt}.
+     */
+    public static Notification composeForDelivery(TenantId tenantId, DeviceSubscriptionId subscriptionId,
+                                                  NotificationPayload message, UUID orderId,
+                                                  Instant readyAt, Instant now, Instant expiresAt) {
+        Objects.requireNonNull(message, "message must not be null");
+        Objects.requireNonNull(now, "now must not be null");
+        Notification n = compose(tenantId, subscriptionId, message.body(), orderId);
+        n.title = message.title();
+        n.url = message.url();
+        n.readyAt = readyAt;
+        n.nextAttemptAt = now;
+        n.expiresAt = expiresAt;
+        return n;
+    }
+
+    /** The push to send: the stored title and click target with the stored body. */
+    public NotificationPayload toMessage() {
+        return new NotificationPayload(title == null || title.isBlank() ? "ReadyBell" : title, payload, url);
+    }
+
+    /** Whether a worker should attempt this notification now. */
+    public boolean isDue(Instant now) {
+        return status == NotificationStatus.PENDING && nextAttemptAt != null && !nextAttemptAt.isAfter(now);
+    }
+
+    /** Whether the deadline has passed. */
+    public boolean isExpired(Instant now) {
+        return expiresAt != null && now.isAfter(expiresAt);
+    }
+
+    /** The attempt just made failed transiently: stay PENDING and try again at {@code at}. */
+    public void scheduleRetry(Instant at, String error) {
+        requirePending("schedule a retry");
+        attempts++;
+        nextAttemptAt = Objects.requireNonNull(at, "at must not be null");
+        lastError = error;
+    }
+
+    /**
      * Transitions from {@link NotificationStatus#PENDING} to {@link NotificationStatus#SENT}
      * and records a {@link NotificationSent} domain event (Req 6.4).
      *
@@ -91,6 +149,9 @@ public class Notification {
                     "Cannot mark SENT: current status is " + status + " (expected PENDING)");
         }
         status = NotificationStatus.SENT;
+        attempts++;
+        nextAttemptAt = null;
+        lastError = null;
         pendingEvents.add(new NotificationSent(UUID.randomUUID(), tenantId, id, clock.instant()));
     }
 
@@ -124,6 +185,19 @@ public class Notification {
                     "Cannot mark FAILED: notification is already DELIVERED");
         }
         status = NotificationStatus.FAILED;
+        nextAttemptAt = null;
+    }
+
+    /** As {@link #markFailed()}, recording why (for the operator; never shown to the customer). */
+    public void markFailed(String reason) {
+        markFailed();
+        lastError = reason;
+    }
+
+    private void requirePending(String what) {
+        if (status != NotificationStatus.PENDING) {
+            throw new IllegalStateException("Cannot " + what + ": current status is " + status + " (expected PENDING)");
+        }
     }
 
     /**
@@ -188,5 +262,35 @@ public class Notification {
     /** The order that caused this notification, or null when unknown. */
     public UUID orderId() {
         return orderId;
+    }
+
+    public String title() { return title; }
+
+    public String url() { return url; }
+
+    public Instant readyAt() { return readyAt; }
+
+    public int attempts() { return attempts; }
+
+    public Instant nextAttemptAt() { return nextAttemptAt; }
+
+    public Instant expiresAt() { return expiresAt; }
+
+    public String lastError() { return lastError; }
+
+    /** Rebuilds a notification including its delivery state (persistence adapter only). */
+    public static Notification reconstitute(NotificationId id, TenantId tenantId, DeviceSubscriptionId subscriptionId,
+                                            NotificationStatus status, String payload, UUID orderId,
+                                            String title, String url, Instant readyAt, int attempts,
+                                            Instant nextAttemptAt, Instant expiresAt, String lastError) {
+        Notification n = new Notification(id, tenantId, subscriptionId, status, payload, orderId);
+        n.title = title;
+        n.url = url;
+        n.readyAt = readyAt;
+        n.attempts = attempts;
+        n.nextAttemptAt = nextAttemptAt;
+        n.expiresAt = expiresAt;
+        n.lastError = lastError;
+        return n;
     }
 }

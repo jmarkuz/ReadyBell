@@ -1,6 +1,8 @@
 package org.readybell.platform;
 
 import org.readybell.notification.application.OrderReadyHandler;
+import org.readybell.notification.application.PushDeliveryService;
+import org.readybell.notification.domain.PushRetryPolicy;
 import org.readybell.notification.domain.NotificationRepository;
 import org.readybell.notification.domain.NotificationSender;
 import org.readybell.ordering.application.ManageOrderService;
@@ -160,27 +162,55 @@ public class ApplicationConfig {
      * @param subscriptionUseCase    the {@link ManageSubscriptionUseCase} bean defined above
      * @return the wired handler
      */
+    /**
+     * Retry pauses after a transient push failure; empty means no retries (tests). The n-th failed attempt is followed
+     * by the n-th pause, as a later {@code next_attempt_at} rather than a sleeping thread.
+     */
     @Bean
-    public OrderReadyHandler orderReadyHandler(
-            DeviceSubscriptionRepository subscriptionRepository,
+    public PushRetryPolicy pushRetryPolicy(
+            @Value("${readybell.push.retry-delays-ms:1000,5000,30000,120000}") List<Long> retryDelaysMs) {
+        return new PushRetryPolicy(retryDelaysMs.stream().map(Duration::ofMillis).toList());
+    }
+
+    /** Makes one delivery attempt for a due notification and records the outcome (see its Javadoc). */
+    @Bean
+    public PushDeliveryService pushDeliveryService(
             NotificationRepository notificationRepository,
+            DeviceSubscriptionRepository subscriptionRepository,
             NotificationSender notificationSender,
             org.readybell.platform.metrics.PushMetrics pushMetrics,
             DomainEventPublisher eventPublisher,
             ManageSubscriptionUseCase subscriptionUseCase,
-            RestaurantRepository restaurantRepository,
-            OrderRepository orderRepository,
-            @Value("${readybell.push.retry-delays-ms:500,2000,5000}")
-            List<Long> retryDelaysMs) {
-        return new OrderReadyHandler(
-                subscriptionRepository,
+            PushRetryPolicy retryPolicy,
+            Clock clock) {
+        return new PushDeliveryService(
                 notificationRepository,
+                subscriptionRepository,
                 new org.readybell.platform.metrics.MeteredNotificationSender(notificationSender, pushMetrics),
                 eventPublisher,
                 subscriptionUseCase,
+                retryPolicy,
+                clock);
+    }
+
+    /** Queues a push per device when an order becomes READY and wakes the delivery worker. */
+    @Bean
+    public OrderReadyHandler orderReadyHandler(
+            DeviceSubscriptionRepository subscriptionRepository,
+            NotificationRepository notificationRepository,
+            RestaurantRepository restaurantRepository,
+            OrderRepository orderRepository,
+            org.readybell.notification.application.DeliveryTrigger deliveryTrigger,
+            @Value("${readybell.push.deadline:10m}") Duration deadline,
+            Clock clock) {
+        return new OrderReadyHandler(
+                subscriptionRepository,
+                notificationRepository,
                 restaurantRepository,
                 orderRepository,
-                retryDelaysMs.stream().map(Duration::ofMillis).toList());
+                deliveryTrigger,
+                deadline,
+                clock);
     }
 
     // -------------------------------------------------------------------------

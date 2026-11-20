@@ -36,4 +36,5 @@ readybell:
         roles: [PLATFORM_ADMIN]
   push:
     async: false          # deliver pushes inline so tests can assert on the result
-    retry-delays-ms: ""   # no retries/sleeps in tests
+    retry-delays-ms: ""   # no retries in tests
+    scheduled: false      # contexts share one database: only a test that wants the schedule turns it on

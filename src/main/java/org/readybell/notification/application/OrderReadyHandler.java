@@ -3,110 +3,81 @@ package org.readybell.notification.application;
 import org.readybell.notification.domain.Notification;
 import org.readybell.notification.domain.NotificationPayload;
 import org.readybell.notification.domain.NotificationRepository;
-import org.readybell.notification.domain.NotificationSender;
-import org.readybell.notification.domain.SendResult;
 import org.readybell.ordering.domain.OrderReady;
 import org.readybell.ordering.domain.OrderRepository;
-import org.readybell.shared.domain.DomainEventPublisher;
-import org.readybell.subscription.application.ManageSubscriptionUseCase;
 import org.readybell.subscription.domain.DeviceSubscription;
 import org.readybell.subscription.domain.DeviceSubscriptionRepository;
 
 import java.time.Clock;
 import org.readybell.restaurant.domain.RestaurantRepository;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * Application-layer handler for the {@link OrderReady} domain event.
  *
- * <p>Orchestrates the order-ready notification flow (Req 6.1–6.8, 3.6):
+ * <p>It does not send anything itself. For every device subscribed to the session it queues a delivery task (a PENDING
+ * {@link Notification} due at once, with a deadline) and wakes the delivery worker; {@link PushDeliveryService} makes the
+ * attempts, so a slow or failing push service holds up nobody (Req 6.1–6.8, 3.6):
  * <ol>
- *   <li>Query {@link DeviceSubscriptionRepository} for all subscriptions associated with
- *       the event's {@code sessionId} whose {@code tenantId} matches the event's
- *       {@code tenantId} (Req 6.1).</li>
- *   <li>For each subscription, compose a {@link Notification} and send it via
- *       {@link NotificationSender} (Req 6.2).</li>
- *   <li>On {@link SendResult#ACCEPTED}: mark the notification SENT, persist, publish
- *       {@code NotificationSent} (Req 6.4).</li>
- *   <li>On {@link SendResult#REJECTED}: mark FAILED, persist, record failure, and
- *       continue with the next subscription (Req 6.7, 6.8).</li>
- *   <li>On {@link SendResult#ENDPOINT_EXPIRED}: delete the subscription via
- *       {@link ManageSubscriptionUseCase#deleteExpiredSubscription}, mark FAILED,
- *       persist, and continue (Req 3.6, 6.7).</li>
- *   <li>If no subscriptions exist, record that no notification was delivered and return
- *       without error (Req 6.6).</li>
+ *   <li>Query {@link DeviceSubscriptionRepository} for the subscriptions of the event's session and tenant (Req 6.1).</li>
+ *   <li>For each, queue a notification, unless this order already has one waiting or accepted for that device (a replayed
+ *       event must not push twice).</li>
+ *   <li>If there are no subscriptions, record that nothing was delivered and return without error (Req 6.6).</li>
  * </ol>
- *
- * <p>Send calls are sequential for simplicity; concurrent dispatch is a later NFR
- * concern. No Spring annotations are used — wiring happens in the composition root.
+ * No Spring annotations are used: wiring happens in the composition root.
  */
 public class OrderReadyHandler {
 
     private static final Logger LOG = Logger.getLogger(OrderReadyHandler.class.getName());
 
-    /** Notification payload used for every order-ready push (title + body). */
-
     private final DeviceSubscriptionRepository subscriptionRepository;
     private final NotificationRepository notificationRepository;
-    private final NotificationSender notificationSender;
-    private final DomainEventPublisher eventPublisher;
-    private final ManageSubscriptionUseCase subscriptionService;
     private final RestaurantRepository restaurantRepository;
     private final OrderRepository orderRepository;
-    private final List<Duration> retryDelays;
+    private final DeliveryTrigger deliveryTrigger;
+    private final Duration deadline;
+    private final Clock clock;
 
     /**
-     * Constructor — all dependencies are injected (no framework annotations).
-     *
-     * @param subscriptionRepository repository for querying device subscriptions
-     * @param notificationRepository repository for persisting notification records
-     * @param notificationSender     port for delivering Web Push messages
-     * @param eventPublisher         port for publishing domain events
-     * @param subscriptionService    use case for managing subscriptions (used to delete expired ones)
+     * @param deadline how long after the order became READY a push is still worth sending; later attempts are dropped
      */
     public OrderReadyHandler(DeviceSubscriptionRepository subscriptionRepository,
                              NotificationRepository notificationRepository,
-                             NotificationSender notificationSender,
-                             DomainEventPublisher eventPublisher,
-                             ManageSubscriptionUseCase subscriptionService,
                              RestaurantRepository restaurantRepository,
                              OrderRepository orderRepository,
-                             List<Duration> retryDelays) {
+                             DeliveryTrigger deliveryTrigger,
+                             Duration deadline,
+                             Clock clock) {
         this.subscriptionRepository = Objects.requireNonNull(subscriptionRepository,
                 "subscriptionRepository must not be null");
         this.notificationRepository = Objects.requireNonNull(notificationRepository,
                 "notificationRepository must not be null");
-        this.notificationSender = Objects.requireNonNull(notificationSender,
-                "notificationSender must not be null");
-        this.eventPublisher = Objects.requireNonNull(eventPublisher,
-                "eventPublisher must not be null");
-        this.subscriptionService = Objects.requireNonNull(subscriptionService,
-                "subscriptionService must not be null");
         this.restaurantRepository = Objects.requireNonNull(restaurantRepository,
                 "restaurantRepository must not be null");
         this.orderRepository = Objects.requireNonNull(orderRepository,
                 "orderRepository must not be null");
-        this.retryDelays = List.copyOf(retryDelays);
+        this.deliveryTrigger = Objects.requireNonNull(deliveryTrigger, "deliveryTrigger must not be null");
+        this.deadline = Objects.requireNonNull(deadline, "deadline must not be null");
+        this.clock = Objects.requireNonNull(clock, "clock must not be null");
     }
 
     /**
-     * Handles an {@link OrderReady} event by composing and dispatching push notifications
-     * to all matching device subscriptions.
+     * Queues the push of an {@link OrderReady} event for every device of the session and wakes the worker.
      *
      * @param event the order-ready event (must not be {@code null})
      */
     public void handle(OrderReady event) {
         Objects.requireNonNull(event, "event must not be null");
 
-        // Req 6.1 — query subscriptions for the session scoped to the event's tenant
+        // Req 6.1: subscriptions of the session, scoped to the event's tenant
         List<DeviceSubscription> subscriptions =
                 subscriptionRepository.findByTenantAndSession(event.tenantId(), event.sessionId());
 
-        // Req 6.6 — no subscriptions: log "none delivered" and return without error
+        // Req 6.6: no subscriptions, log "none delivered" and return without error
         if (subscriptions.isEmpty()) {
             LOG.info(() -> String.format(
                     "OrderReady [orderId=%s, session=%s, tenantId=%s]: no device subscriptions — no notification delivered.",
@@ -114,17 +85,25 @@ public class OrderReadyHandler {
             return;
         }
 
-        NotificationPayload payload = payloadFor(event);
+        NotificationPayload message = payloadFor(event);
+        // The deadline counts from the moment the order became READY, not from now: a replayed event is not fresher
+        Instant expiresAt = event.occurredAt().plus(deadline);
+        Instant now = clock.instant();
 
-        // Req 6.2 — for each subscription, compose and send
+        boolean queued = false;
         for (DeviceSubscription subscription : subscriptions) {
-            // Replayed event (relay retry after a crash): this device already got its push
-            if (notificationRepository.existsSent(event.tenantId(), event.orderId().value(), subscription.getId())) {
+            // Replayed event (relay retry after a crash): this device already has its push queued or sent
+            if (notificationRepository.existsLive(event.tenantId(), event.orderId().value(), subscription.getId())) {
                 LOG.info(() -> "OrderReady " + event.orderId() + ": push to subscription "
-                        + subscription.getId() + " already sent, skipping.");
+                        + subscription.getId() + " already queued or sent, skipping.");
                 continue;
             }
-            processSubscription(event, subscription, payload);
+            notificationRepository.save(Notification.composeForDelivery(event.tenantId(), subscription.getId(),
+                    message, event.orderId().value(), event.occurredAt(), now, expiresAt));
+            queued = true;
+        }
+        if (queued) {
+            deliveryTrigger.wake();
         }
     }
 
@@ -147,87 +126,8 @@ public class OrderReadyHandler {
                 "/track/" + event.sessionId().value());
     }
 
-    private SendResult sendWithRetry(DeviceSubscription subscription, NotificationPayload payload) {
-        SendResult result = notificationSender.send(subscription.getEndpoint(), payload);
-        for (Duration delay : retryDelays) {
-            if (result != SendResult.TRANSIENT_FAILURE) {
-                break;
-            }
-            try {
-                Thread.sleep(delay.toMillis());
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-            result = notificationSender.send(subscription.getEndpoint(), payload);
-        }
-        return result;
-    }
-
-    private void processSubscription(OrderReady event, DeviceSubscription subscription, NotificationPayload payload) {
-        // Compose a PENDING notification for this subscription (Req 6.2)
-        Notification notification = Notification.compose(
-                event.tenantId(),
-                subscription.getId(),
-                payload.body(),
-                event.orderId().value());
-        notificationRepository.save(notification);
-
-        SendResult result;
-        try {
-            result = sendWithRetry(subscription, payload);
-        } catch (Exception ex) {
-            // Treat unexpected sender exceptions as a failure — Req 6.7
-            LOG.log(Level.WARNING, "NotificationSender threw an unexpected exception for subscription "
-                    + subscription.getId() + "; recording failure.", ex);
-            notification.markFailed();
-            notificationRepository.save(notification);
-            return;
-        }
-
-        switch (result) {
-            case ACCEPTED -> handleAccepted(notification);
-            case REJECTED, TRANSIENT_FAILURE -> handleRejected(notification, subscription);
-            case ENDPOINT_EXPIRED -> handleExpired(notification, subscription);
-        }
-    }
-
-    /**
-     * ACCEPTED outcome: PENDING → SENT, publish {@code NotificationSent} (Req 6.4).
-     */
-    private void handleAccepted(Notification notification) {
-        notification.markSent(Clock.systemUTC());
-        notificationRepository.save(notification);
-        eventPublisher.publishAll(notification.pendingEvents());
-
-        LOG.fine(() -> "Notification " + notification.id() + " sent successfully.");
-    }
-
-    /**
-     * REJECTED outcome: record failure and continue (Req 6.7, 6.8).
-     */
     /** The session id is the customer's credential for the tracking page, so logs carry only a prefix of it. */
     private static String shortId(java.util.UUID id) {
         return id.toString().substring(0, 8) + "…";
-    }
-
-    private void handleRejected(Notification notification, DeviceSubscription subscription) {
-        LOG.warning(() -> String.format(
-                "Notification rejected for subscription %s; recording failure.",
-                subscription.getId()));
-        notification.markFailed();
-        notificationRepository.save(notification);
-    }
-
-    /**
-     * ENDPOINT_EXPIRED outcome: delete the subscription, record failure, continue (Req 3.6, 6.7).
-     */
-    private void handleExpired(Notification notification, DeviceSubscription subscription) {
-        LOG.warning(() -> String.format(
-                "Endpoint expired for subscription %s; deleting subscription.",
-                subscription.getId()));
-        notification.markFailed();
-        notificationRepository.save(notification);
-        subscriptionService.deleteExpiredSubscription(subscription.getId());
     }
 }

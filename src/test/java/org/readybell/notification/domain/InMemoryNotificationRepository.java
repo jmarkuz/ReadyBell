@@ -35,6 +35,31 @@ public class InMemoryNotificationRepository implements NotificationRepository {
     }
 
     @Override
+    public boolean existsLive(TenantId tenantId, java.util.UUID orderId, DeviceSubscriptionId subscriptionId) {
+        return store.values().stream().anyMatch(n -> n.tenantId().equals(tenantId)
+                && orderId.equals(n.orderId()) && n.subscriptionId().equals(subscriptionId)
+                && n.status() != NotificationStatus.FAILED);
+    }
+
+    /** Hands out the due PENDING notifications; the fake needs no lease because tests call it from one thread. */
+    @Override
+    public java.util.List<Notification> claimDue(java.time.Instant now, java.time.Duration lease, int limit) {
+        return store.values().stream().filter(n -> n.isDue(now))
+                .sorted(java.util.Comparator.comparing(Notification::nextAttemptAt))
+                .limit(limit).toList();
+    }
+
+    @Override
+    public long countPending() {
+        return store.values().stream().filter(n -> n.status() == NotificationStatus.PENDING).count();
+    }
+
+    /** All stored notifications, for assertions. */
+    public java.util.List<Notification> all() {
+        return java.util.List.copyOf(store.values());
+    }
+
+    @Override
     public Optional<Notification> findByTenantAndId(TenantId tenantId, NotificationId id) {
         return Optional.ofNullable(store.get(id)).filter(n -> n.tenantId().equals(tenantId));
     }

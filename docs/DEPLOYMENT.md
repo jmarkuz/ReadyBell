@@ -42,6 +42,13 @@ Before the first pilot restaurant, work through [PILOT_CHECKLIST.md](PILOT_CHECK
 - **Probes**: `/actuator/health/liveness` and `/actuator/health/readiness`.
 - **Metrics**: `/actuator/prometheus`, readable only by the platform operator (HTTP Basic works for scrapers).
   Business metrics, alert rules and a Prometheus setup: [MONITORING.md](MONITORING.md).
+- **Push delivery**: when an order becomes READY the pushes are queued (table `notification`, `PENDING`) and delivered by a
+  worker pool, so a push service that is slow or down holds up no other order. A transient failure (network error, 429, 5xx,
+  no answer within the timeout) is retried later with backoff 1 s, 5 s, 30 s, 2 min, and a push is dropped once it is older
+  than 10 minutes after READY ("ready" that late is noise). Properties (environment variables follow Spring's naming, for
+  example `READYBELL_PUSH_DEADLINE`): `readybell.push.retry-delays-ms` (`1000,5000,30000,120000`; empty = no retries),
+  `.deadline` (`10m`), `.send-timeout` (`5s`, per request), `.workers` (`8`), `.batch-size` (`20`), `.lease` (`2m`),
+  `.poll-interval` (`1s`). Several replicas can run it: each notification is leased to one.
 - **Housekeeping**: hourly, sessions older than `readybell.session.ttl` (24h) with no open orders are ended and
   their push subscriptions deleted. Orders are kept.
 - **Logs**: unexpected errors are logged with a stack trace; clients only see a generic 500.

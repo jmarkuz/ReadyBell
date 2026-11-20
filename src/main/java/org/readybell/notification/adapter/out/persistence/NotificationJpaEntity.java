@@ -51,6 +51,31 @@ public class NotificationJpaEntity extends TenantScopedEntity {
     @Column(name = "order_id", updatable = false)
     private UUID orderId;
 
+    @Column(name = "title", length = 255)
+    private String title;
+
+    @Column(name = "url", length = 512)
+    private String url;
+
+    @Column(name = "ready_at")
+    private Instant readyAt;
+
+    @Column(name = "attempts", nullable = false)
+    private int attempts;
+
+    @Column(name = "next_attempt_at")
+    private Instant nextAttemptAt;
+
+    @Column(name = "expires_at")
+    private Instant expiresAt;
+
+    /** Set by the worker's claim query only; a plain save clears it, which is what releases the lease. */
+    @Column(name = "locked_until")
+    private Instant lockedUntil;
+
+    @Column(name = "last_error", length = 255)
+    private String lastError;
+
     /** Required by JPA. */
     protected NotificationJpaEntity() {}
 
@@ -68,6 +93,14 @@ public class NotificationJpaEntity extends TenantScopedEntity {
         entity.payload        = notification.payload();
         entity.createdAt      = Instant.now();
         entity.orderId        = notification.orderId();
+        entity.title          = notification.title();
+        entity.url            = notification.url();
+        entity.readyAt        = notification.readyAt();
+        entity.attempts       = notification.attempts();
+        entity.nextAttemptAt  = notification.nextAttemptAt();
+        entity.expiresAt      = notification.expiresAt();
+        entity.lastError      = notification.lastError() == null ? null
+                : notification.lastError().substring(0, Math.min(255, notification.lastError().length()));
         return entity;
     }
 
@@ -79,7 +112,8 @@ public class NotificationJpaEntity extends TenantScopedEntity {
                 new DeviceSubscriptionId(subscriptionId),
                 status,
                 payload,
-                orderId);
+                orderId,
+                title, url, readyAt, attempts, nextAttemptAt, expiresAt, lastError);
     }
 
     // -------------------------------------------------------------------------
