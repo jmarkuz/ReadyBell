@@ -141,12 +141,12 @@ Browsers do not always revoke the endpoint at once and some push services keep a
 | What | Where | Notes |
 |---|---|---|
 | No subscribers | log `OrderReady [orderId=…, sessionId=…, tenantId=…]: no device subscriptions — no notification delivered.` | Customer never tapped **Notify me**. |
-| Duplicate suppressed | log `OrderReady <id>: push to subscription <id> already sent, skipping.` | Idempotency on outbox redelivery. |
-| Expired endpoint | WARNING `Endpoint expired for subscription <id>; deleting subscription.` | Subscription deleted. |
-| Rejected by push service | WARNING `Notification rejected for subscription <id>; recording failure.`, `Unexpected push service HTTP status: <n>` | 4xx other than 404/410 (typically bad VAPID keys). |
-| Transient failure | WARNING `Web Push delivery failed for endpoint …`, `Push service temporarily unavailable (HTTP <n>)` | I/O error or 5xx. |
+| Duplicate suppressed | log `OrderReady <id>: push to subscription <id> already queued or sent, skipping.` | Idempotency on outbox redelivery. |
+| Expired endpoint | WARNING `Notification <id> given up: endpoint expired.` | Subscription deleted. |
+| Rejected by push service | WARNING `Notification <id> given up: rejected by the push service.`, `Unexpected push service HTTP status: <n>` | 4xx other than 404/410 (typically bad VAPID keys). |
+| Transient failure | WARNING `Web Push delivery failed for endpoint …`, `Push service temporarily unavailable (HTTP <n>)`, `timed out after … ms`; INFO `Notification <id>: attempt <n> failed, retrying at <time>.` | I/O error, no answer in time, 429 or 5xx. The push stays `PENDING` with a later `next_attempt_at` and is retried; after the last retry or the 10-minute deadline it becomes `FAILED` (`last_error` says why). |
 | VAPID unusable | `VAPID credentials are not configured…` / `Failed to initialize VAPID Web Push service…` | Fix the keys. |
-| Outcome per push | table `notification`, columns `status` (`PENDING`, `SENT`, `DELIVERED`, `FAILED`), `created_at` | `select status, count(*) from notification where created_at > now() - interval '1 day' group by 1;` `SENT` means handed to the push service, not shown on the phone. |
+| Outcome per push | table `notification`, columns `status` (`PENDING`, `SENT`, `DELIVERED`, `FAILED`), `attempts`, `next_attempt_at`, `last_error`, `created_at` | `select status, count(*) from notification where created_at > now() - interval '1 day' group by 1;` `SENT` means handed to the push service, not shown on the phone. |
 | Stuck events | table `outbox_event` (`processed_at`, `failed_at`, `attempts`, `last_error`) | `select count(*) from outbox_event where processed_at is null and failed_at is null;` should stay near 0 (relay polls every 1 s and retries with backoff). |
 | Rate limiting | `/actuator/metrics/ratelimit.rejected` (tag `endpoint`) | Needs operator credentials. |
 | General | `/actuator/prometheus` (`http_server_requests_*`, JVM), HTTP Basic with the platform operator for scrapers | Business metrics (sessions, push results, READY → push latency) and alert rules are described in [MONITORING.md](MONITORING.md). |
@@ -223,7 +223,7 @@ Notifications: the `notification` table as in 3.4 (it has `tenant_id`). Complain
 - **No backups (BACKLOG P3).**
 - **Delivery time is not recorded by the system**; measure it by hand (3.1).
 - **Sessions expire**: hourly housekeeping ends sessions older than 24 h with no open orders and deletes their push subscriptions.
-- **Push TTL is 1 hour**: a phone that stays offline longer never gets the "ready" ping.
+- **Push TTL is 1 hour**: a phone that stays offline longer never gets the "ready" ping. Our own retries stop earlier: a push the push service could not take within 10 minutes of READY is dropped (`readybell.push.deadline`).
 - **Staff tokens live in browser `localStorage`** (BACKLOG S3); use staff-only devices.
 - The staff panel is English only (BACKLOG Q2); the customer page has English and Ukrainian.
 - This document was written from the code and docs, not from a pilot run; nothing here has been verified on real devices or a real host.

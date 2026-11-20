@@ -12,7 +12,8 @@ Tags are always low-cardinality enums. Tenant ids and session ids are never used
 | `readybell_sessions_started_total` | counter | Customer sessions started (QR scanned) |
 | `readybell_orders_created_total` | counter | Orders created |
 | `readybell_orders_transitions_total{status}` | counter | Status changes by the status entered (`CREATED`, `IN_PROGRESS`, `READY`, `COMPLETED`, `CANCELLED`) |
-| `readybell_push_attempts_total{result}` | counter | Web Push send attempts: `sent` (accepted by the push service), `failed` (rejected, transient error, exception), `expired` (404/410, subscription removed). Each retry is an attempt |
+| `readybell_push_attempts_total{result}` | counter | Web Push send attempts: `sent` (accepted by the push service), `failed` (rejected, transient error, exception), `expired` (404/410, subscription removed). Each retry is an attempt (retries are separate delivery attempts later in time, not sleeps) |
+| `readybell_push_pending` | gauge | Pushes waiting for a delivery attempt or a retry (queued, or scheduled after a transient failure). Stays near 0; a rising value means the push service is slow or down |
 | `readybell_push_ready_latency_seconds` | histogram | Time from the order becoming READY to the push service accepting a push (buckets 0.25, 0.5, 1, 2, 5, 10, 30 s) |
 | `readybell_sse_connections{audience}` | gauge | Open SSE connections on this node, `audience` = `staff` or `customer` (sum over instances for the total) |
 

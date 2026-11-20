@@ -20,31 +20,24 @@ import java.util.Objects;
 public class SpringOrderReadyEventListener {
 
     private final OrderReadyHandler orderReadyHandler;
-    private final org.readybell.platform.metrics.PushMetrics pushMetrics;
 
     /**
      * @param orderReadyHandler the application-layer handler for order-ready events
-     * @param pushMetrics       measures READY to push-handed-over latency
      */
-    public SpringOrderReadyEventListener(OrderReadyHandler orderReadyHandler,
-                                         org.readybell.platform.metrics.PushMetrics pushMetrics) {
+    public SpringOrderReadyEventListener(OrderReadyHandler orderReadyHandler) {
         this.orderReadyHandler = Objects.requireNonNull(
                 orderReadyHandler, "orderReadyHandler must not be null");
-        this.pushMetrics = Objects.requireNonNull(pushMetrics, "pushMetrics must not be null");
     }
 
     /**
-     * Receives an {@link OrderReady} domain event from Spring's in-process event bus
-     * and delegates processing to {@link OrderReadyHandler#handle(OrderReady)}.
+     * Called by the outbox relay on its own thread. The handler only queues the pushes and wakes the delivery worker, so
+     * marking an order READY never waits on push services; synchronous on purpose, so a failure to queue reaches the
+     * relay and the event is retried.
      *
      * @param event the order-ready event (must not be {@code null})
      */
-    /**
-     * Called by the outbox relay on its own thread, so marking an order READY never waits on push services;
-     * synchronous on purpose, so a failure reaches the relay and the event is retried.
-     */
     @EventListener
     public void onOrderReady(OrderReady event) {
-        pushMetrics.whileHandling(event.occurredAt(), () -> orderReadyHandler.handle(event));
+        orderReadyHandler.handle(event);
     }
 }

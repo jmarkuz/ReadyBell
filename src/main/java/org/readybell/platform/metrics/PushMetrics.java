@@ -16,8 +16,8 @@ import java.util.Map;
  * Meters of the Web Push path: attempts by result, and the time from an order becoming READY to the push
  * service accepting the message (the "push within 2 s" success criterion).
  *
- * <p>The order-ready handler runs synchronously on the caller's thread, so the READY instant is carried in a
- * {@link ThreadLocal} for the duration of {@link #whileHandling}; the sender decorator reads it.
+ * <p>The delivery worker makes each attempt on one of its pool threads, so the READY instant of the notification is
+ * carried in a {@link ThreadLocal} for the duration of {@link #whileHandling}; the sender decorator reads it.
  */
 @Component
 public class PushMetrics {
@@ -69,7 +69,7 @@ public class PushMetrics {
         errors.increment();
     }
 
-    /** Runs {@code work} (the handling of one OrderReady) with the READY instant available to the sender. */
+    /** Runs {@code work} (one delivery attempt) with the READY instant available to the sender. */
     public void whileHandling(Instant readyInstant, Runnable work) {
         readyAt.set(readyInstant);
         try {

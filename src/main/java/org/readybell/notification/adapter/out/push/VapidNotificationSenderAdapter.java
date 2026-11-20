@@ -16,7 +16,11 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.security.Security;
+import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * VAPID Web Push implementation of {@link NotificationSender}.
@@ -41,16 +45,26 @@ class VapidNotificationSenderAdapter implements NotificationSender {
 
     private static final Logger log = LoggerFactory.getLogger(VapidNotificationSenderAdapter.class);
 
+    /** Default limit for one push request: a push service that does not answer in this time counts as unavailable. */
+    static final Duration DEFAULT_SEND_TIMEOUT = Duration.ofSeconds(5);
+
     private final Optional<PushService> pushService;
     private final PushEndpointPolicy endpointPolicy;
+    private final Duration sendTimeout;
+
+    VapidNotificationSenderAdapter(String publicKey, String privateKey, String subject, PushEndpointPolicy endpointPolicy) {
+        this(publicKey, privateKey, subject, endpointPolicy, DEFAULT_SEND_TIMEOUT);
+    }
 
     @org.springframework.beans.factory.annotation.Autowired
     VapidNotificationSenderAdapter(
             @Value("${readybell.vapid.public-key}") String publicKey,
             @Value("${readybell.vapid.private-key}") String privateKey,
             @Value("${readybell.vapid.subject}") String subject,
-            PushEndpointPolicy endpointPolicy) {
+            PushEndpointPolicy endpointPolicy,
+            @Value("${readybell.push.send-timeout:5s}") Duration sendTimeout) {
         this.endpointPolicy = endpointPolicy;
+        this.sendTimeout = sendTimeout;
 
         // Skip initialization if using placeholder keys (development/testing without real VAPID credentials)
         if (isPlaceholder(publicKey) || isPlaceholder(privateKey)) {
@@ -68,8 +82,14 @@ class VapidNotificationSenderAdapter implements NotificationSender {
     }
 
     VapidNotificationSenderAdapter(Optional<PushService> pushService, PushEndpointPolicy endpointPolicy) {
+        this(pushService, endpointPolicy, DEFAULT_SEND_TIMEOUT);
+    }
+
+    VapidNotificationSenderAdapter(Optional<PushService> pushService, PushEndpointPolicy endpointPolicy,
+                                   Duration sendTimeout) {
         this.pushService = pushService;
         this.endpointPolicy = endpointPolicy;
+        this.sendTimeout = sendTimeout;
     }
 
     private static Optional<PushService> initializePushService(String publicKey, String privateKey, String subject) {
@@ -125,7 +145,18 @@ class VapidNotificationSenderAdapter implements NotificationSender {
                     .urgency(nl.martijndwars.webpush.Urgency.HIGH)
                     .build();
 
-            HttpResponse response = pushService.get().send(notification);
+            // The library's blocking send() waits as long as the connection lasts; ask for the response asynchronously and
+            // wait only for the timeout, so one stuck push service ties up a delivery worker for seconds, not minutes
+            Future<HttpResponse> pending = pushService.get().sendAsync(notification);
+            HttpResponse response;
+            try {
+                response = pending.get(sendTimeout.toMillis(), TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                pending.cancel(true);
+                log.warn("Web Push to endpoint host {} timed out after {} ms",
+                        PushEndpointPolicy.hostForLog(endpoint.endpointUrl()), sendTimeout.toMillis());
+                return SendResult.TRANSIENT_FAILURE;
+            }
             int statusCode = response.getStatusLine().getStatusCode();
 
             return mapStatusCode(statusCode);
@@ -133,6 +164,9 @@ class VapidNotificationSenderAdapter implements NotificationSender {
         } catch (Exception e) {
             // Any I/O, security, or encoding exception is treated as a transient
             // delivery failure so processing can continue for other subscriptions (Req 6.7)
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             log.warn("Web Push delivery failed for endpoint host {}: {}",
                     PushEndpointPolicy.hostForLog(endpoint.endpointUrl()), e.getMessage(), e);
             return SendResult.TRANSIENT_FAILURE;

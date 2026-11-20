@@ -18,4 +18,6 @@ public interface NotificationJpaRepository
     boolean existsByTenantIdAndOrderIdAndSubscriptionIdAndStatusIn(
             UUID tenantId, UUID orderId, UUID subscriptionId,
             java.util.Collection<org.readybell.notification.domain.NotificationStatus> statuses);
+
+    long countByStatus(org.readybell.notification.domain.NotificationStatus status);
 }

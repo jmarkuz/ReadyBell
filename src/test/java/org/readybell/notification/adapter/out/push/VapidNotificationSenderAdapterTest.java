@@ -23,6 +23,7 @@ import java.security.Security;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Base64;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -77,10 +78,25 @@ class VapidNotificationSenderAdapterTest {
     void mapsThePushServiceStatus(int status, SendResult expected) throws Exception {
         var service = mock(PushService.class);
         var response = responseWith(status);
-        when(service.send(any(Notification.class))).thenReturn(response);
+        when(service.sendAsync(any(Notification.class))).thenReturn(CompletableFuture.completedFuture(response));
 
         assertThat(new VapidNotificationSenderAdapter(Optional.of(service)).send(endpoint, PAYLOAD))
                 .isEqualTo(expected);
+    }
+
+    @Test
+    void aPushServiceThatDoesNotAnswerInTimeIsATransientFailureAndTheRequestIsCancelled() throws Exception {
+        var service = mock(PushService.class);
+        var never = new CompletableFuture<org.apache.http.HttpResponse>();      // the connection hangs
+        when(service.sendAsync(any(Notification.class))).thenReturn(never);
+        var adapter = new VapidNotificationSenderAdapter(Optional.of(service), PushEndpointPolicy.defaults(),
+                java.time.Duration.ofMillis(100));
+
+        long started = System.nanoTime();
+        assertThat(adapter.send(endpoint, PAYLOAD)).isEqualTo(SendResult.TRANSIENT_FAILURE);
+
+        assertThat(java.time.Duration.ofNanos(System.nanoTime() - started)).isLessThan(java.time.Duration.ofSeconds(3));
+        assertThat(never.isCancelled()).isTrue();
     }
 
     @Test
@@ -111,7 +127,7 @@ class VapidNotificationSenderAdapterTest {
     @Test
     void networkErrorIsATransientFailure() throws Exception {
         var service = mock(PushService.class);
-        when(service.send(any(Notification.class))).thenThrow(new java.io.IOException("connection reset"));
+        when(service.sendAsync(any(Notification.class))).thenThrow(new java.io.IOException("connection reset"));
 
         assertThat(new VapidNotificationSenderAdapter(Optional.of(service)).send(endpoint, PAYLOAD))
                 .isEqualTo(SendResult.TRANSIENT_FAILURE);
@@ -124,20 +140,20 @@ class VapidNotificationSenderAdapterTest {
 
         assertThat(new VapidNotificationSenderAdapter(Optional.of(service)).send(broken, PAYLOAD))
                 .isEqualTo(SendResult.TRANSIENT_FAILURE);
-        verify(service, never()).send(any(Notification.class));
+        verify(service, never()).sendAsync(any(Notification.class));
     }
 
     @Test
     void payloadIsEscapedJsonWithTheTrackingUrl() throws Exception {
         var service = mock(PushService.class);
         var created = responseWith(201);
-        when(service.send(any(Notification.class))).thenReturn(created);
+        when(service.sendAsync(any(Notification.class))).thenReturn(CompletableFuture.completedFuture(created));
         var tricky = new NotificationPayload("Joe's \"Diner\"", "line1\nline2\ttab \\ back", "/track/x");
 
         new VapidNotificationSenderAdapter(Optional.of(service)).send(endpoint, tricky);
 
         var captor = ArgumentCaptor.forClass(Notification.class);
-        verify(service).send(captor.capture());
+        verify(service).sendAsync(captor.capture());
         String json = new String(captor.getValue().getPayload(), StandardCharsets.UTF_8);
         assertThat(json).isEqualTo(
                 "{\"title\":\"Joe's \\\"Diner\\\"\",\"body\":\"line1\\nline2\\ttab \\\\ back\",\"url\":\"/track/x\"}");
@@ -148,13 +164,13 @@ class VapidNotificationSenderAdapterTest {
     void payloadWithoutUrlOmitsTheField() throws Exception {
         var service = mock(PushService.class);
         var created = responseWith(201);
-        when(service.send(any(Notification.class))).thenReturn(created);
+        when(service.sendAsync(any(Notification.class))).thenReturn(CompletableFuture.completedFuture(created));
 
         new VapidNotificationSenderAdapter(Optional.of(service))
                 .send(endpoint, new NotificationPayload("Title", "Body", null));
 
         var captor = ArgumentCaptor.forClass(Notification.class);
-        verify(service).send(captor.capture());
+        verify(service).sendAsync(captor.capture());
         assertThat(new String(captor.getValue().getPayload(), StandardCharsets.UTF_8))
                 .isEqualTo("{\"title\":\"Title\",\"body\":\"Body\"}");
     }

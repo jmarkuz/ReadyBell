@@ -4,6 +4,9 @@ import org.readybell.shared.domain.TenantId;
 
 import org.readybell.subscription.domain.DeviceSubscriptionId;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,6 +43,22 @@ public interface NotificationRepository {
      * (status SENT or DELIVERED). Used to make a replayed {@code OrderReady} event harmless.
      */
     boolean existsSent(TenantId tenantId, UUID orderId, DeviceSubscriptionId subscriptionId);
+
+    /**
+     * Whether a push for this order is already waiting for delivery or was accepted for this subscription (PENDING, SENT or
+     * DELIVERED). A replayed {@code OrderReady} event must not queue a second push.
+     */
+    boolean existsLive(TenantId tenantId, UUID orderId, DeviceSubscriptionId subscriptionId);
+
+    /**
+     * Hands the due PENDING notifications (oldest first, at most {@code limit}) to one worker: each is leased for
+     * {@code lease}, so concurrent workers, on this node or another, never get the same one. A worker that dies lets the
+     * lease expire and the notification is handed out again. Spans every tenant: the worker serves them all.
+     */
+    List<Notification> claimDue(Instant now, Duration lease, int limit);
+
+    /** PENDING notifications, due or not (a gauge for the operator). */
+    long countPending();
 
     Optional<Notification> findByTenantAndId(TenantId tenantId, NotificationId id);
 }

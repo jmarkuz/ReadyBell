@@ -65,9 +65,10 @@ beat and a regression test that keeps it.
 | T17 | New orders are inserted, not merged | M | Done | – | – | Creating an order took 10 statements: a `SELECT` (merge) and an `UPDATE version` right after the `INSERT` |
 | T18 | Batch-fetch order items, batch JDBC inserts | S | Done | T17 | – | A page of 12 orders took 14 statements (N+1 on `order_item`); items were inserted one by one |
 | T19 | Session housekeeping runs on one replica at a time | S | Done | – | R3 | Every replica ran the cleanup (idempotent, but redundant); PostgreSQL advisory lock, no new dependency |
+| T20 | Push delivery without sleeping threads | M | Done | T05 | – | Retries slept on the outbox relay thread (up to 7.5 s per device); after the last one a push was lost for good, because the handler swallowed the failure and the outbox's own backoff never applied |
 
 Left out on purpose (still in the backlog or noted in the review): token storage in the browser (S3, needs a threat
-model), retrying a failed push through the outbox instead of `Thread.sleep` on the relay thread, per-aggregate ordering
+model), per-aggregate ordering
 of outbox events, PostgreSQL Row-Level Security as a second tenant barrier, keyset pagination, Web Push on real devices (P1).
 
 ## Not in this plan (still in the backlog)
@@ -84,7 +85,7 @@ Q3 remaining accessibility gaps, Q4 customer page extras, Q5 `.kiro` specs.
 | 1 | 4 / 4 |
 | 2 | 4 / 4 |
 | 3 | 5 / 5 |
-| 4 | 6 / 6 |
+| 4 | 7 / 7 |
 
 ## Log
 
@@ -110,3 +111,4 @@ Q3 remaining accessibility gaps, Q4 customer page extras, Q5 `.kiro` specs.
 | 2026-11-16 | Security audit (`docs/SECURITY_AUDIT.md`): 12 findings and a prioritised plan (waves 1-3). **Fixed here:** the per-IP rate limit matched the raw request URI, so a percent-encoded path (`/api/%73essions`, `/api/restaurants/x/%63laim`) reached the controller unlimited, which also defeated the counter-claim brute-force limit; `RateLimitFilter` now matches the decoded path (confirmed on a real server, regression tests in `RateLimitFilterTest`). Counter-claim window default lowered from 4 h to 30 min (`CLAIM_MAX_AGE`, must be positive). Open: SSRF through the push `endpointUrl` (S-02), token refresh/revocation (S-03), login lockout DoS (S-04), per-IP limits vs. shared restaurant Wi-Fi (S-06). |
 | 2026-11-16 | Security plan implemented (`docs/SECURITY_AUDIT.md`, branch `security/hardening`): S-02 push endpoint allow-list (SSRF), S-01 proxy diagnostics, S-05 failed-claim counters, S-04 account+address login lockout and operator networks, S-03 token revocation/rotation/account check, S-06 per-session limits, S-07 subscription and stream caps, S-12 password policy, S-10 headers and log hygiene, S-09 production startup checks, S-11 dependency/image scanning. The Trivy scan found 77 vulnerable dependencies (17 CRITICAL), fixed by Spring Boot 3.5.16 and library bumps; 2 accepted in `.trivyignore`. Backend `check`, 732 UI tests and 10 Playwright scenarios pass. |
 | 2026-11-16 | QR handed over in person (`feat/handover-qr`), replacing the claim by receipt number: the number space is small and sequential, so a stranger who typed a valid number first also took the push. Removed: `POST /api/restaurants/{identifier}/claim`, `GET .../public`, `CounterClaimService`, `ClaimFailureFilter`, the `/r/:identifier` page, the Settings QR, `CLAIM_MAX_AGE` and the claim alerts. Added: `order.connected_at` (Flyway V6, renamed from `claimed_at`), the first open of `/track/{id}` emits `OrderConnected` -> staff-only SSE `order-connected`; staff rows carry `sessionId` and `connected`; QR dialog per order, QR hidden once connected; customer-facing `/display` screen. |
+| 2026-11-20 | T20: push delivery without sleeping threads (`feat/push-delivery-retries`). `OrderReadyHandler` no longer sends: it queues one PENDING `notification` per device (due at once, deadline 10 min after READY) and wakes `PushDeliveryWorker`. The worker claims due rows with `FOR UPDATE SKIP LOCKED` and a lease, hands them to a pool of 8 and `PushDeliveryService` makes one attempt each: a transient failure becomes a later `next_attempt_at` (backoff 1 s, 5 s, 30 s, 2 min) instead of `Thread.sleep`, so a hanging push service holds up one worker, not the relay; after the retries or the deadline the push is FAILED with `last_error`. Request timeout 5 s (the library's `send()` had none; now `sendAsync` + `Future.get(timeout)` + cancel). Flyway V8 adds title, url, ready_at, attempts, next_attempt_at, expires_at, locked_until, last_error to `notification`; gauge `readybell_push_pending`. Tests: retry/backoff/deadline arithmetic, a hanging push does not delay another order (real DB and worker pool), lease and release. |
