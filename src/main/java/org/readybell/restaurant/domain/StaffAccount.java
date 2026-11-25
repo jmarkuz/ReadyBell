@@ -23,6 +23,8 @@ public class StaffAccount {
     private final Role role;
     private AccountStatus status;
     private final String passwordHash;
+    /** When the account was deactivated; {@code null} while it is active (and for accounts stored before this was kept). */
+    private java.time.Instant deactivatedAt;
 
     private StaffAccount(StaffAccountId id, TenantId tenantId, String username, Role role, AccountStatus status,
                          String passwordHash) {
@@ -69,7 +71,19 @@ public class StaffAccount {
      * <p>Calling this method on an already-deactivated account is idempotent.
      */
     public void deactivate() {
-        this.status = AccountStatus.DEACTIVATED;
+        deactivate(java.time.Instant.now());
+    }
+
+    /** Deactivates the account at the given instant (kept for the retention of personal data). */
+    public void deactivate(java.time.Instant at) {
+        if (this.status != AccountStatus.DEACTIVATED) {
+            this.status = AccountStatus.DEACTIVATED;
+            this.deactivatedAt = at;
+        }
+    }
+
+    public java.time.Instant getDeactivatedAt() {
+        return deactivatedAt;
     }
 
     /** Returns {@code true} if this account's status is {@link AccountStatus#ACTIVE}. */
@@ -140,5 +154,17 @@ public class StaffAccount {
                                             AccountStatus status,
                                             String passwordHash) {
         return new StaffAccount(id, tenantId, username, role, status, passwordHash);
+    }
+
+    public static StaffAccount reconstitute(StaffAccountId id,
+                                            TenantId tenantId,
+                                            String username,
+                                            Role role,
+                                            AccountStatus status,
+                                            String passwordHash,
+                                            java.time.Instant deactivatedAt) {
+        StaffAccount account = new StaffAccount(id, tenantId, username, role, status, passwordHash);
+        account.deactivatedAt = deactivatedAt;
+        return account;
     }
 }

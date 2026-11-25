@@ -55,6 +55,7 @@ public class RetentionService {
     private final Duration orderAge;
     private final Duration notificationAge;
     private final Duration sessionAge;
+    private final Duration staffAge;
     private final AtomicLong lastSuccess;
 
     public RetentionService(PlatformTransactionManager transactionManager, Clock clock, MeterRegistry meters,
@@ -63,7 +64,8 @@ public class RetentionService {
                             @Value("${readybell.retention.batch-size:500}") int batchSize,
                             @Value("${readybell.retention.order-days:30}") int orderDays,
                             @Value("${readybell.retention.notification-days:30}") int notificationDays,
-                            @Value("${readybell.retention.session-days:30}") int sessionDays) {
+                            @Value("${readybell.retention.session-days:30}") int sessionDays,
+                            @Value("${readybell.retention.staff-days:30}") int staffDays) {
         this.tx = new TransactionTemplate(transactionManager);
         this.clock = clock;
         this.meters = meters;
@@ -73,6 +75,7 @@ public class RetentionService {
         this.orderAge = Duration.ofDays(requireBetween("readybell.retention.order-days", orderDays, 7, 365));
         this.notificationAge = Duration.ofDays(requireBetween("readybell.retention.notification-days", notificationDays, 7, 365));
         this.sessionAge = Duration.ofDays(requireBetween("readybell.retention.session-days", sessionDays, 7, 365));
+        this.staffAge = Duration.ofDays(requireBetween("readybell.retention.staff-days", staffDays, 7, 365));
         // starts at "now": the alert fires when no run has succeeded for two days after the start
         this.lastSuccess = new AtomicLong(clock.instant().getEpochSecond());
         Gauge.builder("readybell.retention.last.success.timestamp", lastSuccess, AtomicLong::get)
@@ -107,6 +110,7 @@ public class RetentionService {
         clean &= task("anonymize-orders", result, () -> anonymizeOrders(now.minus(orderAge), tenant, now));
         clean &= task("scrub-notifications", result, () -> scrubNotifications(now.minus(notificationAge), tenant));
         clean &= task("purge-sessions", result, () -> purgeSessions(now.minus(sessionAge), tenant));
+        clean &= task("anonymize-staff", result, () -> anonymizeStaff(now.minus(staffAge), tenant));
         if (clean) {
             lastSuccess.set(clock.instant().getEpochSecond());
         }
@@ -216,6 +220,23 @@ public class RetentionService {
                     em.createNativeQuery("DELETE FROM device_subscription WHERE session_id IN (:ids)").setParameter("ids", ids).executeUpdate();
                     return em.createNativeQuery("DELETE FROM customer_session WHERE id IN (:ids)").setParameter("ids", ids).executeUpdate();
                 });
+    }
+
+    /** Replaces the username of accounts deactivated before {@code cutoff} and drops their password hash. */
+    int anonymizeStaff(Instant cutoff, UUID tenant) {
+        return batches(ids(tenant, """
+                SELECT a.id FROM staff_account a
+                WHERE a.status = 'DEACTIVATED' AND a.deactivated_at < :cutoff AND a.username NOT LIKE 'deleted-%%'%s
+                ORDER BY a.deactivated_at, a.id LIMIT :batch OFFSET :offset""", "a", cutoff),
+                this::anonymizeStaffAccounts);
+    }
+
+    /** Makes these accounts anonymous at once: a username that names nobody, no password, deactivated. Caller's transaction. */
+    int anonymizeStaffAccounts(List<UUID> ids) {
+        return em.createNativeQuery("""
+                UPDATE staff_account SET username = 'deleted-' || substr(id::text, 1, 8), password_hash = NULL,
+                       status = 'DEACTIVATED', deactivated_at = COALESCE(deactivated_at, now())
+                WHERE id IN (:ids)""").setParameter("ids", ids).executeUpdate();
     }
 
     // ---------------------------------------------------------------------------------------------------------------

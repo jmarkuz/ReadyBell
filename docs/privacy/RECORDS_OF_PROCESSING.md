@@ -13,7 +13,7 @@ restaurant's own contact and the platform operator account ReadyBell is the cont
 | Web Push subscription (address of the device at the push service and its keys) | Customer who pressed "Notify me" | send the "ready" notification | `device_subscription` | until the session ends, the push service reports the device gone, or the customer erases | housekeeping, delivery worker, customer request |
 | Consent to the push (time, notice version) | Customer | proof of consent | `device_subscription.consent_at`, `consent_notice` | with the subscription | with the subscription |
 | Text of a sent notification ("Order #12 is ready") | Customer | delivery record | `notification.payload` | `notification-days` (30); status and times stay | `scrub-notifications` |
-| Staff username, password hash, role, status | Staff | sign-in, access control | `staff_account` | while employed; see open items | restaurant admin (deactivate); deletion workflow is an open item |
+| Staff username, password hash, role, status | Staff | sign-in, access control | `staff_account` | while employed; see open items | restaurant admin: deactivate, then `POST /api/admin/staff/{id}/erase` at once, or the retention run after `staff-days` (30) |
 | Restaurant name, identifier | Restaurant | tenant | `restaurant` | while a customer of the platform | offboarding (open item) |
 | Order timings, outcome, size, whether the link was opened (no name, items, or link to a person) | none (anonymous facts) | operational reports, analytics | `order_fact`, `order_status_history` | long-term | not personal data |
 | IP address of the caller, username (failed sign-ins) | Customer, staff | rate limits, login throttling | Redis keys with a time to live | minutes to a day | expiry |
@@ -38,5 +38,5 @@ audit of operator actions is an open item.
 
 ## Open items
 
-Staff account deletion (`anonymize` after deactivation), restaurant offboarding and export, per-restaurant retention settings,
+Restaurant offboarding and export, per-restaurant retention settings,
 the signed processing agreement, the final privacy notice, a retention period for facts that outlives a restaurant's contract.

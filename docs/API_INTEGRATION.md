@@ -21,6 +21,9 @@ Client code: `dashboard-ui/src/utils/api.ts` (staff API, Bearer token) and `dash
 | GET | `/api/sessions/{id}/data` | the customer's own data as a downloadable JSON document: orders of this link (number, status, customer name, items, times, `anonymized`) and push subscriptions (push service host, time and notice version of the consent; never the device address or keys). 404 for an unknown link; 6 per minute per session |
 | DELETE | `/api/sessions/{id}/data` | erase: push subscriptions deleted, the customer name of every order of the link removed, finished orders anonymized at once (name, items, link to the session; the fact row stays); an order still being prepared keeps its items for the kitchen and is anonymized by the retention run when finished. Answer `{subscriptions, ordersAnonymized, ordersKeptUntilFinished}`. Logged in `erasure_log` under a keyed hash |
 | POST | `/api/platform/erasures/replay` | platform operator: after restoring a backup, repeat the erasures recorded in `erasure_log` (every session of the restored database is hashed and matched); answer `{sessionsErasedAgain}` |
+| GET | `/api/platform/delivery/problems` | platform operator: outbox events parked after their retries and pushes that failed in the last 24 hours (id, tenant, type, attempts, error; never the text of a push) |
+| POST | `/api/platform/delivery/events/{id}/retry` | platform operator: put a parked outbox event back in the queue with fresh attempts (404 when it is not parked) |
+| POST | `/api/platform/delivery/pushes/{id}/retry` | platform operator: queue a failed push again with a new 10-minute deadline (404 when its text was removed by retention or the device is gone) |
 | POST | `/api/platform/retention/run` | platform operator: run the retention tasks now; answer rows changed per task (rows that would change in a dry run) |
 | GET | `/api/push/config` | `{enabled, publicKey}`: the VAPID public key the browser subscribes with |
 | GET | `/actuator/health` | probes (`/liveness`, `/readiness`) |
@@ -63,7 +66,8 @@ the number (with or without `#`, prefix match: `10` finds #10 and #100-#109).
 | GET | `/api/orders/stream` | ticket | SSE; `EventSource` cannot set headers, so pass `?ticket=` from the call above (one use, 30 s). `?token=` is no longer accepted; no ticket → 401. Events: `order-status-updated` `{id, orderId, status}` and, for the staff stream only, `order-created` `{id, orderId, status: "CREATED", event: "order-created", orderNumber: "#12"}` (sent after the order's transaction commits; the dashboard reloads and alerts staff) |
 | GET | `/api/orders/poll` | any | `since` / `eTag`; 200 `{orders, eTag}` or 304 |
 | GET / POST | `/api/admin/staff` | RESTAURANT_ADMIN | list / create `{username, password (8–72), role}` |
-| DELETE | `/api/admin/staff/{accountId}` | RESTAURANT_ADMIN | deactivate |
+| DELETE | `/api/admin/staff/{accountId}` | RESTAURANT_ADMIN | deactivate (records `deactivated_at`; the retention run anonymizes it after `readybell.retention.staff-days`, 30) |
+| POST | `/api/admin/staff/{accountId}/erase` | RESTAURANT_ADMIN | remove a former employee's personal data at once: username becomes `deleted-<id>`, password hash dropped, account deactivated. 409 for your own account, 404 for another restaurant's |
 | PUT | `/api/admin/config` | RESTAURANT_ADMIN | `{name}` |
 
 ## Platform operator (PLATFORM_ADMIN, cross-tenant)
