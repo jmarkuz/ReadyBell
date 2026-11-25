@@ -4,6 +4,11 @@ import org.readybell.notification.domain.Notification;
 import org.readybell.notification.domain.NotificationPayload;
 import org.readybell.notification.domain.NotificationRepository;
 import org.readybell.ordering.domain.OrderReady;
+import org.readybell.ordering.domain.OrderId;
+import org.readybell.ordering.domain.OrderStatus;
+import org.readybell.ordering.domain.OrderStatusUpdated;
+import org.readybell.session.domain.CustomerSessionId;
+import org.readybell.shared.domain.TenantId;
 import org.readybell.ordering.domain.OrderRepository;
 import org.readybell.subscription.domain.DeviceSubscription;
 import org.readybell.subscription.domain.DeviceSubscriptionRepository;
@@ -72,34 +77,52 @@ public class OrderReadyHandler {
      */
     public void handle(OrderReady event) {
         Objects.requireNonNull(event, "event must not be null");
+        queue(event.tenantId(), event.sessionId(), event.orderId(), event.occurredAt(), Notification.KIND_READY,
+                this::readyBody);
+    }
 
+    /**
+     * Queues "your order was cancelled" for every device of the session, so a customer who is waiting is not left to find
+     * out at the counter. Events about other status changes are ignored.
+     */
+    public void handleStatusUpdated(OrderStatusUpdated event) {
+        Objects.requireNonNull(event, "event must not be null");
+        if (event.toStatus() != OrderStatus.CANCELLED) {
+            return;
+        }
+        queue(event.tenantId(), event.sessionId(), event.orderId(), event.occurredAt(), Notification.KIND_CANCELLED,
+                this::cancelledBody);
+    }
+
+    private void queue(TenantId tenantId, CustomerSessionId sessionId, OrderId orderId, Instant occurredAt, String kind,
+                       java.util.function.BiFunction<TenantId, OrderId, String> body) {
         // Req 6.1: subscriptions of the session, scoped to the event's tenant
-        List<DeviceSubscription> subscriptions =
-                subscriptionRepository.findByTenantAndSession(event.tenantId(), event.sessionId());
+        List<DeviceSubscription> subscriptions = subscriptionRepository.findByTenantAndSession(tenantId, sessionId);
 
         // Req 6.6: no subscriptions, log "none delivered" and return without error
         if (subscriptions.isEmpty()) {
             LOG.info(() -> String.format(
-                    "OrderReady [orderId=%s, session=%s, tenantId=%s]: no device subscriptions — no notification delivered.",
-                    event.orderId(), shortId(event.sessionId().value()), event.tenantId()));
+                    "Order %s (%s) [session=%s, tenantId=%s]: no device subscriptions — no notification delivered.",
+                    orderId, kind, shortId(sessionId.value()), tenantId));
             return;
         }
 
-        NotificationPayload message = payloadFor(event);
-        // The deadline counts from the moment the order became READY, not from now: a replayed event is not fresher
-        Instant expiresAt = event.occurredAt().plus(deadline);
+        NotificationPayload message = new NotificationPayload(restaurantName(tenantId), body.apply(tenantId, orderId),
+                "/track/" + sessionId.value());
+        // The deadline counts from the moment of the event, not from now: a replayed event is not fresher
+        Instant expiresAt = occurredAt.plus(deadline);
         Instant now = clock.instant();
 
         boolean queued = false;
         for (DeviceSubscription subscription : subscriptions) {
-            // Replayed event (relay retry after a crash): this device already has its push queued or sent
-            if (notificationRepository.existsLive(event.tenantId(), event.orderId().value(), subscription.getId())) {
-                LOG.info(() -> "OrderReady " + event.orderId() + ": push to subscription "
+            // Replayed event (relay retry after a crash): this device already has this push queued or sent
+            if (notificationRepository.existsLive(tenantId, orderId.value(), subscription.getId(), kind)) {
+                LOG.info(() -> "Order " + orderId + ": " + kind + " push to subscription "
                         + subscription.getId() + " already queued or sent, skipping.");
                 continue;
             }
-            notificationRepository.save(Notification.composeForDelivery(event.tenantId(), subscription.getId(),
-                    message, event.orderId().value(), event.occurredAt(), now, expiresAt));
+            notificationRepository.save(Notification.composeForDelivery(tenantId, subscription.getId(),
+                    message, orderId.value(), occurredAt, now, expiresAt, kind));
             queued = true;
         }
         if (queued) {
@@ -111,19 +134,24 @@ public class OrderReadyHandler {
     // Private helpers
     // -------------------------------------------------------------------------
 
-    /** "Café Aurora: order #101 is ready", tapping it opens the tracking page. */
-    private NotificationPayload payloadFor(OrderReady event) {
-        String restaurant = restaurantRepository.findByTenantId(event.tenantId())
+    private String restaurantName(TenantId tenantId) {
+        return restaurantRepository.findByTenantId(tenantId)
                 .map(r -> r.getConfig().name())
                 .filter(n -> !n.isBlank())
                 .orElse("Your order");
-        String body = orderRepository.findByTenantAndId(event.tenantId(), event.orderId())
+    }
+
+    /** "Order #101 is ready for pickup!", tapping the push opens the tracking page. */
+    private String readyBody(TenantId tenantId, OrderId orderId) {
+        return orderRepository.findByTenantAndId(tenantId, orderId)
                 .map(o -> "Order #" + o.getOrderNumber() + " is ready for pickup!")
                 .orElse("Your order is ready for pickup!");
-        return new NotificationPayload(
-                restaurant,
-                body,
-                "/track/" + event.sessionId().value());
+    }
+
+    private String cancelledBody(TenantId tenantId, OrderId orderId) {
+        return orderRepository.findByTenantAndId(tenantId, orderId)
+                .map(o -> "Order #" + o.getOrderNumber() + " was cancelled. Please ask the staff.")
+                .orElse("Your order was cancelled. Please ask the staff.");
     }
 
     /** The session id is the customer's credential for the tracking page, so logs carry only a prefix of it. */

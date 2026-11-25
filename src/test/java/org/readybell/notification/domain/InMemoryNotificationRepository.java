@@ -35,9 +35,9 @@ public class InMemoryNotificationRepository implements NotificationRepository {
     }
 
     @Override
-    public boolean existsLive(TenantId tenantId, java.util.UUID orderId, DeviceSubscriptionId subscriptionId) {
+    public boolean existsLive(TenantId tenantId, java.util.UUID orderId, DeviceSubscriptionId subscriptionId, String kind) {
         return store.values().stream().anyMatch(n -> n.tenantId().equals(tenantId)
-                && orderId.equals(n.orderId()) && n.subscriptionId().equals(subscriptionId)
+                && orderId.equals(n.orderId()) && n.subscriptionId().equals(subscriptionId) && n.kind().equals(kind)
                 && n.status() != NotificationStatus.FAILED);
     }
 

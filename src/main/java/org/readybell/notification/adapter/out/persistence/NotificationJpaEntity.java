@@ -76,6 +76,9 @@ public class NotificationJpaEntity extends TenantScopedEntity {
     @Column(name = "last_error", length = 255)
     private String lastError;
 
+    @Column(name = "kind", nullable = false, length = 16)
+    private String kind = Notification.KIND_READY;
+
     /** Required by JPA. */
     protected NotificationJpaEntity() {}
 
@@ -93,6 +96,7 @@ public class NotificationJpaEntity extends TenantScopedEntity {
         entity.payload        = notification.payload();
         entity.createdAt      = Instant.now();
         entity.orderId        = notification.orderId();
+        entity.kind           = notification.kind();
         entity.title          = notification.title();
         entity.url            = notification.url();
         entity.readyAt        = notification.readyAt();
@@ -113,7 +117,7 @@ public class NotificationJpaEntity extends TenantScopedEntity {
                 status,
                 payload,
                 orderId,
-                title, url, readyAt, attempts, nextAttemptAt, expiresAt, lastError);
+                title, url, readyAt, attempts, nextAttemptAt, expiresAt, lastError, kind);
     }
 
     // -------------------------------------------------------------------------

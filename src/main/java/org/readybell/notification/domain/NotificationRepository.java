@@ -45,10 +45,10 @@ public interface NotificationRepository {
     boolean existsSent(TenantId tenantId, UUID orderId, DeviceSubscriptionId subscriptionId);
 
     /**
-     * Whether a push for this order is already waiting for delivery or was accepted for this subscription (PENDING, SENT or
+     * Whether a push for this order is already waiting for delivery or was accepted for this subscription of this kind (PENDING, SENT or
      * DELIVERED). A replayed {@code OrderReady} event must not queue a second push.
      */
-    boolean existsLive(TenantId tenantId, UUID orderId, DeviceSubscriptionId subscriptionId);
+    boolean existsLive(TenantId tenantId, UUID orderId, DeviceSubscriptionId subscriptionId, String kind);
 
     /**
      * Hands the due PENDING notifications (oldest first, at most {@code limit}) to one worker: each is leased for

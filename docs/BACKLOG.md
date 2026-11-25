@@ -43,7 +43,7 @@ The ordered plan for what to do next, with specifications and status, is in [IMP
 | Q1 | Browser E2E (Playwright): login, New order, QR link, customer sees READY | M |
 | Q2 | i18n for the staff panel (uk/en); the customer page already has both | M |
 | Q3 | Accessibility gaps from `UI_QUALITY.md` (aria-sort, skip link, aria-current, live regions) and four colour pairs below 3:1 | M |
-| Q4 | Customer page: show "order cancelled" push, order history of a session, add-to-home-screen prompt | M |
+| Q4 | Customer page: "order cancelled" push (done, T23), order history of a session, add-to-home-screen prompt | M |
 | Q5 | Decide the fate of `.kiro/specs/*` (historical specs): archive or delete the three UI/integration ones that no longer describe the code | S |
 | Q6 | Staff UX: sound/vibration on new order, status change from the QR dialog, edit/cancel order | M |
 

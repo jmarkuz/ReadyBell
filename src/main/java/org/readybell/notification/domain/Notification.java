@@ -53,6 +53,11 @@ public class Notification {
     /** After this instant a delivery is pointless ("ready" a quarter of an hour late is noise); null means no deadline. */
     private Instant expiresAt;
     private String lastError;
+    /** What the push is about: {@link #KIND_READY} or {@link #KIND_CANCELLED}. */
+    private String kind = KIND_READY;
+
+    public static final String KIND_READY = "READY";
+    public static final String KIND_CANCELLED = "CANCELLED";
 
     private Notification(NotificationId id,
                          TenantId tenantId,
@@ -101,6 +106,13 @@ public class Notification {
     public static Notification composeForDelivery(TenantId tenantId, DeviceSubscriptionId subscriptionId,
                                                   NotificationPayload message, UUID orderId,
                                                   Instant readyAt, Instant now, Instant expiresAt) {
+        return composeForDelivery(tenantId, subscriptionId, message, orderId, readyAt, now, expiresAt, KIND_READY);
+    }
+
+    /** As above, for a push about something other than the order being ready. */
+    public static Notification composeForDelivery(TenantId tenantId, DeviceSubscriptionId subscriptionId,
+                                                  NotificationPayload message, UUID orderId,
+                                                  Instant readyAt, Instant now, Instant expiresAt, String kind) {
         Objects.requireNonNull(message, "message must not be null");
         Objects.requireNonNull(now, "now must not be null");
         Notification n = compose(tenantId, subscriptionId, message.body(), orderId);
@@ -109,6 +121,7 @@ public class Notification {
         n.readyAt = readyAt;
         n.nextAttemptAt = now;
         n.expiresAt = expiresAt;
+        n.kind = Objects.requireNonNull(kind, "kind must not be null");
         return n;
     }
 
@@ -278,12 +291,15 @@ public class Notification {
 
     public String lastError() { return lastError; }
 
+    public String kind() { return kind; }
+
     /** Rebuilds a notification including its delivery state (persistence adapter only). */
     public static Notification reconstitute(NotificationId id, TenantId tenantId, DeviceSubscriptionId subscriptionId,
                                             NotificationStatus status, String payload, UUID orderId,
                                             String title, String url, Instant readyAt, int attempts,
-                                            Instant nextAttemptAt, Instant expiresAt, String lastError) {
+                                            Instant nextAttemptAt, Instant expiresAt, String lastError, String kind) {
         Notification n = new Notification(id, tenantId, subscriptionId, status, payload, orderId);
+        n.kind = kind == null ? KIND_READY : kind;
         n.title = title;
         n.url = url;
         n.readyAt = readyAt;
