@@ -51,6 +51,9 @@ public class StaffAccountJpaEntity extends TenantScopedEntity {
     @Column(name = "status", nullable = false)
     private AccountStatus status;
 
+    @Column(name = "deactivated_at")
+    private java.time.Instant deactivatedAt;
+
     /** Encoded password; null for accounts created before sign-in existed (they cannot sign in). */
     @Column(name = "password_hash", length = 100)
     private String passwordHash;
@@ -71,6 +74,7 @@ public class StaffAccountJpaEntity extends TenantScopedEntity {
         entity.role     = account.getRole();
         entity.status   = account.getStatus();
         entity.passwordHash = account.getPasswordHash();
+        entity.deactivatedAt = account.getDeactivatedAt();
         return entity;
     }
 
@@ -82,7 +86,8 @@ public class StaffAccountJpaEntity extends TenantScopedEntity {
                 username,
                 role,
                 status,
-                passwordHash);
+                passwordHash,
+                deactivatedAt);
     }
 
     /** Returns the typed domain identity. */

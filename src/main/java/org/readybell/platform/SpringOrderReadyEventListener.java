@@ -40,4 +40,10 @@ public class SpringOrderReadyEventListener {
     public void onOrderReady(OrderReady event) {
         orderReadyHandler.handle(event);
     }
+
+    /** A cancelled order tells its customer, so nobody waits for an order that will not come. */
+    @EventListener
+    public void onOrderStatusUpdated(org.readybell.ordering.domain.OrderStatusUpdated event) {
+        orderReadyHandler.handleStatusUpdated(event);
+    }
 }

@@ -142,4 +142,64 @@ class OrderReadyHandlerTest {
         assertNull(notifications.all().get(0).lastError());
         assertFalse(notifications.all().get(0).isExpired(NOW));
     }
+
+    // ---- cancelled orders ---------------------------------------------------------------------------------------------
+
+    private org.readybell.ordering.domain.OrderStatusUpdated cancelled(org.readybell.ordering.domain.Order order) {
+        return org.readybell.ordering.domain.OrderStatusUpdated.of(order.getId(), tenant, session,
+                org.readybell.ordering.domain.OrderStatus.IN_PROGRESS, org.readybell.ordering.domain.OrderStatus.CANCELLED, NOW);
+    }
+
+    private org.readybell.ordering.domain.Order openOrder() {
+        var order = Order.create(tenant, session, clock, OrderDetails.NONE, 7);
+        orders.save(order);
+        return order;
+    }
+
+    @Test
+    void aCancelledOrderQueuesACancellationPush() {
+        var order = openOrder();
+
+        handler.handleStatusUpdated(cancelled(order));
+
+        assertEquals(1, notifications.size());
+        Notification queued = notifications.all().get(0);
+        assertEquals(Notification.KIND_CANCELLED, queued.kind());
+        assertTrue(queued.toMessage().body().startsWith("Order #7 was cancelled"));
+        assertEquals("/track/" + session.value(), queued.toMessage().url());
+        assertEquals(1, wakeUps.get());
+    }
+
+    @Test
+    void otherStatusChangesQueueNothing() {
+        var order = openOrder();
+
+        handler.handleStatusUpdated(org.readybell.ordering.domain.OrderStatusUpdated.of(order.getId(), tenant, session,
+                org.readybell.ordering.domain.OrderStatus.CREATED, org.readybell.ordering.domain.OrderStatus.IN_PROGRESS, NOW));
+
+        assertEquals(0, notifications.size());
+        assertEquals(0, wakeUps.get());
+    }
+
+    @Test
+    void aReplayedCancellationIsNotQueuedTwice() {
+        var event = cancelled(openOrder());
+        handler.handleStatusUpdated(event);
+        handler.handleStatusUpdated(event);
+
+        assertEquals(1, notifications.size());
+    }
+
+    @Test
+    void anOrderThatWasReadyAndIsThenCancelledGetsBothPushes() {
+        var order = openOrder();
+        handler.handle(OrderReady.of(order.getId(), tenant, session, NOW));
+        notifications.all().get(0).markSent(clock);                 // the ready push went out
+
+        handler.handleStatusUpdated(cancelled(order));
+
+        assertEquals(2, notifications.size());
+        assertEquals(java.util.Set.of(Notification.KIND_READY, Notification.KIND_CANCELLED),
+                notifications.all().stream().map(Notification::kind).collect(java.util.stream.Collectors.toSet()));
+    }
 }

@@ -212,7 +212,7 @@ class RetentionTest {
     void aDryRunReportsTheWorkAndChangesNothing() {
         UUID id = order(tenant, "COMPLETED", old, "Anna", UUID.randomUUID(), "Latte");
         var dry = new RetentionService(transactionManager, Clock.systemUTC(), new SimpleMeterRegistry(),
-                true, true, 1, 30, 30, 30);
+                true, true, 1, 30, 30, 30, 30);
         ReflectionTestUtils.setField(dry, "em", em);
 
         Map<String, Integer> result = dry.run(now, tenant);
@@ -227,7 +227,7 @@ class RetentionTest {
     @Test
     void manyOrdersAreHandledInBatches() {
         var small = new RetentionService(transactionManager, Clock.systemUTC(), new SimpleMeterRegistry(),
-                true, false, 2, 30, 30, 30);
+                true, false, 2, 30, 30, 30, 30);
         ReflectionTestUtils.setField(small, "em", em);
         for (int i = 0; i < 5; i++) {
             order(tenant, "COMPLETED", old, "Customer " + i, UUID.randomUUID(), "Item " + i);
@@ -254,8 +254,8 @@ class RetentionTest {
     @Test
     void theRetentionPeriodsHaveLimits() {
         assertThatThrownBy(() -> new RetentionService(transactionManager, Clock.systemUTC(), new SimpleMeterRegistry(),
-                true, false, 500, 3, 30, 30)).hasMessageContaining("order-days");
+                true, false, 500, 3, 30, 30, 30)).hasMessageContaining("order-days");
         assertThatThrownBy(() -> new RetentionService(transactionManager, Clock.systemUTC(), new SimpleMeterRegistry(),
-                true, false, 500, 30, 30, 1000)).hasMessageContaining("session-days");
+                true, false, 500, 30, 30, 1000, 30)).hasMessageContaining("session-days");
     }
 }

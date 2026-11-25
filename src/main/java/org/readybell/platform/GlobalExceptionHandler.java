@@ -344,6 +344,17 @@ public class GlobalExceptionHandler {
         );
     }
 
+    /** An endpoint that decided on a status itself ({@code ResponseStatusException}): keep it, in the problem format. */
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(org.springframework.web.server.ResponseStatusException ex) {
+        HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+        if (status == null) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        return problem(status, "https://readybell.org/problems/" + status.name().toLowerCase().replace('_', '-'),
+                status.getReasonPhrase(), ex.getReason() == null ? status.getReasonPhrase() : ex.getReason());
+    }
+
     /**
      * Catch-all handler for any unexpected exception. The cause is logged; the client only gets a
      * generic problem detail.
