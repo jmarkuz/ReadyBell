@@ -2,6 +2,7 @@ import { memo } from 'react';
 import OrderSummaryCard from './OrderSummaryCard';
 import { OrderMetrics } from '@/types';
 import { ShoppingCart, Clock, Zap, CheckCircle } from 'lucide-react';
+import { useStaffStrings } from '@/i18n/useStaffStrings';
 
 interface OrderMetricsGridProps {
   metrics: OrderMetrics;
@@ -28,28 +29,29 @@ export default memo(function OrderMetricsGrid({
   isLoading = false,
   onCardClick,
 }: OrderMetricsGridProps) {
+  const t = useStaffStrings();
   const cards = [
     {
       id: 'total',
-      title: 'Total Orders',
+      title: t.metricTotal,
       value: metrics.totalOrders,
       icon: ShoppingCart,
     },
     {
       id: 'new',
-      title: 'New Orders',
+      title: t.metricNew,
       value: metrics.newOrders,
       icon: Clock,
     },
     {
       id: 'preparing',
-      title: 'Preparing',
+      title: t.statusPreparing,
       value: metrics.preparing,
       icon: Zap,
     },
     {
       id: 'ready',
-      title: 'Ready for Pickup',
+      title: t.statusReady,
       value: metrics.readyForPickup,
       icon: CheckCircle,
     },

@@ -1,3 +1,5 @@
+import { staffStrings } from '@/i18n/staff';
+
 export type Role = 'STAFF' | 'RESTAURANT_ADMIN' | 'PLATFORM_ADMIN';
 
 export interface NavEntry {
@@ -8,17 +10,18 @@ export interface NavEntry {
 
 /** Sidebar entries each role may use. */
 export function navFor(role: Role | null | undefined): NavEntry[] {
+  const t = staffStrings();
   switch (role) {
     case 'PLATFORM_ADMIN':
-      return [{ id: 'restaurants', label: 'Restaurants', route: '/restaurants' }];
+      return [{ id: 'restaurants', label: t.navRestaurants, route: '/restaurants' }];
     case 'RESTAURANT_ADMIN':
       return [
-        { id: 'dashboard', label: 'Dashboard', route: '/' },
-        { id: 'staff', label: 'Staff', route: '/staff' },
-        { id: 'settings', label: 'Settings', route: '/settings' },
+        { id: 'dashboard', label: t.navDashboard, route: '/' },
+        { id: 'staff', label: t.navStaff, route: '/staff' },
+        { id: 'settings', label: t.navSettings, route: '/settings' },
       ];
     default:
-      return [{ id: 'dashboard', label: 'Dashboard', route: '/' }];
+      return [{ id: 'dashboard', label: t.navDashboard, route: '/' }];
   }
 }
 

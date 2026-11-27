@@ -1,4 +1,7 @@
 import { OrderStatus } from '@/types';
+import { staffStrings } from '@/i18n/staff';
+
+const t = staffStrings();
 
 /**
  * Lifecycle transitions the backend allows, in the UI's status names
@@ -14,9 +17,9 @@ export const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {
 
 /** Menu wording for moving an order to a status. */
 export const STATUS_ACTION_LABEL: Record<OrderStatus, string> = {
-  CREATED: 'Mark as new',
-  PREPARING: 'Start preparing',
-  READY: 'Mark ready for pickup',
-  COMPLETED: 'Mark completed',
-  CANCELLED: 'Cancel order',
+  CREATED: t.actionNew,
+  PREPARING: t.actionPreparing,
+  READY: t.actionReady,
+  COMPLETED: t.actionCompleted,
+  CANCELLED: t.actionCancel,
 };

@@ -3,6 +3,8 @@ import React, { memo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Home, Settings, Users, Store, LogOut } from 'lucide-react';
 import { navFor, type Role } from '@/utils/roles';
+import { staffLanguage, setStaffLanguage } from '@/i18n/staff';
+import { useStaffStrings } from '@/i18n/useStaffStrings';
 
 interface SidebarProps {
   /** Decides which entries are shown; without one only the dashboard is offered. */
@@ -31,6 +33,7 @@ export default memo(function Sidebar({
   onNavigate,
   userProfile,
 }: SidebarProps) {
+  const t = useStaffStrings();
   const menuItems = navFor(role).map((e) => ({ ...e, icon: ICONS[e.id] ?? Home }));
 
   return (
@@ -43,7 +46,7 @@ export default memo(function Sidebar({
           </div>
           <div className="hidden md:block min-w-0">
             <p className="font-bold text-sm truncate">ReadyBell</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Restaurant Panel</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{t.panelName}</p>
           </div>
         </a>
       </div>
@@ -130,6 +133,17 @@ export default memo(function Sidebar({
           </div>
         )}
 
+        {/* Language of the panel: the choice is remembered and the page reloads */}
+        <button
+          type="button"
+          className="w-full mb-2 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-left focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label={t.languageSwitchLabel}
+          onClick={() => setStaffLanguage(staffLanguage() === 'uk' ? 'en' : 'uk')}
+        >
+          <span className="hidden md:inline">{t.languageSwitch}</span>
+          <span className="md:hidden" aria-hidden="true">{staffLanguage() === 'uk' ? 'EN' : 'УК'}</span>
+        </button>
+
         {/* Logout button */}
         <button
           className="w-full flex items-center gap-3 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
@@ -138,14 +152,14 @@ export default memo(function Sidebar({
           type="button"
         >
           <LogOut className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-          <span className="hidden md:inline text-sm font-medium">Logout</span>
+          <span className="hidden md:inline text-sm font-medium">{t.logout}</span>
           
           {/* Tooltip for mobile/collapsed state */}
           <div 
             className="md:hidden absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-700 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50"
             role="tooltip"
           >
-            Logout
+            {t.logout}
           </div>
         </button>
       </section>

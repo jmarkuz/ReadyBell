@@ -13,6 +13,7 @@ import OrderQrDialog from '@/components/OrderQrDialog';
 import { useRestaurant } from '@/context/restaurantContext';
 import { Link } from 'react-router-dom';
 import { MonitorSmartphone, Plus } from 'lucide-react';
+import { useStaffStrings } from '@/i18n/useStaffStrings';
 
 /** Incoming Orders rows per page. */
 const PAGE_SIZE = 10;
@@ -53,6 +54,7 @@ const SORT_BY: Record<SortField, OrdersSortBy | null> = {
  * - Mobile (<768px): 1-column stacked
  */
 export default function Dashboard() {
+  const t = useStaffStrings();
   // Get search query from context
   const { query: searchQuery } = useSearch();
 
@@ -178,9 +180,9 @@ export default function Dashboard() {
       {/* Page title with SSE connection indicator */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t.navDashboard}</h1>
           <p className="text-slate-600 dark:text-slate-400 mt-2">
-            Welcome to the ReadyBell restaurant dashboard. Monitor incoming orders and track operations.
+            {t.dashboardWelcome}
           </p>
         </div>
         
@@ -190,7 +192,7 @@ export default function Dashboard() {
           className="inline-flex items-center gap-2 h-10 px-4 whitespace-nowrap rounded-full border border-slate-300 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           <MonitorSmartphone className="w-4 h-4" aria-hidden="true" />
-          Customer display
+          {t.customerDisplay}
         </Link>
 
         <button
@@ -199,7 +201,7 @@ export default function Dashboard() {
           className="inline-flex items-center gap-2 h-10 px-5 whitespace-nowrap rounded-full bg-stone-800 text-white dark:bg-stone-100 dark:text-stone-900 text-sm font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
-          New order
+          {t.newOrder}
         </button>
 
         {/* Real-time connection status indicator */}
@@ -213,7 +215,7 @@ export default function Dashboard() {
             aria-label={isConnected ? 'Real-time connection active' : 'Real-time connection disconnected'}
           />
           <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-            {isConnected ? 'Live' : 'Offline'}
+            {isConnected ? t.live : t.offline}
           </span>
           {loadError && (
             <span className="text-xs text-red-600 dark:text-red-400 ml-2" role="alert">
@@ -235,13 +237,13 @@ export default function Dashboard() {
 
       {/* Order Summary Cards Grid */}
       <section aria-labelledby="order-summary-heading">
-        <h2 id="order-summary-heading" className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Order Summary</h2>
+        <h2 id="order-summary-heading" className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t.orderSummary}</h2>
         <OrderMetricsGrid metrics={metrics} />
       </section>
 
       {/* Filters Section */}
       <section aria-labelledby="filters-heading" className="space-y-4">
-        <h2 id="filters-heading" className="text-lg font-semibold text-slate-900 dark:text-white">Filters</h2>
+        <h2 id="filters-heading" className="text-lg font-semibold text-slate-900 dark:text-white">{t.filters}</h2>
         <div className="space-y-4">
           {/* Filter Controls */}
           <div className="flex items-center gap-3 flex-wrap">
@@ -256,7 +258,7 @@ export default function Dashboard() {
               aria-expanded={showDateFilter}
               type="button"
             >
-              <span className="text-sm font-medium">Date Range</span>
+              <span className="text-sm font-medium">{t.dateRange}</span>
               {dateRangeStart && dateRangeEnd && (
                 <span 
                   className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
@@ -307,7 +309,7 @@ export default function Dashboard() {
             aria-atomic="true"
           >
             <p className="text-sm text-blue-700 dark:text-blue-300">
-              <strong>Active Filters:</strong>
+              <strong>{t.activeFilters}</strong>
               {selectedStatuses.length > 0 && ` Status (${selectedStatuses.length})`}
               {selectedStatuses.length > 0 && dateRangeStart && dateRangeEnd && ', '}
               {dateRangeStart && dateRangeEnd && ` Date Range (${dateRangeStart.toLocaleDateString()} - ${dateRangeEnd.toLocaleDateString()})`}
@@ -333,10 +335,10 @@ export default function Dashboard() {
       {/* Incoming Orders Table */}
       <section aria-labelledby="orders-heading">
         <h2 id="orders-heading" className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-          Incoming Orders {(searchQuery.trim() || activeFilterCount > 0) && `(${totalCount})`}
+          {t.incomingOrders} {(searchQuery.trim() || activeFilterCount > 0) && `(${totalCount})`}
         </h2>
         {isLoading ? (
-          <p className="text-sm text-slate-600 dark:text-slate-400" role="status">Loading orders…</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400" role="status">{t.loadingOrders}</p>
         ) : (
           <>
             {actionError && (

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { OrderStatus } from '@/types';
+import { useStaffStrings } from '@/i18n/useStaffStrings';
 
 interface StatusFilterProps {
   onApply?: (statuses: OrderStatus[]) => void;
@@ -28,6 +29,7 @@ export default function StatusFilter({
   onCancel,
   selectedStatuses = [],
 }: StatusFilterProps) {
+  const t = useStaffStrings();
   const [isOpen, setIsOpen] = useState(false);
   const [tempSelectedStatuses, setTempSelectedStatuses] = useState<OrderStatus[]>(selectedStatuses);
 
@@ -36,11 +38,11 @@ export default function StatusFilter({
 
   // Status labels for display
   const statusLabels: Record<OrderStatus, string> = {
-    CREATED: 'New Order',
-    PREPARING: 'Preparing',
-    READY: 'Ready for Pickup',
-    COMPLETED: 'Completed',
-    CANCELLED: 'Cancelled',
+    CREATED: t.statusCreated,
+    PREPARING: t.statusPreparing,
+    READY: t.statusReady,
+    COMPLETED: t.statusCompleted,
+    CANCELLED: t.statusCancelled,
   };
 
   // Toggle individual checkbox
@@ -91,7 +93,7 @@ export default function StatusFilter({
         aria-haspopup="menu"
         type="button"
       >
-        <span className="text-sm font-medium">Status</span>
+        <span className="text-sm font-medium">{t.status}</span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
         
         {/* Active filters badge */}
