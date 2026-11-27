@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import OrderQrPanel from './OrderQrPanel';
 import { qrDataUrl, trackingUrl } from '@/utils/receipt';
+import { useStaffStrings } from '@/i18n/useStaffStrings';
 
 interface Props {
   order: { orderNumber: string; sessionId: string };
@@ -12,6 +13,7 @@ interface Props {
 
 /** Shows the QR code of an existing order, for a customer who was not handed it when the order was entered. */
 export default function OrderQrDialog({ order, connected, restaurantName, onClose }: Props) {
+  const t = useStaffStrings();
   const url = trackingUrl(order.sessionId);
   const [qr, setQr] = useState<string | null>(null);
 
@@ -33,13 +35,13 @@ export default function OrderQrDialog({ order, connected, restaurantName, onClos
       <div role="dialog" aria-modal="true" aria-labelledby="order-qr-title"
         className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 shadow-xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 id="order-qr-title" className="text-2xl">Order QR code</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-5 h-5" aria-hidden="true" /></button>
+          <h2 id="order-qr-title" className="text-2xl">{t.orderQrTitle}</h2>
+          <button type="button" onClick={onClose} aria-label={t.close} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         {qr ? (
           <OrderQrPanel orderNumber={order.orderNumber} url={url} qr={qr} restaurantName={restaurantName} connected={connected} />
         ) : (
-          <p role="status" className="text-center text-slate-500">Preparing the code…</p>
+          <p role="status" className="text-center text-slate-500">{t.preparingCode}</p>
         )}
       </div>
     </div>

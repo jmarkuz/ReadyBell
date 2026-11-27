@@ -1,5 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { apiClient, ApiError } from '@/utils/api';
+import { staffStrings } from '@/i18n/staff';
+import { useStaffStrings } from '@/i18n/useStaffStrings';
 
 const RESTAURANT_KEY = 'readybell.login.restaurant';
 
@@ -27,6 +29,7 @@ function rememberRestaurant(value: string) {
  * The token is stored by the API client; a full reload then lets AuthProvider restore the session.
  */
 export default function Login() {
+  const t = useStaffStrings();
   const [restaurant, setRestaurant] = useState(rememberedRestaurant);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -62,7 +65,7 @@ export default function Login() {
 
         <div>
           <label htmlFor="restaurant" className="block text-sm font-medium text-slate-700 mb-1">
-            Restaurant
+            {t.loginRestaurant}
           </label>
           <input
             id="restaurant"
@@ -76,13 +79,13 @@ export default function Login() {
             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <p id="restaurant-hint" className="mt-1 text-xs text-slate-500">
-            The restaurant's code, as given to you. Leave empty only for the platform operator.
+            {t.loginRestaurantHint}
           </p>
         </div>
 
         <div>
           <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-1">
-            Username
+            {t.loginUsername}
           </label>
           <input
             id="username"
@@ -97,7 +100,7 @@ export default function Login() {
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
-            Password
+            {t.loginPassword}
           </label>
           <input
             id="password"
@@ -122,7 +125,7 @@ export default function Login() {
           disabled={submitting}
           className="w-full h-10 px-5 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 disabled:opacity-60 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
-          {submitting ? 'Signing in…' : 'Sign in'}
+          {submitting ? t.loginSigningIn : t.loginSignIn}
         </button>
       </form>
     </div>
@@ -131,8 +134,8 @@ export default function Login() {
 
 function messageFor(e: unknown): string {
   if (e instanceof ApiError) {
-    if (e.statusCode === 401) return 'Invalid restaurant, username or password.';
-    if (e.statusCode === 429) return 'Too many failed attempts. Please wait a few minutes and try again.';
+    if (e.statusCode === 401) return staffStrings().loginInvalid;
+    if (e.statusCode === 429) return staffStrings().loginThrottled;
   }
-  return 'Sign-in failed. Check your connection and try again.';
+  return staffStrings().loginFailed;
 }

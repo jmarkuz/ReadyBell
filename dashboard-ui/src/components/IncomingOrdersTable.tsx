@@ -5,6 +5,9 @@ import { NEXT_STATUSES, STATUS_ACTION_LABEL } from '@/utils/orderStatus';
 import OrderStatusBadge from './OrderStatusBadge';
 import { ChevronUp, ChevronDown, QrCode, Smartphone, Edit2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { uk } from 'date-fns/locale';
+import { staffLanguage, staffStrings } from '@/i18n/staff';
+import { useStaffStrings } from '@/i18n/useStaffStrings';
 
 interface IncomingOrdersTableProps {
   orders: OrderRow[];
@@ -43,12 +46,13 @@ const nextSort = (prev: SortState | null, field: SortField): SortState =>
     ? { field, order: prev.order === 'asc' ? 'desc' : 'asc' }
     : { field, order: 'asc' };
 
+const COLUMN_TEXT = staffStrings();
 const SORTABLE_COLUMNS: { field: SortField; label: string }[] = [
-  { field: 'id', label: 'Order ID' },
-  { field: 'customerName', label: 'Customer' },
-  { field: 'itemsOrdered', label: 'Items' },
-  { field: 'deliveryETA', label: 'ETA' },
-  { field: 'status', label: 'Status' },
+  { field: 'id', label: COLUMN_TEXT.colOrderId },
+  { field: 'customerName', label: COLUMN_TEXT.colCustomer },
+  { field: 'itemsOrdered', label: COLUMN_TEXT.colItems },
+  { field: 'deliveryETA', label: COLUMN_TEXT.colEta },
+  { field: 'status', label: COLUMN_TEXT.colStatus },
 ];
 
 const ARIA_SORT = { asc: 'ascending', desc: 'descending' } as const;
@@ -119,6 +123,7 @@ export default memo(function IncomingOrdersTable({
   sortOrder: initialSortOrder = 'asc',
   serverSide,
 }: IncomingOrdersTableProps) {
+  const t = useStaffStrings();
   const [clientSort, setClientSort] = useState<SortState>({ field: 'deliveryETA', order: initialSortOrder });
   const { field: sortField, order: sortOrder } = clientSort;
   const sort = serverSide ? serverSide.sort : clientSort;
@@ -223,12 +228,12 @@ export default memo(function IncomingOrdersTable({
           <table className="w-full" role="table" aria-label="Loading orders table">
             <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">Order ID</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">Customer</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">Items</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">ETA</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">Status</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">Actions</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">{t.colOrderId}</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">{t.colCustomer}</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">{t.colItems}</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">{t.colEta}</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">{t.colStatus}</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300" scope="col">{t.colActions}</th>
               </tr>
             </thead>
             <tbody>
@@ -253,7 +258,7 @@ export default memo(function IncomingOrdersTable({
   if (orders.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md p-12 text-center">
-        <p className="text-slate-500 dark:text-slate-400 text-lg">No orders found.</p>
+        <p className="text-slate-500 dark:text-slate-400 text-lg">{t.noOrders}</p>
         <p className="text-slate-400 dark:text-slate-500 text-sm mt-2">
           Create an order to get started.
         </p>
@@ -300,14 +305,14 @@ export default memo(function IncomingOrdersTable({
                   </span>
                 </td>
                 <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                  {order.deliveryETA ? formatDistanceToNow(order.deliveryETA, { addSuffix: true }) : '—'}
+                  {order.deliveryETA ? formatDistanceToNow(order.deliveryETA, { addSuffix: true, locale: staffLanguage() === 'uk' ? uk : undefined }) : '—'}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2 flex-wrap">
                     <OrderStatusBadge status={order.status} />
                     {(order.connected || connectedIds?.has(order.id)) && (
-                      <span className="inline-flex items-center gap-1 text-xs text-green-700 dark:text-green-400" title="The customer's phone is connected to this order">
-                        <Smartphone className="w-3.5 h-3.5" aria-hidden="true" />Connected
+                      <span className="inline-flex items-center gap-1 text-xs text-green-700 dark:text-green-400" title={t.connectedHint}>
+                        <Smartphone className="w-3.5 h-3.5" aria-hidden="true" />{t.connected}
                       </span>
                     )}
                   </div>
@@ -318,7 +323,7 @@ export default memo(function IncomingOrdersTable({
                       onClick={() => onRowClick?.(order.id)}
                       className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
                       aria-label={`Show QR code for order ${order.orderId}`}
-                      title="Show QR code"
+                      title={t.showQrTitle}
                       type="button"
                     >
                       <QrCode className="w-4 h-4 text-slate-600 dark:text-slate-400" aria-hidden="true" />
@@ -331,7 +336,7 @@ export default memo(function IncomingOrdersTable({
                         aria-haspopup="menu"
                         aria-expanded={statusMenuFor === order.id}
                         disabled={NEXT_STATUSES[order.status].length === 0}
-                        title={NEXT_STATUSES[order.status].length === 0 ? 'No further status changes' : 'Update Status'}
+                        title={NEXT_STATUSES[order.status].length === 0 ? t.noFurtherChanges : t.updateStatus}
                         type="button"
                       >
                         <Edit2 className="w-4 h-4 text-slate-600 dark:text-slate-400" aria-hidden="true" />
@@ -349,7 +354,7 @@ export default memo(function IncomingOrdersTable({
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-6 py-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700" role="region" aria-label="Table pagination">
           <div className="text-sm text-slate-600 dark:text-slate-400">
-            Page {currentPage} of {totalPages} ({totalCount} total orders)
+            {t.pageOf(currentPage, totalPages, totalCount)}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -359,7 +364,7 @@ export default memo(function IncomingOrdersTable({
               aria-label="Go to previous page"
               type="button"
             >
-              Previous
+              {t.previous}
             </button>
             <button
               onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
@@ -368,7 +373,7 @@ export default memo(function IncomingOrdersTable({
               aria-label="Go to next page"
               type="button"
             >
-              Next
+              {t.next}
             </button>
           </div>
         </div>

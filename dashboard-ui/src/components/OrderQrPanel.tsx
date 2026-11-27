@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Check, CheckCircle2, Copy, Printer } from 'lucide-react';
 import { isLocalOnlyUrl, printReceipt } from '@/utils/receipt';
+import { useStaffStrings } from '@/i18n/useStaffStrings';
 
 interface Props {
   orderNumber: string;
@@ -21,6 +22,7 @@ interface Props {
  * from the counter); staff can bring it back with one click if the customer needs it again.
  */
 export default function OrderQrPanel({ orderNumber, url, qr, restaurantName, connected, children }: Props) {
+  const t = useStaffStrings();
   const [copied, setCopied] = useState(false);
   const [revealed, setRevealed] = useState(false);
   useEffect(() => { setRevealed(false); setCopied(false); }, [url]);
@@ -35,18 +37,18 @@ export default function OrderQrPanel({ orderNumber, url, qr, restaurantName, con
       {hidden ? (
         <div role="status" className="mx-auto w-56 h-56 rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-900 flex flex-col items-center justify-center gap-2 text-green-800 dark:text-green-300">
           <CheckCircle2 className="w-14 h-14" aria-hidden="true" />
-          <p className="font-medium">Customer connected</p>
-          <p className="text-xs px-4">The phone is following this order. The QR code is hidden.</p>
+          <p className="font-medium">{t.customerConnected}</p>
+          <p className="text-xs px-4">{t.customerConnectedHint}</p>
         </div>
       ) : (
         <img src={qr} alt={`QR code for order ${orderNumber}`} className="mx-auto w-56 h-56 rounded-lg border border-slate-200 bg-white" />
       )}
 
       {hidden ? (
-        <button type="button" onClick={() => setRevealed(true)} className="text-sm underline text-slate-600 dark:text-slate-400">Show QR code again</button>
+        <button type="button" onClick={() => setRevealed(true)} className="text-sm underline text-slate-600 dark:text-slate-400">{t.showQrAgain}</button>
       ) : (
         <>
-          <p className="text-sm text-slate-600 dark:text-slate-400">Show or print this code. The customer scans it to follow the order and get notified.</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">{t.qrHint}</p>
           <p className="text-xs break-all text-slate-500">{url}</p>
         </>
       )}
@@ -61,9 +63,9 @@ export default function OrderQrPanel({ orderNumber, url, qr, restaurantName, con
 
       <div className="flex gap-2 justify-center flex-wrap pt-2">
         <button type="button" onClick={() => printReceipt({ restaurant: restaurantName, orderNumber, qr, url })}
-          className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-stone-800 text-white text-sm font-medium"><Printer className="w-4 h-4" aria-hidden="true" />Print</button>
+          className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-stone-800 text-white text-sm font-medium"><Printer className="w-4 h-4" aria-hidden="true" />{t.print}</button>
         <button type="button" onClick={async () => { try { await navigator.clipboard.writeText(url); setCopied(true); } catch { /* clipboard unavailable */ } }}
-          className="inline-flex items-center gap-2 h-10 px-4 rounded-full border border-slate-300 text-sm font-medium">{copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}{copied ? 'Copied' : 'Copy link'}</button>
+          className="inline-flex items-center gap-2 h-10 px-4 rounded-full border border-slate-300 text-sm font-medium">{copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}{copied ? t.copied : t.copyLink}</button>
         {children}
       </div>
     </div>

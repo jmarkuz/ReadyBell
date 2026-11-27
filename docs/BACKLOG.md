@@ -41,7 +41,7 @@ The ordered plan for what to do next, with specifications and status, is in [IMP
 | ID | Task | Size |
 |----|------|------|
 | Q1 | Browser E2E (Playwright): login, New order, QR link, customer sees READY | M |
-| Q2 | i18n for the staff panel (uk/en); the customer page already has both | M |
+| Q2 | i18n for the staff panel (uk/en); the customer page already has both | M | Mostly done (T24): sign-in, navigation, dashboard, orders table, status labels, new order, QR dialog, customer display, staff and settings. Left in English: the header (search, sound, theme), the date-range filter, the operator's restaurants page, error texts that come from the server |
 | Q3 | Accessibility gaps from `UI_QUALITY.md` (aria-sort, skip link, aria-current, live regions) and four colour pairs below 3:1 | M |
 | Q4 | Customer page: "order cancelled" push (done, T23), order history of a session, add-to-home-screen prompt | M |
 | Q5 | Decide the fate of `.kiro/specs/*` (historical specs): archive or delete the three UI/integration ones that no longer describe the code | S |

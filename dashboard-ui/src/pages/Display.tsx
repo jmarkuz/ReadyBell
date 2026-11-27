@@ -4,6 +4,7 @@ import { RestaurantProvider } from '@/context/RestaurantProvider';
 import { useRestaurant } from '@/context/restaurantContext';
 import { useDashboardOrders, type OrdersQuery } from '@/hooks/useDashboardOrders';
 import { qrDataUrl, trackingUrl } from '@/utils/receipt';
+import { useStaffStrings } from '@/i18n/useStaffStrings';
 
 /** An order entered longer ago than this is no longer being handed over at the counter. */
 const HANDOVER_WINDOW_MS = 15 * 60_000;
@@ -19,6 +20,7 @@ const CONFIRMATION_MS = 4_000;
  * receipt number and the code are shown: no names, no items.
  */
 function CustomerDisplay() {
+  const t = useStaffStrings();
   const restaurant = useRestaurant();
 
   const [now, setNow] = useState(() => Date.now());
@@ -71,8 +73,8 @@ function CustomerDisplay() {
     body = (
       <div role="status" className="flex flex-col items-center gap-4 text-green-700 dark:text-green-400">
         <CheckCircle2 className="w-32 h-32" aria-hidden="true" />
-        <p className="text-4xl font-semibold">You are connected</p>
-        <p className="text-xl">We will notify you when your order is ready.</p>
+        <p className="text-4xl font-semibold">{t.displayConnected}</p>
+        <p className="text-xl">{t.displayNotify}</p>
       </div>
     );
   } else if (current && qr?.url === url) {
@@ -80,11 +82,11 @@ function CustomerDisplay() {
       <div className="flex flex-col items-center gap-6">
         <p className="text-6xl font-bold tracking-wide">{current.orderId}</p>
         <img src={qr.data} alt={`QR code for order ${current.orderId}`} className="w-80 h-80 rounded-xl border border-slate-200 bg-white" />
-        <p className="text-2xl">Scan with your phone to follow your order</p>
+        <p className="text-2xl">{t.displayScan}</p>
       </div>
     );
   } else {
-    body = <p role="status" className="text-3xl text-slate-500">Welcome! Your order will appear here.</p>;
+    body = <p role="status" className="text-3xl text-slate-500">{t.displayWelcome}</p>;
   }
 
   return (

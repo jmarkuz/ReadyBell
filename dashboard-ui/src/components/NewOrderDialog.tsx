@@ -4,6 +4,7 @@ import { apiClient } from '@/utils/api';
 import { qrDataUrl, trackingUrl } from '@/utils/receipt';
 import OrderQrPanel from './OrderQrPanel';
 import { useRestaurant } from '@/context/restaurantContext';
+import { useStaffStrings } from '@/i18n/useStaffStrings';
 
 interface Line { name: string; quantity: number }
 interface Created { id: string; orderNumber: string; url: string; qr: string }
@@ -26,6 +27,7 @@ const emptyLine = (): Line => ({ name: '', quantity: 1 });
  */
 export default function NewOrderDialog({ open, onClose, onCreated, connectedOrderIds }: Props) {
   const restaurant = useRestaurant();
+  const tr = useStaffStrings();
   const [customer, setCustomer] = useState('');
   const [lines, setLines] = useState<Line[]>([emptyLine()]);
   const [minutes, setMinutes] = useState(10);
@@ -75,38 +77,38 @@ export default function NewOrderDialog({ open, onClose, onCreated, connectedOrde
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div role="dialog" aria-modal="true" aria-labelledby="new-order-title" className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 shadow-xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 id="new-order-title" className="text-2xl">{created ? 'Order created' : 'New order'}</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-5 h-5" aria-hidden="true" /></button>
+          <h2 id="new-order-title" className="text-2xl">{created ? tr.orderCreatedTitle : tr.newOrderTitle}</h2>
+          <button type="button" onClick={onClose} aria-label={tr.close} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
 
         {created ? (
           <OrderQrPanel orderNumber={created.orderNumber} url={created.url} qr={created.qr} restaurantName={restaurant.name}
             connected={connectedOrderIds?.has(created.id) ?? false}>
             <button type="button" onClick={() => { setCreated(null); setCustomer(''); setLines([emptyLine()]); }}
-              className="h-10 px-4 rounded-full border border-slate-300 text-sm font-medium">New order</button>
+              className="h-10 px-4 rounded-full border border-slate-300 text-sm font-medium">{tr.newOrder}</button>
           </OrderQrPanel>
         ) : (
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label htmlFor="no-customer" className="block text-sm font-medium mb-1">Customer name <span className="text-slate-500 font-normal">(optional)</span></label>
+              <label htmlFor="no-customer" className="block text-sm font-medium mb-1">{tr.customerName} <span className="text-slate-500 font-normal">{tr.optional}</span></label>
               <input id="no-customer" ref={firstField} className={input} value={customer} maxLength={80} onChange={(e) => setCustomer(e.target.value)} />
-              <p className="mt-1 text-xs text-slate-500">A first name or initials is enough. It is removed from the order a few weeks after pick-up.</p>
+              <p className="mt-1 text-xs text-slate-500">{tr.customerNameHint}</p>
             </div>
 
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium mb-1">Items</legend>
+              <legend className="text-sm font-medium mb-1">{tr.items}</legend>
               {lines.map((l, i) => (
                 <div key={i} className="flex gap-2">
-                  <input aria-label={`Item ${i + 1} name`} className={input} placeholder="e.g. Latte" value={l.name} maxLength={100} onChange={(e) => updateLine(i, { name: e.target.value })} />
+                  <input aria-label={`Item ${i + 1} name`} className={input} placeholder={tr.itemPlaceholder} value={l.name} maxLength={100} onChange={(e) => updateLine(i, { name: e.target.value })} />
                   <input aria-label={`Item ${i + 1} quantity`} className={`${input} !w-20`} type="number" min={1} max={99} value={l.quantity} onChange={(e) => updateLine(i, { quantity: Math.min(99, Math.max(1, Number(e.target.value) || 1)) })} />
                   {lines.length > 1 && <button type="button" aria-label={`Remove item ${i + 1}`} onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-4 h-4" aria-hidden="true" /></button>}
                 </div>
               ))}
-              <button type="button" onClick={() => setLines((ls) => [...ls, emptyLine()])} className="inline-flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-300"><Plus className="w-4 h-4" aria-hidden="true" />Add item</button>
+              <button type="button" onClick={() => setLines((ls) => [...ls, emptyLine()])} className="inline-flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-300"><Plus className="w-4 h-4" aria-hidden="true" />{tr.addItem}</button>
             </fieldset>
 
             <fieldset>
-              <legend className="text-sm font-medium mb-1">Ready in (minutes)</legend>
+              <legend className="text-sm font-medium mb-1">{tr.readyInMinutes}</legend>
               <div className="flex gap-2 items-center flex-wrap">
                 {ETA_CHIPS.map((m) => (
                   <button key={m} type="button" aria-pressed={minutes === m} onClick={() => setMinutes(m)}
@@ -117,7 +119,7 @@ export default function NewOrderDialog({ open, onClose, onCreated, connectedOrde
             </fieldset>
 
             {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-            <button type="submit" disabled={busy} className="w-full h-11 rounded-full bg-stone-800 text-white font-medium disabled:opacity-60">{busy ? 'Creating…' : 'Create order'}</button>
+            <button type="submit" disabled={busy} className="w-full h-11 rounded-full bg-stone-800 text-white font-medium disabled:opacity-60">{busy ? tr.creating : tr.createOrder}</button>
           </form>
         )}
       </div>
