@@ -11,7 +11,6 @@ import java.util.Set;
  * are unit-tested; {@link ProductionStartupChecks} applies them outside the {@code dev} and {@code test} profiles.
  */
 public final class StartupChecks {
-
     private static final Set<String> WEAK_PASSWORDS = Set.of(
             "password", "admin", "platform", "staff", "secret", "changeme", "change-me", "12345678", "qwerty", "test", "root");
     private static final Set<String> KNOWN_DB_PASSWORDS = Set.of("change-me", "changeme", "qwer1234", "password", "postgres", "readybell");
@@ -19,7 +18,6 @@ public final class StartupChecks {
     private StartupChecks() {
     }
 
-    /** @return human-readable problems; empty when the configuration is acceptable for production */
     public static List<String> problems(boolean vapidEnabled, String vapidPublicKey, String vapidPrivateKey, String jwtSecret,
                                         String databasePassword, List<SecurityProperties.User> users) {
         var problems = new ArrayList<String>();

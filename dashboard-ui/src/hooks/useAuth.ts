@@ -1,34 +1,16 @@
-/**
- * useAuth Hook - Access authentication state and actions
- * 
- * Provides reactive access to:
- * - Authentication state (isAuthenticated, user profile, loading, error)
- * - User information (id, username, email, name, role, tenantId)
- * - Auth actions (login, logout, refreshToken)
- * 
- * This hook manages authentication lifecycle including:
- * - Bearer token storage and retrieval
- * - User profile extraction from token claims
- * - Token expiry monitoring
- * - Proactive token refresh
- * - Session cleanup on logout
- */
+/** useAuth Hook - Access authentication state and actions */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { UserProfile } from '@/utils/api';
 import { tokenManager, DecodedToken } from '@/utils/TokenManager';
 
-/**
- * Auth state returned by useAuth hook
- */
+/** Auth state returned by useAuth hook */
 export interface AuthState {
-  // State
   isAuthenticated: boolean;
   user: UserProfile | null;
   loading: boolean;
   error: string | null;
   
-  // User info shortcuts
   userId: string | null;
   username: string | null;
   email: string | null;
@@ -36,14 +18,11 @@ export interface AuthState {
   role: 'STAFF' | 'RESTAURANT_ADMIN' | 'PLATFORM_ADMIN' | null;
   tenantId: string | null;
   
-  // Token info
   isTokenExpiringSoon: boolean;
   timeUntilExpiry: number;
 }
 
-/**
- * Auth actions returned by useAuth hook
- */
+/** Auth actions returned by useAuth hook */
 export interface AuthActions {
   login: (credentials: { restaurant?: string; username: string; password: string }) => Promise<void>;
   logout: () => void;
@@ -51,11 +30,7 @@ export interface AuthActions {
   clearError: () => void;
 }
 
-/**
- * useAuth Hook Options
- */
 export interface UseAuthOptions {
-  // Automatically validate token on mount
   validateOnMount?: boolean;
   
   // Proactively refresh token before expiry (threshold in seconds)
@@ -67,43 +42,15 @@ export interface UseAuthOptions {
   expiryCheckInterval?: number;
 }
 
-/**
- * Default options for useAuth hook
- */
 const DEFAULT_OPTIONS: Required<UseAuthOptions> = {
   validateOnMount: true,
   autoRefreshThreshold: 300, // Refresh 5 minutes before expiry
   expiryCheckInterval: 60000, // Check every 60 seconds
 };
 
-/**
- * useAuth Hook
- * 
- * Usage:
- * ```tsx
- * const { isAuthenticated, user, login, logout } = useAuth();
- * 
- * if (!isAuthenticated) {
- *   return <LoginPage onLogin={login} />;
- * }
- * 
- * return <Dashboard user={user} onLogout={logout} />;
- * ```
- * 
- * Proactive Token Refresh:
- * The hook automatically monitors token expiry and can refresh before expiry.
- * Set autoRefreshThreshold to number of seconds before expiry to trigger refresh.
- * Example: autoRefreshThreshold={300} refreshes 5 minutes before expiry.
- * 
- * @param options - Hook configuration options
- * @returns Object with auth state, user info shortcuts, and auth actions
- */
 export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
   const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
   
-  // ============================================================================
-  // State Management
-  // ============================================================================
   
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -112,18 +59,12 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
   const [isTokenExpiringSoon, setIsTokenExpiringSoon] = useState<boolean>(false);
   const [timeUntilExpiry, setTimeUntilExpiry] = useState<number>(-1);
   
-  // Refs for cleanup and tracking
   const expiryCheckTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef<boolean>(true);
   
-  // ============================================================================
-  // Helper Functions
-  // ============================================================================
   
-  /**
-   * Safely update state only if component is mounted
-   */
+  /** Safely update state only if component is mounted */
   const safeSetState = useCallback(<T,>(
     setState: (value: T) => void,
     value: T
@@ -133,9 +74,6 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
     }
   }, []);
   
-  /**
-   * Build UserProfile from decoded token claims
-   */
   const buildUserProfileFromToken = useCallback(
     (decoded: DecodedToken): UserProfile => ({
       id: decoded.sub || decoded.id || '',
@@ -149,9 +87,6 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
     []
   );
   
-  /**
-   * Update token expiry tracking
-   */
   const updateTokenExpiry = useCallback(() => {
     const timeRemaining = tokenManager.getTimeUntilExpiry();
     safeSetState(setTimeUntilExpiry, timeRemaining);
@@ -163,9 +98,6 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
     safeSetState(setIsTokenExpiringSoon, isExpiringSoon);
   }, [mergedOptions.autoRefreshThreshold, safeSetState]);
   
-  /**
-   * Load user profile from current token
-   */
   const loadUserProfile = useCallback(() => {
     const token = tokenManager.get();
     
@@ -178,7 +110,6 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
     
     const decoded = tokenManager.getDecodedToken();
     if (!decoded) {
-      // Token is invalid or expired
       tokenManager.clear();
       safeSetState(setIsAuthenticated, false);
       safeSetState(setUser, null);
@@ -186,26 +117,19 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
       return;
     }
     
-    // Token is valid
     const userProfile = buildUserProfileFromToken(decoded);
     safeSetState(setUser, userProfile);
     safeSetState(setIsAuthenticated, true);
     safeSetState(setLoading, false);
     
-    // Update expiry tracking
     updateTokenExpiry();
   }, [safeSetState, buildUserProfileFromToken, updateTokenExpiry]);
   
-  /**
-   * Start monitoring token expiry
-   */
   const startExpiryMonitoring = useCallback(() => {
-    // Clear any existing timer
     if (expiryCheckTimerRef.current) {
       clearInterval(expiryCheckTimerRef.current);
     }
     
-    // Set up periodic expiry checks
     expiryCheckTimerRef.current = setInterval(() => {
       updateTokenExpiry();
       
@@ -229,9 +153,6 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
     updateTokenExpiry,
   ]);
   
-  /**
-   * Stop all timers and cleanup
-   */
   const cleanup = useCallback(() => {
     if (expiryCheckTimerRef.current) {
       clearInterval(expiryCheckTimerRef.current);
@@ -244,16 +165,7 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
     }
   }, []);
   
-  // ============================================================================
-  // Auth Actions
-  // ============================================================================
   
-  /**
-   * Login action - authenticate with credentials
-   * 
-   * @param credentials - Username and password
-   * @throws Error if login fails
-   */
   const login = useCallback(
     async (credentials: { restaurant?: string; username: string; password: string }): Promise<void> => {
       try {
@@ -263,28 +175,23 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
         // Import api client (lazy import to avoid circular dependencies)
         const { apiClient } = await import('@/utils/api');
         
-        // Call backend login endpoint
         const response = await apiClient.login({
           ...(credentials.restaurant && { restaurant: credentials.restaurant }),
           username: credentials.username,
           password: credentials.password,
         });
         
-        // Backend should return token in response
         if (!response.token) {
           throw new Error('No token in login response');
         }
         
-        // Store token in TokenManager
         const stored = tokenManager.store(response.token);
         if (!stored) {
           throw new Error('Failed to store authentication token');
         }
         
-        // Load user profile from token
         loadUserProfile();
         
-        // Start monitoring token expiry
         startExpiryMonitoring();
         
         console.debug('[useAuth] Login successful');
@@ -302,12 +209,8 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
     [safeSetState, loadUserProfile, startExpiryMonitoring]
   );
   
-  /**
-   * Logout action - clear session and token
-   */
   const logout = useCallback(() => {
     try {
-      // Clean up timers
       cleanup();
       
       // Call backend logout endpoint to invalidate session
@@ -316,7 +219,6 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
         apiClient.logout();
       });
       
-      // Clear local state
       tokenManager.clear();
       safeSetState(setIsAuthenticated, false);
       safeSetState(setUser, null);
@@ -330,17 +232,12 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
     }
   }, [cleanup, safeSetState]);
   
-  /**
-   * Refresh token action - get new token from refresh endpoint
-   * 
-   * @returns true if refresh succeeded, false otherwise
-   */
+  /** Refresh token action - get new token from refresh endpoint */
   const refreshToken = useCallback(async (): Promise<boolean> => {
     try {
       // Import api client (lazy import to avoid circular dependencies)
       const { apiClient } = await import('@/utils/api');
       
-      // Call backend refresh endpoint
       const response = await apiClient.login({
         username: user?.username || '',
         password: '', // Note: This is a simplified approach
@@ -352,13 +249,11 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
         throw new Error('No token in refresh response');
       }
       
-      // Store new token
       const stored = tokenManager.store(response.token);
       if (!stored) {
         throw new Error('Failed to store refreshed token');
       }
       
-      // Reload user profile
       loadUserProfile();
       
       console.debug('[useAuth] Token refresh successful');
@@ -366,26 +261,16 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
     } catch (err) {
       console.error('[useAuth] Token refresh failed:', err);
       
-      // On refresh failure, logout the user
       logout();
       return false;
     }
   }, [user?.username, loadUserProfile, logout]);
   
-  /**
-   * Clear error message
-   */
   const clearError = useCallback(() => {
     safeSetState(setError, null);
   }, [safeSetState]);
   
-  // ============================================================================
-  // Effects
-  // ============================================================================
   
-  /**
-   * Initialize auth state on mount
-   */
   useEffect(() => {
     if (mergedOptions.validateOnMount) {
       loadUserProfile();
@@ -397,9 +282,6 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   
-  /**
-   * Handle component unmounting
-   */
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
@@ -407,12 +289,8 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
     };
   }, [cleanup]);
   
-  // ============================================================================
-  // Return State and Actions
-  // ============================================================================
   
   return {
-    // State
     isAuthenticated,
     user,
     loading,
@@ -420,7 +298,6 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
     isTokenExpiringSoon,
     timeUntilExpiry,
     
-    // User info shortcuts
     userId: user?.id || null,
     username: user?.username || null,
     email: user?.email || null,
@@ -428,7 +305,6 @@ export function useAuth(options?: UseAuthOptions): AuthState & AuthActions {
     role: user?.role || null,
     tenantId: user?.tenantId || null,
     
-    // Actions
     login,
     logout,
     refreshToken,

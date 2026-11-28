@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Component
 public class RetentionService {
-
     private static final Logger log = LoggerFactory.getLogger(RetentionService.class);
 
     /** Transaction-level advisory lock key ("RETENTIO"): one replica at a time works on a batch. */
@@ -89,7 +88,6 @@ public class RetentionService {
         return value;
     }
 
-    /** The nightly run. */
     @Scheduled(cron = "${readybell.retention.cron:0 30 2 * * *}")
     public void scheduledRun() {
         if (enabled) {
@@ -99,8 +97,6 @@ public class RetentionService {
 
     /**
      * Runs every task. {@code tenant} limits the work to one restaurant (tests, offboarding); {@code null} means all.
-     *
-     * @return rows changed by each task (rows that would change, in a dry run)
      */
     public Map<String, Integer> run(Instant now, UUID tenant) {
         Map<String, Integer> result = new LinkedHashMap<>();
@@ -150,8 +146,6 @@ public class RetentionService {
                 .setParameter("error", finalError).setParameter("id", runId).executeUpdate());
         return error == null;
     }
-
-    // ---------------------------------------------------------------------------------------------------------------
 
     /** Writes the fact row of finished orders that predate the fact table (their timings are estimates). */
     int backfillFacts(Instant cutoff, UUID tenant) {
@@ -239,10 +233,7 @@ public class RetentionService {
                 WHERE id IN (:ids)""").setParameter("ids", ids).executeUpdate();
     }
 
-    // ---------------------------------------------------------------------------------------------------------------
-
     private interface IdSource {
-        /** @param offset rows to skip: always 0 when changing (a changed row leaves the result), growing in a dry run */
         List<UUID> next(int offset);
     }
 
@@ -293,7 +284,6 @@ public class RetentionService {
         }
     }
 
-    /** A dry run: the number of rows the task would change, counted batch by batch without locking or changing anything. */
     private int count(IdSource source) {
         int total = 0;
         while (true) {

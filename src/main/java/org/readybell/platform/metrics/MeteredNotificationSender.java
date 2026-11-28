@@ -9,7 +9,6 @@ import java.util.Objects;
 
 /** Decorates the real sender so every attempt is counted, whichever adapter is behind it. */
 public class MeteredNotificationSender implements NotificationSender {
-
     private final NotificationSender delegate;
     private final PushMetrics metrics;
 

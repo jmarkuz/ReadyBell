@@ -15,11 +15,10 @@ import org.springframework.stereotype.Component;
  * <p>By default the push goes straight to this node's connections. With
  * {@code readybell.sse.redis.enabled=true} it is published through Redis instead, so that every
  * node — including the one that handled the request — delivers to its own connections and clients
- * receive updates regardless of which replica they are attached to (Req 12.5).
+ * receive updates regardless of which replica they are attached to.
  */
 @Component
 public class OrderStatusFanout {
-
     private final SseEmitterRegistry registry;
     private final ObjectProvider<RedisSseBridge> redis;
 

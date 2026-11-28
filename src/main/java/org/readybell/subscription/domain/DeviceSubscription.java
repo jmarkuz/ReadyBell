@@ -10,14 +10,13 @@ import java.util.Objects;
  *
  * <p>A subscription belongs to exactly one {@link CustomerSessionId} within one
  * {@link TenantId} and stores the {@link PushEndpoint} required to deliver push messages
- * to that device (Req 3.1, 3.2).
+ * to that device.
  *
  * <p>The {@code (sessionId, endpointUrl)} pair is intended to be unique: calling
  * {@link #register} creates a fresh subscription while {@link #updateKeys} replaces the
- * keys on an existing one when the same endpoint re-registers (Req 3.4).
+ * keys on an existing one when the same endpoint re-registers.
  */
 public class DeviceSubscription {
-
     private final DeviceSubscriptionId id;
     private final TenantId tenantId;
     private final CustomerSessionId sessionId;
@@ -38,12 +37,7 @@ public class DeviceSubscription {
      * Factory method that creates and returns a new {@code DeviceSubscription}.
      *
      * <p>The subscription is assigned a fresh {@link DeviceSubscriptionId} and is bound
-     * to the supplied {@code tenantId} and {@code sessionId} (Req 3.1).
-     *
-     * @param tenantId  the tenant that owns this subscription
-     * @param sessionId the customer session this subscription belongs to
-     * @param endpoint  the push endpoint value object (validated for completeness by {@link PushEndpoint})
-     * @return a new, ready-to-persist {@code DeviceSubscription}
+     * to the supplied {@code tenantId} and {@code sessionId}.
      */
     public static DeviceSubscription register(
             TenantId tenantId,
@@ -56,9 +50,7 @@ public class DeviceSubscription {
      * Replaces the current {@link PushEndpoint} with a new one.
      *
      * <p>Used when the same endpoint URL re-registers with refreshed keys so that the
-     * existing subscription record is updated rather than duplicated (Req 3.4).
-     *
-     * @param newEndpoint the replacement push endpoint (must be complete and valid)
+     * existing subscription record is updated rather than duplicated.
      */
     public void updateKeys(PushEndpoint newEndpoint) {
         this.endpoint = Objects.requireNonNull(newEndpoint, "newEndpoint must not be null");
@@ -68,18 +60,11 @@ public class DeviceSubscription {
      * Returns {@code true} if this subscription's endpoint URL matches the given URL.
      *
      * <p>Used to detect whether an incoming registration targets the same device endpoint
-     * as an already-stored subscription (Req 3.4).
-     *
-     * @param endpointUrl the endpoint URL to compare against
-     * @return {@code true} when the URLs are equal; {@code false} otherwise
+     * as an already-stored subscription.
      */
     public boolean equalsEndpoint(String endpointUrl) {
         return endpoint.endpointUrl().equals(endpointUrl);
     }
-
-    // -------------------------------------------------------------------------
-    // Accessors
-    // -------------------------------------------------------------------------
 
     public DeviceSubscriptionId getId() {
         return id;
@@ -97,22 +82,13 @@ public class DeviceSubscription {
         return endpoint;
     }
 
-    // -------------------------------------------------------------------------
     // Reconstitution — used by the JPA adapter to rebuild the aggregate from a
-    // stored entity without invoking the register factory.
-    // -------------------------------------------------------------------------
 
     /**
      * Rebuilds a {@code DeviceSubscription} from its stored state.
      *
      * <p>Intended for use by the JPA persistence adapter only; the supplied {@code id}
      * is used as-is rather than generating a fresh one.
-     *
-     * @param id        the persisted subscription identity
-     * @param tenantId  the persisted tenant
-     * @param sessionId the persisted customer session
-     * @param endpoint  the persisted push endpoint
-     * @return a subscription aggregate ready to use
      */
     public static DeviceSubscription reconstitute(DeviceSubscriptionId id,
                                                   TenantId tenantId,

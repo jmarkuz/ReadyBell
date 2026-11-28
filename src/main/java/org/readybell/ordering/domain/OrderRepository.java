@@ -10,21 +10,14 @@ import java.time.Instant;
 /**
  * Repository port for {@link Order} aggregates.
  *
- * <p>This is an outbound port defined in the domain layer (Req 11.1, 11.2). Production
+ * <p>This is an outbound port defined in the domain layer. Production
  * adapters (JPA, tenant-filtered) implement it in the adapter layer; in-memory fakes
  * implement it in tests.
  *
- * <p>All query methods that accept a {@link TenantId} parameter enforce tenant isolation
- * (Req 10.2, 10.4): they only return orders whose {@code tenantId} matches the supplied
+ * <p>All query methods that accept a {@link TenantId} parameter enforce tenant isolation: they only return orders whose {@code tenantId} matches the supplied
  * value, guaranteeing cross-tenant records are never exposed.
  */
 public interface OrderRepository {
-
-    /**
-     * Persists a new or updated {@link Order}.
-     *
-     * @param order the order to save (must not be null)
-     */
     void save(Order order);
 
     /**
@@ -32,45 +25,30 @@ public interface OrderRepository {
      *
      * <p>Intended for internal / trusted lookups. Prefer
      * {@link #findByTenantAndId(TenantId, OrderId)} for tenant-scoped access.
-     *
-     * @param id the order identity (must not be null)
-     * @return the order, or {@link Optional#empty()} if not found
      */
     Optional<Order> findById(OrderId id);
 
     /**
-     * Finds an order by identity, constrained to the given tenant (Req 10.2, 10.4).
+     * Finds an order by identity, constrained to the given tenant.
      *
      * <p>Returns {@link Optional#empty()} when no order with that id exists
-     * <em>or</em> when the order belongs to a different tenant (Req 10.3).
-     *
-     * @param tenantId the tenant scope (must not be null)
-     * @param id       the order identity (must not be null)
-     * @return the order, or empty if not found / belongs to another tenant
+     * <em>or</em> when the order belongs to a different tenant.
      */
     Optional<Order> findByTenantAndId(TenantId tenantId, OrderId id);
 
     /**
      * Returns all orders belonging to the given tenant and associated with the given
-     * customer session (Req 10.2, 10.4).
+     * customer session.
      *
      * <p>Returns an empty list when the session has no orders for this tenant.
-     *
-     * @param tenantId  the tenant scope (must not be null)
-     * @param sessionId the customer session (must not be null)
-     * @return immutable list of matching orders, possibly empty
      */
     List<Order> findByTenantAndSession(TenantId tenantId, CustomerSessionId sessionId);
 
-
     /**
-     * Returns all orders belonging to the given tenant (Req 7.3, 7.7, 10.2, 10.4).
+     * Returns all orders belonging to the given tenant.
      *
      * <p>Used by the Restaurant Staff panel to list all orders for the authenticated
      * tenant. Returns an empty list when the tenant has no orders.
-     *
-     * @param tenantId the tenant scope (must not be null)
-     * @return immutable list of all orders for the tenant, possibly empty
      */
     List<Order> findAllByTenant(TenantId tenantId);
 
@@ -80,12 +58,7 @@ public interface OrderRepository {
      */
     OrderPage findPage(TenantId tenantId, OrderQuery query);
 
-    /**
-     * Counts the tenant's orders per status with one aggregate query (Req 10.2, 10.4).
-     *
-     * @param tenantId the tenant scope (must not be null)
-     * @return the counts; every status is present, zero when it has no orders
-     */
+    /** Counts the tenant's orders per status with one aggregate query. */
     OrderStatusCounts countByStatus(TenantId tenantId);
 
     /**

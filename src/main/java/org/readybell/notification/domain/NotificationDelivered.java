@@ -11,12 +11,7 @@ import java.util.UUID;
  * {@link NotificationStatus#DELIVERED}.
  *
  * <p>Published through the {@code DomainEventPublisher} port after the push service confirms
- * that the message was delivered to the device (Req 6.5).
- *
- * @param eventId        unique identity of this event occurrence
- * @param tenantId       the tenant this event belongs to
- * @param notificationId the notification that was delivered
- * @param occurredAt     the instant at which delivery was confirmed
+ * that the message was delivered to the device.
  */
 public record NotificationDelivered(
         UUID eventId,

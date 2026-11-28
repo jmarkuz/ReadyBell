@@ -15,13 +15,10 @@ import { Link } from 'react-router-dom';
 import { MonitorSmartphone, Plus } from 'lucide-react';
 import { useStaffStrings } from '@/i18n/useStaffStrings';
 
-/** Incoming Orders rows per page. */
 const PAGE_SIZE = 10;
 
-/** How long a "new order" alert waits to learn whether the order was entered on this screen. */
 const OWN_ORDER_GRACE_MS = 1500;
 
-/** Table column → the backend's sortBy value; Items has no server-side sort. */
 const SORT_BY: Record<SortField, OrdersSortBy | null> = {
   id: 'orderId',
   customerName: 'customerName',
@@ -30,35 +27,11 @@ const SORT_BY: Record<SortField, OrdersSortBy | null> = {
   itemsOrdered: null,
 };
 
-/**
- * Dashboard Page
- * 
- * Main dashboard view with:
- * - Order summary cards grid (4 cards: Total, New, Preparing, Ready)
- * - Incoming orders table with search and filter functionality
- * - Search integration with header
- * - Status filter dropdown
- * - Date range filter
- * 
- * Features:
- * - Search, status filter, date range (by creation time), sorting and paging all run on the server
- *   (GET /api/orders); the table shows one page of 10 and any filter or sort change goes back to page 1
- * - Status filter: select multiple statuses (CREATED, PREPARING, READY, COMPLETED)
- * - The current page is reloaded on SSE events (polling while offline)
- * - Metric cards show the restaurant's real totals from GET /api/orders/metrics, independent of filters
- * - Filter badges show active filter counts
- * 
- * Responsive:
- * - Desktop (1024px+): 4-column card grid
- * - Tablet (768px-1023px): 2-column card grid
- * - Mobile (<768px): 1-column stacked
- */
+/** Dashboard Page */
 export default function Dashboard() {
   const t = useStaffStrings();
-  // Get search query from context
   const { query: searchQuery } = useSearch();
 
-  // Filter state
   const [selectedStatuses, setSelectedStatuses] = useState<OrderStatus[]>([]);
   const [dateRangeStart, setDateRangeStart] = useState<Date | null>(null);
   const [dateRangeEnd, setDateRangeEnd] = useState<Date | null>(null);
@@ -147,27 +120,22 @@ export default function Dashboard() {
     }
   }, [reload]);
 
-
   // Real totals from the server; zeros until the first response
   const metrics: OrderMetrics = useMemo(() => serverMetrics ?? {
     totalOrders: 0, newOrders: 0, preparing: 0, readyForPickup: 0, completed: 0, cancelled: 0,
   }, [serverMetrics]);
 
-  // Count active filters
   const activeFilterCount = (selectedStatuses.length > 0 ? 1 : 0) + (dateRangeStart && dateRangeEnd ? 1 : 0);
 
-  // Handle status filter apply
   const handleStatusFilterApply = useCallback((statuses: OrderStatus[]) => {
     setSelectedStatuses(statuses);
   }, []);
 
-  // Handle date range filter apply
   const handleDateRangeApply = useCallback((startDate: Date, endDate: Date) => {
     setDateRangeStart(startDate);
     setDateRangeEnd(endDate);
   }, []);
 
-  // Handle clear all filters
   const handleClearAllFilters = useCallback(() => {
     setSelectedStatuses([]);
     setDateRangeStart(null);
@@ -204,7 +172,6 @@ export default function Dashboard() {
           {t.newOrder}
         </button>
 
-        {/* Real-time connection status indicator */}
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800">
           <div 
             className={`w-2 h-2 rounded-full ${
@@ -235,17 +202,14 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Order Summary Cards Grid */}
       <section aria-labelledby="order-summary-heading">
         <h2 id="order-summary-heading" className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t.orderSummary}</h2>
         <OrderMetricsGrid metrics={metrics} />
       </section>
 
-      {/* Filters Section */}
       <section aria-labelledby="filters-heading" className="space-y-4">
         <h2 id="filters-heading" className="text-lg font-semibold text-slate-900 dark:text-white">{t.filters}</h2>
         <div className="space-y-4">
-          {/* Filter Controls */}
           <div className="flex items-center gap-3 flex-wrap">
             <StatusFilter
               selectedStatuses={selectedStatuses}
@@ -269,7 +233,6 @@ export default function Dashboard() {
               )}
             </button>
 
-            {/* Clear Filters Button */}
             {activeFilterCount > 0 && (
               <button
                 onClick={handleClearAllFilters}
@@ -282,7 +245,6 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Date Range Filter (Expandable) */}
           {showDateFilter && (
             <div className="pl-0">
               <DateRangeFilter
@@ -300,7 +262,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Active Filters Display */}
         {(selectedStatuses.length > 0 || (dateRangeStart && dateRangeEnd)) && (
           <div 
             className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
@@ -318,7 +279,6 @@ export default function Dashboard() {
         )}
       </section>
 
-      {/* Search Results Info */}
       {searchQuery && (
         <div 
           className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
@@ -332,7 +292,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Incoming Orders Table */}
       <section aria-labelledby="orders-heading">
         <h2 id="orders-heading" className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
           {t.incomingOrders} {(searchQuery.trim() || activeFilterCount > 0) && `(${totalCount})`}

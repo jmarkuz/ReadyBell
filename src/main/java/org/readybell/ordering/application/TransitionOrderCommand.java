@@ -12,11 +12,6 @@ import java.util.Objects;
  * <p>Passed to {@link ManageOrderUseCase#transitionOrderStatus(TransitionOrderCommand)}
  * by an inbound adapter (REST controller, test). Immutable; validated at construction
  * time so the application service can assume all fields are non-null.
- *
- * @param tenantId     the tenant that owns the order — used for tenant-scoped lookup
- *                     (Req 10.2, 10.4)
- * @param orderId      identity of the order to transition
- * @param targetStatus the desired new {@link OrderStatus}
  */
 public record TransitionOrderCommand(
         TenantId tenantId,

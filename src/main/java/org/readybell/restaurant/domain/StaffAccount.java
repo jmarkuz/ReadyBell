@@ -8,22 +8,20 @@ import java.util.Objects;
  * Aggregate representing a staff member's account within a single restaurant tenant.
  *
  * <p>A {@code StaffAccount} is always scoped to one tenant; the combination of
- * {@code tenantId} and {@code username} must be unique within that tenant (Req 8.4).
- * New accounts are created in the {@link AccountStatus#ACTIVE} state (Req 8.3) and
- * may be {@linkplain #deactivate() deactivated} later (Req 8.5).
+ * {@code tenantId} and {@code username} must be unique within that tenant.
+ * New accounts are created in the {@link AccountStatus#ACTIVE} state and
+ * may be {@linkplain #deactivate() deactivated} later.
  *
  * <p>No public setters are exposed — all state transitions go through named
  * methods to enforce invariants.
  */
 public class StaffAccount {
-
     private final StaffAccountId id;
     private final TenantId tenantId;
     private final String username;
     private final Role role;
     private AccountStatus status;
     private final String passwordHash;
-    /** When the account was deactivated; {@code null} while it is active (and for accounts stored before this was kept). */
     private java.time.Instant deactivatedAt;
 
     private StaffAccount(StaffAccountId id, TenantId tenantId, String username, Role role, AccountStatus status,
@@ -36,25 +34,12 @@ public class StaffAccount {
         this.passwordHash = passwordHash;
     }
 
-    /**
-     * Creates a new, active staff account for the given tenant (Req 8.3).
-     *
-     * @param tenantId the tenant this account belongs to
-     * @param username the account's username, unique within the tenant (Req 8.4)
-     * @param role     the role assigned to this account
-     * @return a new {@code StaffAccount} with status {@link AccountStatus#ACTIVE}
-     */
+    /** Creates a new, active staff account for the given tenant. */
     /** Creates an account that cannot sign in yet (no password set). */
     public static StaffAccount create(TenantId tenantId, String username, Role role) {
         return create(tenantId, username, role, null);
     }
 
-    /**
-     * Creates an active account.
-     *
-     * @param passwordHash encoded (e.g. BCrypt) password; the raw password never reaches the domain.
-     *                     May be {@code null}, in which case the account cannot sign in.
-     */
     public static StaffAccount create(TenantId tenantId, String username, Role role, String passwordHash) {
         Objects.requireNonNull(tenantId, "tenantId must not be null");
         Objects.requireNonNull(username, "username must not be null");
@@ -66,7 +51,7 @@ public class StaffAccount {
     }
 
     /**
-     * Deactivates this account (Req 8.5).
+     * Deactivates this account.
      *
      * <p>Calling this method on an already-deactivated account is idempotent.
      */
@@ -86,7 +71,6 @@ public class StaffAccount {
         return deactivatedAt;
     }
 
-    /** Returns {@code true} if this account's status is {@link AccountStatus#ACTIVE}. */
     public boolean isActive() {
         return this.status == AccountStatus.ACTIVE;
     }
@@ -96,7 +80,6 @@ public class StaffAccount {
         return isActive() && passwordHash != null && !passwordHash.isBlank();
     }
 
-    /** Encoded password, or {@code null}. Never expose this outside authentication. */
     public String getPasswordHash() {
         return passwordHash;
     }
@@ -121,23 +104,13 @@ public class StaffAccount {
         return status;
     }
 
-    // -------------------------------------------------------------------------
     // Reconstitution — used by the JPA adapter to rebuild the aggregate from a
-    // stored entity without generating a new id.
-    // -------------------------------------------------------------------------
 
     /**
      * Rebuilds a {@code StaffAccount} from its stored state.
      *
      * <p>Unlike {@link #create} this method uses the supplied {@code id} as-is
      * rather than generating a fresh one. Intended for use by the JPA adapter only.
-     *
-     * @param id       the persisted account identity
-     * @param tenantId the persisted tenant
-     * @param username the persisted username
-     * @param role     the persisted role
-     * @param status   the persisted account status
-     * @return a staff account aggregate
      */
     public static StaffAccount reconstitute(StaffAccountId id,
                                             TenantId tenantId,

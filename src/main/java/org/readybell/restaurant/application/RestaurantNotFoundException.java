@@ -3,13 +3,12 @@ package org.readybell.restaurant.application;
 import org.readybell.shared.domain.TenantId;
 
 /**
- * Thrown when a restaurant cannot be found for a given tenant (Req 8.8).
+ * Thrown when a restaurant cannot be found for a given tenant.
  *
  * <p>Surfaced when an admin attempts to update configuration for a restaurant that
  * does not exist or does not belong to their tenant.
  */
 public class RestaurantNotFoundException extends RuntimeException {
-
     private final TenantId tenantId;
 
     public RestaurantNotFoundException(TenantId tenantId) {

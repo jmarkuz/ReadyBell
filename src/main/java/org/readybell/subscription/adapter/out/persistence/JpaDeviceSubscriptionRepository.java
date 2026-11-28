@@ -15,15 +15,14 @@ import java.util.Optional;
 /**
  * JPA adapter implementing the {@link DeviceSubscriptionRepository} port.
  *
- * <h3>Tenant filter activation (Req 10.2, 10.4)</h3>
+ * <h3>Tenant filter activation</h3>
  * <p>The Hibernate {@code tenantFilter} is enabled per query before any
  * {@code SELECT}, constraining results to the current tenant so cross-tenant
- * subscriptions are excluded (Req 10.3).
+ * subscriptions are excluded.
  */
 @Repository
 @Transactional
 public class JpaDeviceSubscriptionRepository implements DeviceSubscriptionRepository {
-
     private final DeviceSubscriptionJpaRepository springRepo;
 
     public JpaDeviceSubscriptionRepository(DeviceSubscriptionJpaRepository springRepo) {

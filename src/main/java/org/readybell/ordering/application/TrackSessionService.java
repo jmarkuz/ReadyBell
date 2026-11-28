@@ -22,7 +22,6 @@ import java.util.Optional;
  * count: opening the link of an old, completed order must not signal anything at the counter.
  */
 public class TrackSessionService implements TrackSessionUseCase {
-
     private final CustomerSessionRepository sessions;
     private final OrderRepository orders;
     private final RestaurantRepository restaurants;

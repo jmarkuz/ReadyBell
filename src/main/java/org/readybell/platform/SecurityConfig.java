@@ -7,7 +7,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.readybell.restaurant.domain.Restaurant;
 import org.readybell.restaurant.domain.RestaurantRepository;
 import org.readybell.restaurant.domain.StaffAccountRepository;
 import org.readybell.shared.domain.TenantId;
@@ -22,7 +21,6 @@ import org.springframework.security.oauth2.server.resource.web.BearerTokenResolv
 import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,15 +43,15 @@ import org.readybell.platform.auth.RedisStreamTicketStore;
 import org.readybell.platform.auth.StreamTicketStore;
 
 /**
- * Spring Security configuration for the ReadyBell REST API (Req 7.1, 7.2, 8.1, 8.2, 9.1).
+ * Spring Security configuration for the ReadyBell REST API.
  *
  * <h2>Access rules</h2>
  * <ul>
  *   <li>{@code /api/sessions/**} and {@code /actuator/**} — public (no authentication)</li>
- *   <li>{@code /api/admin/**} — requires {@code RESTAURANT_ADMIN} (Req 8.1); {@code /api/orders/**} —
- *       requires authentication (Req 7.1); tenant scoping is enforced downstream by the tenant-resolution filter and the
+ *   <li>{@code /api/admin/**} — requires {@code RESTAURANT_ADMIN}; {@code /api/orders/**} —
+ *       requires authentication; tenant scoping is enforced downstream by the tenant-resolution filter and the
  *       repository query layer.</li>
- *   <li>{@code /api/platform/**} — require {@code PLATFORM_ADMIN} role (Req 9.1, 9.4).</li>
+ *   <li>{@code /api/platform/**} — require {@code PLATFORM_ADMIN} role.</li>
  * </ul>
  *
  * <h2>Authentication mechanism</h2>
@@ -70,14 +68,10 @@ import org.readybell.platform.auth.StreamTicketStore;
 @EnableWebSecurity
 @EnableConfigurationProperties({SecurityProperties.class, JwtProperties.class})
 public class SecurityConfig {
-
     /**
      * Configures the main {@link SecurityFilterChain}.
      *
      * <p>Rules are evaluated top-to-bottom; the first matching rule wins.
-     *
-     * @param http the {@link HttpSecurity} builder provided by Spring
-     * @return the configured {@link SecurityFilterChain} bean
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, org.readybell.platform.auth.TokenGuard tokenGuard, StreamTicketStore ticketStore,
@@ -120,9 +114,7 @@ public class SecurityConfig {
                     + "font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; "
                     + "worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'")))
 
-            // Authorization rules
             .authorizeHttpRequests(auth -> auth
-                // Public: customer session endpoints and health/metrics probes
                 .requestMatchers("/api/sessions/**").permitAll()
                 .requestMatchers("/api/push/config").permitAll()
                 .requestMatchers("/api/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
@@ -130,14 +122,13 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/actuator/**").hasRole("PLATFORM_ADMIN")
 
-                // Platform admin: require PLATFORM_ADMIN role (Req 9.1, 9.4)
+                // Platform admin: require PLATFORM_ADMIN role
                 .requestMatchers("/api/platform/**").hasRole("PLATFORM_ADMIN")
 
-                // Restaurant admin and order management: require authentication (Req 7.1, 8.1)
                 .requestMatchers("/api/admin/**").hasRole("RESTAURANT_ADMIN")
                 .requestMatchers("/api/orders/**").authenticated()
 
-                // The single-page UI (index.html, assets, service worker, deep links like /track/...) is public;
+                // The single-page UI (index.html, assets, service worker, deep links like /track/...) is public
                 // everything under /api not matched above requires authentication
                 .requestMatchers(request -> !request.getRequestURI().startsWith("/api/")).permitAll()
                 .anyRequest().authenticated()
@@ -267,16 +258,10 @@ public class SecurityConfig {
         return new org.readybell.platform.auth.AccountDirectory(configured, staffAccounts, restaurants);
     }
 
-    /** Configured passwords are plain text (dev) or pre-hashed with the {@code {bcrypt}} prefix (production). */
     private static String passwordHash(PasswordEncoder encoder, String configured) {
         return configured.startsWith("{bcrypt}") ? configured.substring("{bcrypt}".length()) : encoder.encode(configured);
     }
 
-    /**
-     * Password encoder using BCrypt.
-     *
-     * @return a {@link BCryptPasswordEncoder} instance
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

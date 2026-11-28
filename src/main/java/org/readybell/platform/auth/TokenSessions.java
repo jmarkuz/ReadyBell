@@ -17,7 +17,6 @@ import java.util.UUID;
  * </ul>
  */
 public class TokenSessions {
-
     /** How long a refreshed token stays valid, for requests that were already on their way. */
     static final Duration REFRESH_OVERLAP = Duration.ofSeconds(60);
 
@@ -25,7 +24,6 @@ public class TokenSessions {
     private final Clock clock;
     private final Duration keepRevoked;
 
-    /** @param keepRevoked how long a revocation must be remembered: the token lifetime plus the refresh grace */
     public TokenSessions(TokenRevocationStore store, Clock clock, Duration keepRevoked) {
         this.store = store;
         this.clock = clock;
@@ -57,10 +55,7 @@ public class TokenSessions {
         store.revokeSession(sessionIdOf(jwt), keepRevoked);
     }
 
-    /**
-     * Called when {@code old} is presented to refresh.
-     * @return false if it must be refused (revoked chain, or a retired token used again, which also ends the chain)
-     */
+    /** Called when {@code old} is presented to refresh. */
     public boolean allowRefresh(Jwt old) {
         String sid = sessionIdOf(old);
         if (store.isSessionRevoked(sid)) {

@@ -15,7 +15,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/platform/delivery")
 public class DeliveryProblemsController {
-
     private final DeliveryProblemsService problems;
 
     public DeliveryProblemsController(DeliveryProblemsService problems) {

@@ -1,22 +1,11 @@
 /**
  * API Client Configuration
  * Handles all HTTP requests to the backend with authentication, interceptors, and error handling
- * 
- * Base URL: same origin by default (Vite proxies /api to the backend); override with VITE_API_BASE_URL
- * 
- * Supports:
- * - Bearer token authentication (Authorization header)
- * - Tenant isolation (via authenticated user context)
- * - RFC 7807 error responses
- * - Multi-phase endpoint integration
  */
 
 import { ErrorResponse, DisplayError, PaginatedResponse, OrderRow, OrderStatus, OrderMetrics } from '@/types';
 import { tokenManager } from './TokenManager';
 
-/**
- * User profile from authentication
- */
 export interface UserProfile {
   id: string;
   username: string;
@@ -27,14 +16,8 @@ export interface UserProfile {
   restaurantName?: string;
 }
 
-/**
- * Request interceptor type definition
- */
 export type RequestInterceptor = (config: RequestConfig) => RequestConfig | Promise<RequestConfig>;
 
-/**
- * Response interceptor type definition
- */
 /** The request a response belongs to, so interceptors can replay it faithfully (method, headers, body). */
 export interface RequestContext {
   url: string;
@@ -46,14 +29,8 @@ export type ResponseInterceptor = (
   context?: RequestContext,
 ) => Response | Promise<Response>;
 
-/**
- * Error interceptor type definition
- */
 export type ErrorInterceptor = (error: Error) => Error | Promise<Error>;
 
-/**
- * Request configuration for interceptors
- */
 export interface RequestConfig {
   method: string;
   endpoint: string;
@@ -62,9 +39,7 @@ export interface RequestConfig {
   url?: string;
 }
 
-/**
- * Order row exactly as the backend sends it: dates are ISO strings and statuses use backend names.
- */
+/** Order row exactly as the backend sends it: dates are ISO strings and statuses use backend names. */
 export type RawOrderRow = Omit<OrderRow, 'deliveryETA' | 'status'> & {
   deliveryETA: string | null;
   status: string;
@@ -85,7 +60,6 @@ export interface RestaurantInfo {
   adminUsername: string | null;
 }
 
-/** Response of GET /api/orders/metrics (backend status names). */
 interface RawOrderMetrics {
   totalOrders: number;
   created: number;
@@ -100,7 +74,6 @@ export function fromBackendStatus(status: string): OrderStatus {
   return (status === 'IN_PROGRESS' ? 'PREPARING' : status) as OrderStatus;
 }
 
-/** UI → backend status names. */
 export function toBackendStatus(status: string): string {
   return status === 'PREPARING' ? 'IN_PROGRESS' : status;
 }
@@ -150,7 +123,6 @@ export class ApiClient {
       const token = tokenManager.get();
       
       if (token) {
-        // Token available: inject it into Authorization header
         (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
         console.debug(`[API] Request interceptor: Bearer token injected for ${config.method} ${config.endpoint}`);
       } else {
@@ -237,7 +209,6 @@ export class ApiClient {
         console.debug('[API] Response interceptor: Token refresh already in progress, waiting...');
       }
 
-      // Wait for refresh to complete
       const newToken = await this.refreshPromise;
 
       if (newToken) {
@@ -261,7 +232,6 @@ export class ApiClient {
         const retryResponse = await fetch(url, retryOptions);
         return retryResponse;
       } else {
-        // Refresh failed - logout and redirect to login
         console.warn('[API] Response interceptor: Token refresh failed, logging out');
         this.logout();
         window.location.href = '/login';
@@ -270,28 +240,21 @@ export class ApiClient {
     });
   }
 
-  /**
-   * Attempt to refresh the bearer token using refresh endpoint
-   * 
-   * @returns Promise resolving to new token string if successful, null if refresh fails
-   */
+  /** Attempt to refresh the bearer token using refresh endpoint */
   /**
    * Attempt to refresh the bearer token with exponential backoff retry
-   * 
+   *
    * Retry Strategy:
    * - Max 3 attempts total
    * - Exponential backoff: 1s, 2s, 4s between attempts
    * - No retry on permanent failures (401, 403, 400)
    * - Retry on transient failures (5xx, network errors, timeouts)
    * - Detailed logging of each attempt
-   * 
-   * @returns Promise resolving to new token string if successful, null if all retries exhausted
    */
   private async attemptTokenRefresh(): Promise<string | null> {
     const MAX_ATTEMPTS = 3;
     const BACKOFF_DELAYS = [1000, 2000, 4000]; // 1s, 2s, 4s in milliseconds
 
-    // Get current token for refresh endpoint
     const currentToken = tokenManager.get();
     if (!currentToken) {
       console.warn('[API] attemptTokenRefresh: No current token available');
@@ -363,7 +326,6 @@ export class ApiClient {
           return null;
         }
 
-        // Success - parse refresh response
         console.debug('[API] Token refresh attempt succeeded (status 200)');
         const data = await response.json();
         const newToken = data.token || data.accessToken;
@@ -373,7 +335,6 @@ export class ApiClient {
           return null;
         }
 
-        // Store new token
         const stored = tokenManager.store(newToken);
         if (!stored) {
           console.error('[API] Failed to store refreshed token');
@@ -410,7 +371,6 @@ export class ApiClient {
             return null;
           }
         } else {
-          // Unexpected error - don't retry
           console.error(
             '[API] Token refresh failed with unexpected error:',
             error instanceof Error ? error.message : String(error)
@@ -434,18 +394,10 @@ export class ApiClient {
     this.requestInterceptors.push(interceptor);
   }
 
-  /**
-   * Add a response interceptor
-   * Interceptors are called in order after response is received
-   */
   public addResponseInterceptor(interceptor: ResponseInterceptor): void {
     this.responseInterceptors.push(interceptor);
   }
 
-  /**
-   * Add an error interceptor
-   * Interceptors are called in order when an error occurs
-   */
   public addErrorInterceptor(interceptor: ErrorInterceptor): void {
     this.errorInterceptors.push(interceptor);
   }
@@ -456,7 +408,6 @@ export class ApiClient {
    */
   private loadUserProfile(): void {
     try {
-      // Try to load from token first (more authoritative)
       const decodedToken = tokenManager.getDecodedToken();
       if (decodedToken) {
         this.userProfile = {
@@ -471,7 +422,6 @@ export class ApiClient {
         return;
       }
 
-      // Fallback to localStorage
       const profileJson = localStorage.getItem('user-profile');
       if (profileJson) {
         this.userProfile = JSON.parse(profileJson);
@@ -489,30 +439,18 @@ export class ApiClient {
     return { ...this.defaultHeaders };
   }
 
-  /**
-   * Get current user profile
-   */
   getUserProfile(): UserProfile | null {
     return this.userProfile;
   }
 
-  /**
-   * Get current tenant ID
-   */
   getTenantId(): string | null {
     return this.userProfile?.tenantId || null;
   }
 
-  /**
-   * Get current user role
-   */
   getUserRole(): string | null {
     return this.userProfile?.role || null;
   }
 
-  /**
-   * Map backend error response to frontend display error
-   */
   private mapError(response: Response, data: unknown): DisplayError {
     let errorData: Partial<ErrorResponse> = {};
     
@@ -532,7 +470,6 @@ export class ApiClient {
       type = 'network';
     }
 
-    // Build user-friendly error message
     let message = '';
     switch (response.status) {
       case 400:
@@ -577,7 +514,7 @@ export class ApiClient {
 
   /**
    * Perform HTTP request with error handling and interceptors
-   * 
+   *
    * Flow:
    * 1. Apply request interceptors (e.g., inject Bearer token)
    * 2. Send HTTP request
@@ -592,7 +529,6 @@ export class ApiClient {
     const url = `${this.baseURL}${endpoint}`;
 
     try {
-      // Build initial request config
       let config: RequestConfig = {
         method,
         endpoint,
@@ -600,7 +536,6 @@ export class ApiClient {
         headers: this.getHeaders(),
       };
 
-      // Apply request interceptors in order
       for (const interceptor of this.requestInterceptors) {
         config = await interceptor(config);
       }
@@ -614,15 +549,12 @@ export class ApiClient {
         options.body = JSON.stringify(config.body);
       }
 
-      // Execute request
       let response = await fetch(url, options);
 
-      // Apply response interceptors in order
       for (const interceptor of this.responseInterceptors) {
         response = await interceptor(response, { url, init: options });
       }
 
-      // Parse response body
       let data: unknown;
       const contentType = response.headers.get('content-type');
       if (contentType?.includes('json')) {
@@ -636,7 +568,6 @@ export class ApiClient {
         data = await response.text();
       }
 
-      // Handle errors
       if (!response.ok) {
         const error = this.mapError(response, data);
         throw new ApiError(error.message, response.status, error);
@@ -644,13 +575,11 @@ export class ApiClient {
 
       return data as T;
     } catch (error) {
-      // Apply error interceptors
       let processedError = error instanceof Error ? error : new Error(String(error));
       for (const interceptor of this.errorInterceptors) {
         processedError = await interceptor(processedError);
       }
 
-      // Handle network errors or propagate API errors
       if (processedError instanceof ApiError) {
         throw processedError;
       }
@@ -669,49 +598,26 @@ export class ApiClient {
     }
   }
 
-  /**
-   * GET request
-   */
   async get<T>(endpoint: string): Promise<T> {
     return this.request<T>('GET', endpoint);
   }
 
-  /**
-   * POST request
-   */
   async post<T>(endpoint: string, body: unknown): Promise<T> {
     return this.request<T>('POST', endpoint, body);
   }
 
-  /**
-   * PUT request
-   */
   async put<T>(endpoint: string, body: unknown): Promise<T> {
     return this.request<T>('PUT', endpoint, body);
   }
 
-  /**
-   * PATCH request
-   */
   async patch<T>(endpoint: string, body: unknown): Promise<T> {
     return this.request<T>('PATCH', endpoint, body);
   }
 
-  /**
-   * DELETE request
-   */
   async delete<T>(endpoint: string): Promise<T> {
     return this.request<T>('DELETE', endpoint);
   }
 
-  // ============================================================================
-  // ORDER MANAGEMENT ENDPOINTS
-  // ============================================================================
-
-  /**
-   * Get order list with pagination and filtering
-   * GET /api/orders?page=1&pageSize=25&status=CREATED&status=READY&sortBy=created&sortOrder=desc&from=…&to=…
-   */
   async getOrders(params?: {
     page?: number;
     pageSize?: number;
@@ -769,15 +675,10 @@ export class ApiClient {
     return res.ticket;
   }
 
-  /**
-   * Create a new order
-   * POST /api/orders
-   */
   async createOrder(data: {
     /** Omit to let the server start a new customer session (the receipt QR links to it). */
     sessionId?: string;
     customerName?: string;
-    /** Minutes from now until the order should be ready (0–1440). */
     estimatedMinutes?: number;
     items?: Array<{ name: string; quantity: number }>;
   }): Promise<{ id: string; orderId: string; sessionId: string; status: string; version: number; createdAt: string; updatedAt: string }> {
@@ -787,7 +688,7 @@ export class ApiClient {
   /**
    * Update order status
    * PATCH /api/orders/{id}/status
-   * 
+   *
    * Valid transitions:
    * CREATED → IN_PROGRESS, CANCELLED
    * IN_PROGRESS → READY, CANCELLED
@@ -801,14 +702,6 @@ export class ApiClient {
     return this.patch(`/api/orders/${orderId}/status`, { status: toBackendStatus(status) });
   }
 
-  // ============================================================================
-  // AUTHENTICATION ENDPOINTS
-  // ============================================================================
-
-  /**
-   * Login with credentials
-   * POST /api/login
-   */
   async login(credentials: {
     /** The restaurant's identifier: usernames repeat between restaurants. Omitted only for the platform operator. */
     restaurant?: string;
@@ -817,7 +710,6 @@ export class ApiClient {
   }): Promise<{ token: string; role: string; tenantId: string; expiresIn: number }> {
     const response = await this.post('/api/login', credentials);
     
-    // Store token and user profile
     const typedResponse = response as {
       token: string;
       role: string;
@@ -848,9 +740,6 @@ export class ApiClient {
     return typedResponse;
   }
 
-  /**
-   * Logout (clear tokens)
-   */
   logout(): void {
     // End the session on the server too, so a copy of the token stops working at once. Best effort: `keepalive` lets
     // the request finish while the page navigates to /login, and a failure changes nothing for the user.
@@ -867,10 +756,8 @@ export class ApiClient {
       }
     }
 
-    // Clear token via TokenManager
     tokenManager.clear();
     
-    // Clear user profile
     localStorage.removeItem('user-profile');
     localStorage.removeItem('auth-token'); // Legacy fallback
     this.userProfile = null;
@@ -883,19 +770,10 @@ export class ApiClient {
    * Reloads profile to ensure we have latest token data
    */
   isAuthenticated(): boolean {
-    // Reload profile to check current token status
     this.loadUserProfile();
     return !!tokenManager.get() && !!this.userProfile;
   }
 
-  // ============================================================================
-  // RESTAURANT STAFF ADMIN ENDPOINTS
-  // ============================================================================
-
-  /**
-   * The signed-in user's own restaurant (any staff role)
-   * GET /api/restaurant
-   */
   async getRestaurantProfile(): Promise<{ name: string; identifier: string }> {
     return this.get('/api/restaurant');
   }
@@ -908,10 +786,6 @@ export class ApiClient {
     return this.get('/api/admin/staff');
   }
 
-  /**
-   * All restaurants (PLATFORM_ADMIN only)
-   * GET /api/platform/restaurants
-   */
   async listRestaurants(): Promise<RestaurantInfo[]> {
     return this.get('/api/platform/restaurants');
   }
@@ -938,10 +812,6 @@ export class ApiClient {
     return this.delete(`/api/admin/staff/${accountId}`);
   }
 
-  /**
-   * Rename the restaurant (RESTAURANT_ADMIN only)
-   * PUT /api/admin/config
-   */
   async updateRestaurantConfig(data: { name: string }): Promise<{ name: string }> {
     return this.put('/api/admin/config', data);
   }
@@ -961,16 +831,11 @@ export class ApiClient {
     return this.post('/api/platform/restaurants', data);
   }
 
-  /**
-   * Deactivate a restaurant (PLATFORM_ADMIN only)
-   * DELETE /api/platform/restaurants/{tenantId}
-   */
   async deactivateRestaurant(
     tenantId: string
   ): Promise<RestaurantInfo> {
     return this.delete(`/api/platform/restaurants/${tenantId}`);
   }
-
 }
 
 /**
@@ -989,7 +854,4 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Create singleton instance
- */
 export const apiClient = new ApiClient();

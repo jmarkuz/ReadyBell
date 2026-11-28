@@ -17,7 +17,6 @@ import java.util.Locale;
  * A successful login clears the account + address and the account counters.
  */
 public class LoginAttemptLimiter {
-
     private final int maxFailures;
     private final int maxFailuresPerAddress;
     private final int maxFailuresPerAccount;

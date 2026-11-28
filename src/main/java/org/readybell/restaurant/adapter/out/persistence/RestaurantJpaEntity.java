@@ -24,7 +24,7 @@ import java.util.UUID;
  *
  * <p>Table: {@code restaurant(tenant_id PK, identifier UNIQUE, status, config_json, created_at)}
  *
- * <p>Indexes on {@code (tenant_id)} are implicitly covered by the PK. (Req 10.1, ADR-007)
+ * <p>Indexes on {@code (tenant_id)} are implicitly covered by the PK. (, ADR-007)
  */
 @Entity
 @Table(
@@ -34,7 +34,6 @@ import java.util.UUID;
         }
 )
 public class RestaurantJpaEntity {
-
     /** The restaurant's tenant_id serves as both PK and tenant discriminator. */
     @Id
     @Column(name = "tenant_id", nullable = false, updatable = false)
@@ -47,8 +46,6 @@ public class RestaurantJpaEntity {
     @Column(name = "status", nullable = false)
     private RestaurantStatus status;
 
-    /** Stores the JSON-serialised {@link RestaurantConfig} (kept simple as text). */
-    /** Stored as a real JSON document ({@code {"name": "..."}}): jsonb on PostgreSQL. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "config_json")
     private Map<String, String> config;
@@ -56,12 +53,7 @@ public class RestaurantJpaEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    /** Required by JPA. */
     protected RestaurantJpaEntity() {}
-
-    // -------------------------------------------------------------------------
-    // Mapping helpers
-    // -------------------------------------------------------------------------
 
     /** Maps the domain aggregate to a new JPA entity ready for insert or merge. */
     public static RestaurantJpaEntity from(Restaurant restaurant) {
@@ -74,7 +66,6 @@ public class RestaurantJpaEntity {
         return entity;
     }
 
-    /** Reconstructs the domain aggregate from this entity. */
     public Restaurant toDomain() {
         return Restaurant.reconstitute(
                 new TenantId(tenantId),
@@ -82,10 +73,6 @@ public class RestaurantJpaEntity {
                 status,
                 RestaurantConfig.of(config == null ? null : config.get("name")));
     }
-
-    // -------------------------------------------------------------------------
-    // Accessors (needed by the adapter)
-    // -------------------------------------------------------------------------
 
     public UUID getTenantId() { return tenantId; }
     public void setTenantId(UUID tenantId) { this.tenantId = tenantId; }

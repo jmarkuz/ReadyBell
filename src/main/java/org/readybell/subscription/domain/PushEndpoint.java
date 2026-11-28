@@ -5,18 +5,13 @@ package org.readybell.subscription.domain;
  * Web Push message to a specific customer device.
  *
  * <p>All three fields are mandatory; a subscription that is missing any of
- * them cannot receive messages and is therefore invalid (Req 3.2, 3.3).
- *
- * @param endpointUrl the push service URL for this device subscription
- * @param p256dhKey   the client's public key (P-256 Diffie-Hellman), base64url-encoded
- * @param authKey     the client's authentication secret, base64url-encoded
+ * them cannot receive messages and is therefore invalid.
  */
 public record PushEndpoint(String endpointUrl, String p256dhKey, String authKey) {
-
     /**
      * Compact constructor that validates every field.
      *
-     * @throws IllegalArgumentException if any field is {@code null} or blank (Req 3.3)
+     * @throws IllegalArgumentException if any field is {@code null} or blank
      */
     public PushEndpoint {
         requireNonBlank(endpointUrl, "endpointUrl");

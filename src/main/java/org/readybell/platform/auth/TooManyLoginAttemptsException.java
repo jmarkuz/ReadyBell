@@ -4,7 +4,6 @@ import java.time.Duration;
 
 /** Too many failed logins; mapped to 429 with a {@code Retry-After} header. */
 public class TooManyLoginAttemptsException extends RuntimeException {
-
     private final Duration retryAfter;
 
     public TooManyLoginAttemptsException(Duration retryAfter) {

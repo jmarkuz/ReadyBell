@@ -3,16 +3,13 @@ import { OrderMetrics, OrderRow, OrderStatus } from '@/types';
 import { apiClient } from '@/utils/api';
 import { useSSE } from './useSSE';
 
-/** Fallback refresh interval while the live connection is down. */
 const POLL_INTERVAL_MS = 30_000;
 
-/** Delay that coalesces bursts of SSE events into a single reload. */
 const RELOAD_DEBOUNCE_MS = 300;
 
 /** A new order announced by the live stream (`order-created`). */
 export interface NewOrderEvent {
   id: string;
-  /** The receipt number, for example `#12`. */
   orderNumber?: string;
 }
 
@@ -34,16 +31,11 @@ export type OrdersSortBy = 'created' | 'eta' | 'status' | 'customerName' | 'orde
 
 /** Everything the server needs to produce one page of the Incoming Orders table. */
 export interface OrdersQuery {
-  /** 1-based page number. */
   page: number;
   pageSize: number;
-  /** Empty means all statuses. */
   statuses: OrderStatus[];
-  /** Free text matched against order number, customer and item names. */
   search: string;
-  /** Orders created at or after this instant. */
   from: Date | null;
-  /** Orders created at or before this instant. */
   to: Date | null;
   sortBy: OrdersSortBy;
   sortOrder: 'asc' | 'desc';
@@ -61,20 +53,15 @@ export const DEFAULT_ORDERS_QUERY: OrdersQuery = {
 };
 
 export interface UseDashboardOrdersState {
-  /** The rows of the requested page. */
   orders: OrderRow[];
-  /** Orders matching the filters across all pages. */
   totalCount: number;
   pageCount: number;
   /** Real per-status totals for the restaurant, independent of filters and paging (null until loaded). */
   metrics: OrderMetrics | null;
   /** True only until the first page has loaded; later queries keep showing the previous rows. */
   isLoading: boolean;
-  /** Last load error, cleared by the next successful load. */
   error: Error | null;
-  /** True while the SSE stream is open. */
   isConnected: boolean;
-  /** Reloads the current page (and the metrics). */
   reload: () => Promise<void>;
 }
 
@@ -89,15 +76,7 @@ const toParams = (q: OrdersQuery) => ({
   ...(q.to && { to: q.to.toISOString() }),
 });
 
-/**
- * Loads one page of the tenant's orders from the backend and keeps it fresh.
- *
- * - {@code GET /api/orders} with the page, filters and sort from {@code query}; any change to
- *   the query is exactly one request, and a response that arrives after a newer request is dropped.
- * - {@code GET /api/orders/stream} (SSE) signals changes; each burst reloads the current page, so
- *   rows always carry the server's data (customer, items, ETA) rather than a partial event.
- * - While the stream is down the page is refreshed every 30 s.
- */
+/** Loads one page of the tenant's orders from the backend and keeps it fresh. */
 export function useDashboardOrders(
   query: OrdersQuery,
   options: { onNewOrder?: (order: NewOrderEvent) => void; onOrderConnected?: (orderId: string) => void } = {}

@@ -11,27 +11,14 @@ import java.util.List;
  *
  * <p>The Hibernate {@code tenantFilter} is enabled by the adapter
  * ({@link JpaStaffAccountRepository}) before any query, so these derived-query
- * methods automatically return only rows matching the current tenant (Req 10.2, 10.4).
+ * methods automatically return only rows matching the current tenant.
  */
 public interface StaffAccountJpaRepository
         extends JpaRepository<StaffAccountJpaEntity, UUID> {
-
-    /**
-     * Finds a staff account by identity constrained to the given tenant.
-     *
-     * @param id       the account UUID
-     * @param tenantId the tenant discriminator
-     * @return the account entity, or empty if not found or cross-tenant
-     */
+    /** Finds a staff account by identity constrained to the given tenant. */
     Optional<StaffAccountJpaEntity> findByIdAndTenantId(UUID id, UUID tenantId);
 
-    /**
-     * Finds a staff account by username within a specific tenant (Req 8.4).
-     *
-     * @param tenantId the tenant discriminator
-     * @param username the account username
-     * @return the account entity, or empty if not found
-     */
+    /** Finds a staff account by username within a specific tenant. */
     Optional<StaffAccountJpaEntity> findByTenantIdAndUsername(UUID tenantId, String username);
 
     List<StaffAccountJpaEntity> findByTenantIdOrderByUsernameAsc(UUID tenantId);

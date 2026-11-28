@@ -2,10 +2,9 @@ package org.readybell.restaurant.domain;
 
 /**
  * Thrown when an operation that requires an active Restaurant is attempted
- * against a deactivated one — e.g. starting a new customer session (Req 9.6).
+ * against a deactivated one — e.g. starting a new customer session.
  */
 public class DeactivatedRestaurantException extends RuntimeException {
-
     private final String restaurantIdentifier;
 
     public DeactivatedRestaurantException(String restaurantIdentifier) {
@@ -13,7 +12,6 @@ public class DeactivatedRestaurantException extends RuntimeException {
         this.restaurantIdentifier = restaurantIdentifier;
     }
 
-    /** The business identifier of the deactivated restaurant. */
     public String getRestaurantIdentifier() {
         return restaurantIdentifier;
     }

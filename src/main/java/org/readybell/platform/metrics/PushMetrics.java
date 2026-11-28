@@ -21,7 +21,6 @@ import java.util.Map;
  */
 @Component
 public class PushMetrics {
-
     static final String ATTEMPTS = "readybell.push.attempts";
     static final String READY_LATENCY = "readybell.push.ready.latency";
 

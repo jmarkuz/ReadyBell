@@ -6,6 +6,5 @@ package org.readybell.notification.application;
  */
 @FunctionalInterface
 public interface DeliveryTrigger {
-
     void wake();
 }

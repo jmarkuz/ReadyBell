@@ -6,10 +6,8 @@ import { useDashboardOrders, type OrdersQuery } from '@/hooks/useDashboardOrders
 import { qrDataUrl, trackingUrl } from '@/utils/receipt';
 import { useStaffStrings } from '@/i18n/useStaffStrings';
 
-/** An order entered longer ago than this is no longer being handed over at the counter. */
 const HANDOVER_WINDOW_MS = 15 * 60_000;
 const CLOCK_TICK_MS = 60_000;
-/** How long the "connected" confirmation stays before the screen goes back to waiting. */
 const CONFIRMATION_MS = 4_000;
 
 /**

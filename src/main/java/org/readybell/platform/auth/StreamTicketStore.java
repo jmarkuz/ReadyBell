@@ -9,7 +9,6 @@ import java.util.Optional;
  * user who requested it, so user, role and tenant are exactly those of the requester.
  */
 public interface StreamTicketStore {
-
     /** Stores {@code jwt} under a new random ticket valid for {@code ttl}; returns the ticket. */
     String issue(String jwt, Duration ttl);
 

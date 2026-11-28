@@ -15,7 +15,7 @@ import java.util.UUID;
  *
  * <p>Extends {@link TenantScopedEntity} so the Hibernate {@code tenantFilter} is applied
  * automatically to every query on this table, and the {@code tenant_id} column is stamped
- * on first persist (Req 10.1, 10.2, 10.4, 10.6).
+ * on first persist.
  *
  * <p>Table: {@code customer_session(id PK, tenant_id, status, started_at)}
  *
@@ -29,7 +29,6 @@ import java.util.UUID;
         }
 )
 public class CustomerSessionJpaEntity extends TenantScopedEntity {
-
     @Id
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
@@ -41,12 +40,7 @@ public class CustomerSessionJpaEntity extends TenantScopedEntity {
     @Column(name = "started_at", nullable = false, updatable = false)
     private Instant startedAt;
 
-    /** Required by JPA. */
     protected CustomerSessionJpaEntity() {}
-
-    // -------------------------------------------------------------------------
-    // Mapping helpers
-    // -------------------------------------------------------------------------
 
     /** Maps the domain aggregate to a JPA entity ready for insert or merge. */
     public static CustomerSessionJpaEntity from(CustomerSession session) {
@@ -58,7 +52,6 @@ public class CustomerSessionJpaEntity extends TenantScopedEntity {
         return entity;
     }
 
-    /** Reconstructs the domain aggregate from this entity. */
     public CustomerSession toDomain() {
         return CustomerSession.reconstitute(
                 new CustomerSessionId(id),
@@ -66,10 +59,6 @@ public class CustomerSessionJpaEntity extends TenantScopedEntity {
                 status,
                 startedAt);
     }
-
-    // -------------------------------------------------------------------------
-    // Accessors
-    // -------------------------------------------------------------------------
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }

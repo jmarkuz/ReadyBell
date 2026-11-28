@@ -14,19 +14,19 @@ import java.util.UUID;
 /**
  * JPA {@code @MappedSuperclass} that enforces tenant isolation at the persistence layer.
  *
- * <h3>Filter enforcement (Req 10.2, 10.4)</h3>
+ * <h3>Filter enforcement</h3>
  * <p>The Hibernate named filter {@code tenantFilter} with condition
  * {@code tenant_id = :tenantId} is declared here and applied to every subclass table.
  * The filter is bound automatically around every persistence-adapter call by
  * {@code TenantFilterInterceptor} (tenant from the method's {@link TenantId} argument, else from
  * {@link TenantContextHolder}); methods that must see every tenant say so with {@link CrossTenant}.
- * Adapters never enable the filter by hand (Req 10.2, 10.3, 10.4).
+ * Adapters never enable the filter by hand.
  *
- * <h3>Write stamping (Req 10.1, 10.6)</h3>
+ * <h3>Write stamping</h3>
  * <p>The {@link #stampTenant()} {@code @PrePersist} listener automatically stamps
  * {@link #tenantId} with the request-scoped tenant from {@link TenantContextHolder}
  * before any new entity row is committed, so tenant-scoped records always carry the
- * correct tenant discriminator (Req 10.6). If a {@code tenantId} was already set
+ * correct tenant discriminator. If a {@code tenantId} was already set
  * (e.g., for the {@code RestaurantJpaEntity}
  * whose PK is the {@code tenant_id}), the field is left unchanged.
  *
@@ -42,7 +42,6 @@ import java.util.UUID;
 @Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 @MappedSuperclass
 public abstract class TenantScopedEntity {
-
     /**
      * Tenant discriminator column present on every tenant-scoped table.
      *
@@ -54,7 +53,7 @@ public abstract class TenantScopedEntity {
 
     /**
      * JPA lifecycle callback — stamps the current request's tenant onto this entity
-     * before the first {@code INSERT} is executed (Req 10.6).
+     * before the first {@code INSERT} is executed.
      *
      * <p>If {@link #tenantId} is already set (e.g., because the subclass assigned it
      * explicitly in a factory method), it is left untouched so that the caller's
@@ -63,11 +62,10 @@ public abstract class TenantScopedEntity {
     @PrePersist
     void stampTenant() {
         if (tenantId == null) {
-            tenantId = TenantContextHolder.require().value(); // Req 10.6
+            tenantId = TenantContextHolder.require().value();
         }
     }
 
-    /** Returns the raw {@link UUID} tenant discriminator value. */
     public UUID getTenantId() {
         return tenantId;
     }

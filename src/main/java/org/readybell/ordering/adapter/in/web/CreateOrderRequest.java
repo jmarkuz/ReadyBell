@@ -25,8 +25,6 @@ public record CreateOrderRequest(
         @Size(max = OrderDetails.MAX_CUSTOMER_NAME) String customerName,
         @Min(0) @Max(24 * 60) Integer estimatedMinutes,
         @Size(max = OrderDetails.MAX_ITEMS) List<@Valid Item> items) {
-
-    /** Convenience for callers that only know the session. */
     public CreateOrderRequest(UUID sessionId) {
         this(sessionId, null, null, null);
     }

@@ -14,11 +14,10 @@ import java.util.UUID;
  * JPA entity mapping the {@code device_subscription} table.
  *
  * <p>Extends {@link TenantScopedEntity} so the Hibernate {@code tenantFilter} is applied
- * automatically and the {@code tenant_id} column is stamped on first persist
- * (Req 10.1, 10.2, 10.4, 10.6).
+ * automatically and the {@code tenant_id} column is stamped on first persist.
  *
  * <p>The unique constraint on {@code (tenant_id, session_id, endpoint_url)} enforces
- * idempotent re-registration at the database level (Req 3.4).
+ * idempotent re-registration at the database level.
  *
  * <p>Table: {@code device_subscription(id PK, tenant_id, session_id FK, endpoint_url,
  * p256dh_key, auth_key, UNIQUE(tenant_id, session_id, endpoint_url))}
@@ -32,7 +31,7 @@ import java.util.UUID;
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uq_device_subscription_tenant_session_endpoint",
-                        columnNames = {"tenant_id", "session_id", "endpoint_url"})  // Req 3.4
+                        columnNames = {"tenant_id", "session_id", "endpoint_url"})
         },
         indexes = {
                 @Index(name = "idx_device_subscription_tenant_id", columnList = "tenant_id"),
@@ -41,7 +40,6 @@ import java.util.UUID;
         }
 )
 public class DeviceSubscriptionJpaEntity extends TenantScopedEntity {
-
     @Id
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
@@ -71,12 +69,7 @@ public class DeviceSubscriptionJpaEntity extends TenantScopedEntity {
     /** Version of the privacy notice the customer is shown; change it together with the text (docs/privacy). */
     public static final String CONSENT_NOTICE = "2026-11-draft";
 
-    /** Required by JPA. */
     protected DeviceSubscriptionJpaEntity() {}
-
-    // -------------------------------------------------------------------------
-    // Mapping helpers
-    // -------------------------------------------------------------------------
 
     /** Maps the domain aggregate to a JPA entity ready for insert or merge. */
     public static DeviceSubscriptionJpaEntity from(DeviceSubscription subscription) {
@@ -92,7 +85,6 @@ public class DeviceSubscriptionJpaEntity extends TenantScopedEntity {
         return entity;
     }
 
-    /** Rebuilds the domain aggregate from this entity. */
     public DeviceSubscription toDomain() {
         return DeviceSubscription.reconstitute(
                 new DeviceSubscriptionId(id),
@@ -100,10 +92,6 @@ public class DeviceSubscriptionJpaEntity extends TenantScopedEntity {
                 new CustomerSessionId(sessionId),
                 new PushEndpoint(endpointUrl, p256dhKey, authKey));
     }
-
-    // -------------------------------------------------------------------------
-    // Accessors
-    // -------------------------------------------------------------------------
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }

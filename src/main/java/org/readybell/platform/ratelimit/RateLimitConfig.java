@@ -18,7 +18,6 @@ import java.time.Clock;
 @Configuration
 @EnableConfigurationProperties(RateLimitProperties.class)
 public class RateLimitConfig {
-
     /** One resolver for everything that keys on the client address (rate limits, login throttle). */
     @Bean
     public ClientIpResolver clientIpResolver(RateLimitProperties props) {

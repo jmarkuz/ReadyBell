@@ -17,7 +17,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "erasure_log", indexes = @Index(name = "idx_erasure_log_tenant", columnList = "tenant_id,performed_at"))
 class ErasureLogEntity {
-
     @Id
     UUID id;
 

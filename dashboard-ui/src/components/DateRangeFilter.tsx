@@ -2,40 +2,17 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { Calendar, X } from 'lucide-react';
 import { formatDate, getPresetDates } from '@/utils/dateHelper';
 
-/**
- * DateRangeFilterProps - Props for DateRangeFilter component
- */
+/** DateRangeFilterProps - Props for DateRangeFilter component */
 export interface DateRangeFilterProps {
-  /** Callback when date range is applied */
   onApply?: (startDate: Date, endDate: Date) => void;
-  /** Callback when filter is cleared */
   onClear?: () => void;
-  /** Initial start date (optional) */
   initialStartDate?: Date;
-  /** Initial end date (optional) */
   initialEndDate?: Date;
-  /** CSS class name */
   className?: string;
-  /** Show in expanded or collapsed state */
   isOpen?: boolean;
 }
 
-/**
- * DateRangeFilter Component
- *
- * Provides date range filtering for orders with:
- * - Date picker inputs (start and end date)
- * - Preset options: Today, This Week, This Month, Custom
- * - Validation (start date ≤ end date)
- * - Visual feedback for invalid ranges
- * - Keyboard accessible controls
- *
- * Accessibility:
- * - Semantic HTML with proper labels
- * - aria-label and aria-describedby for inputs
- * - Focus indicators on all interactive elements
- * - Keyboard navigation support
- */
+/** DateRangeFilter Component */
 export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterProps>(
   function DateRangeFilter(
     {
@@ -48,7 +25,6 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
     },
     ref
   ) {
-    // State management for date range
     const [startDate, setStartDate] = useState<string>(
       initialStartDate ? formatDate(initialStartDate) : ''
     );
@@ -57,7 +33,6 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
     );
     const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
-    // Validation: ensure start date <= end date
     const isValidDateRange = useMemo(() => {
       if (!startDate || !endDate) return true; // Empty ranges are valid (no filter)
       const start = new Date(startDate);
@@ -65,7 +40,6 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
       return start <= end;
     }, [startDate, endDate]);
 
-    // Get error message for invalid range
     const validationError = useMemo(() => {
       if (!startDate || !endDate) return '';
       if (!isValidDateRange) {
@@ -74,7 +48,6 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
       return '';
     }, [startDate, endDate, isValidDateRange]);
 
-    // Handle preset selection
     const handlePresetSelect = useCallback((preset: 'today' | 'week' | 'month') => {
       const dates = getPresetDates(preset);
       setStartDate(formatDate(dates.start));
@@ -82,7 +55,6 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
       setSelectedPreset(preset);
     }, []);
 
-    // Handle custom date input
     const handleStartDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
       setStartDate(e.target.value);
       setSelectedPreset(null);
@@ -93,7 +65,6 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
       setSelectedPreset(null);
     }, []);
 
-    // Handle apply action
     const handleApply = useCallback(() => {
       if (!startDate || !endDate) {
         return;
@@ -106,13 +77,11 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
       const start = new Date(startDate);
       const end = new Date(endDate);
 
-      // Set end date to end of day (23:59:59.999)
       end.setHours(23, 59, 59, 999);
 
       onApply?.(start, end);
     }, [startDate, endDate, isValidDateRange, onApply]);
 
-    // Handle clear action
     const handleClear = useCallback(() => {
       setStartDate('');
       setEndDate('');
@@ -120,7 +89,6 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
       onClear?.();
     }, [onClear]);
 
-    // Handle keyboard shortcuts
     const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
       if (e.key === 'Enter') {
         handleApply();
@@ -142,7 +110,6 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
         onKeyDown={handleKeyDown}
       >
         <div className="space-y-4">
-          {/* Header */}
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -160,7 +127,6 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
             )}
           </div>
 
-          {/* Preset Buttons */}
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => handlePresetSelect('today')}
@@ -197,12 +163,10 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
             </button>
           </div>
 
-          {/* Custom Date Inputs */}
           <div className="space-y-3 border-t border-slate-200 dark:border-slate-800 pt-3">
             <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">Or select custom dates:</p>
 
             <div className="grid grid-cols-2 gap-3">
-              {/* Start Date Input */}
               <div className="space-y-1">
                 <label
                   htmlFor="start-date"
@@ -229,7 +193,6 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
                 />
               </div>
 
-              {/* End Date Input */}
               <div className="space-y-1">
                 <label
                   htmlFor="end-date"
@@ -257,7 +220,6 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
               </div>
             </div>
 
-            {/* Error Message */}
             {validationError && (
               <div
                 id="date-error"
@@ -270,7 +232,6 @@ export const DateRangeFilter = React.forwardRef<HTMLDivElement, DateRangeFilterP
             )}
           </div>
 
-          {/* Action Buttons */}
           <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
             <button
               onClick={handleApply}

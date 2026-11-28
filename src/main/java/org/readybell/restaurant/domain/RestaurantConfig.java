@@ -3,12 +3,11 @@ package org.readybell.restaurant.domain;
 import java.util.Objects;
 
 /**
- * Value object holding Restaurant-level configuration (Req 8.6).
+ * Value object holding Restaurant-level configuration.
  *
  * <p>Immutable; replace the whole record to change configuration values.
  */
 public record RestaurantConfig(String name) {
-
     public RestaurantConfig {
         Objects.requireNonNull(name, "restaurant name must not be null");
     }

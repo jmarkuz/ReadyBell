@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/push")
 public class PushConfigController {
-
     private final String publicKey;
     private final boolean enabled;
 

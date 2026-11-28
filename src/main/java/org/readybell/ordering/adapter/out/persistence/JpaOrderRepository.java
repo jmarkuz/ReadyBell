@@ -12,7 +12,6 @@ import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.hibernate.Session;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaExpression;
 import org.readybell.ordering.domain.Order;
@@ -37,12 +36,12 @@ import java.util.Optional;
 /**
  * JPA adapter implementing the {@link OrderRepository} port.
  *
- * <h3>Tenant filter activation (Req 10.2, 10.4)</h3>
+ * <h3>Tenant filter activation</h3>
  * <p>The Hibernate {@code tenantFilter} is enabled per query before any
  * {@code SELECT} is executed, constraining results to the current tenant
- * and excluding cross-tenant rows (Req 10.3).
+ * and excluding cross-tenant rows.
  *
- * <h3>Optimistic locking (Req 5.8)</h3>
+ * <h3>Optimistic locking</h3>
  * <p>The {@code @Version} column on {@link OrderJpaEntity} ensures JPA raises an
  * {@code OptimisticLockException} when two concurrent transitions try to update the
  * same row, guaranteeing at most one succeeds.
@@ -50,7 +49,6 @@ import java.util.Optional;
 @Repository
 @Transactional
 public class JpaOrderRepository implements OrderRepository {
-
     private final OrderJpaRepository springRepo;
 
     @PersistenceContext
@@ -65,7 +63,7 @@ public class JpaOrderRepository implements OrderRepository {
     public void save(Order order) {
         var entity = OrderJpaEntity.from(order);
         if (order.isNew()) {
-            // A new order is inserted as it is. springRepo.save() would treat the entity as detached (assigned id,
+            // A new order is inserted as it is. springRepo.save() would treat the entity as detached (assigned id
             // primitive version) and run a SELECT plus an extra UPDATE of the version around the INSERT.
             entityManager.persist(entity);
             order.markPersisted();
@@ -97,7 +95,6 @@ public class JpaOrderRepository implements OrderRepository {
                 .map(OrderJpaEntity::toDomain)
                 .toList();
     }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -168,7 +165,6 @@ public class JpaOrderRepository implements OrderRepository {
         };
     }
 
-    /** Matches the order number (digit prefix, with or without #), the customer name, or any item name (case-insensitive, literal text). */
     private static Predicate searchPredicate(Root<OrderJpaEntity> root, CriteriaQuery<?> cq,
                                              CriteriaBuilder cb, String search) {
         String term = search.toLowerCase(Locale.ROOT);

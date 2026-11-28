@@ -19,11 +19,10 @@ import java.util.UUID;
  * JPA entity mapping the {@code order} table.
  *
  * <p>Extends {@link TenantScopedEntity} so the Hibernate {@code tenantFilter} is applied
- * automatically and the {@code tenant_id} column is stamped on first persist
- * (Req 10.1, 10.2, 10.4, 10.6).
+ * automatically and the {@code tenant_id} column is stamped on first persist.
  *
  * <p>The {@code version} column is mapped with {@link Version} to support JPA optimistic
- * locking so at most one of two concurrent status transitions succeeds (Req 5.8).
+ * locking so at most one of two concurrent status transitions succeeds.
  *
  * <p>Table: {@code order(id PK, tenant_id, session_id FK, status, version, created_at, updated_at)}
  *
@@ -40,12 +39,10 @@ import java.util.UUID;
         uniqueConstraints = @UniqueConstraint(name = "uq_order_tenant_number", columnNames = {"tenant_id", "order_number"})
 )
 public class OrderJpaEntity extends TenantScopedEntity {
-
     @Id
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    /** Per-restaurant sequence number; unique together with {@code tenant_id}. */
     @Column(name = "order_number", nullable = false, updatable = false)
     private int orderNumber;
 
@@ -68,7 +65,7 @@ public class OrderJpaEntity extends TenantScopedEntity {
      *
      * <p>JPA increments this automatically on every successful flush and rejects a
      * flush whose stored version does not match, ensuring at most one concurrent
-     * state transition succeeds (Req 5.8).
+     * state transition succeeds.
      */
     @Column(name = "customer_name", length = OrderDetails.MAX_CUSTOMER_NAME)
     private String customerName;
@@ -96,12 +93,7 @@ public class OrderJpaEntity extends TenantScopedEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    /** Required by JPA. */
     protected OrderJpaEntity() {}
-
-    // -------------------------------------------------------------------------
-    // Mapping helpers
-    // -------------------------------------------------------------------------
 
     /** Maps the domain aggregate to a JPA entity ready for insert or merge. */
     public static OrderJpaEntity from(Order order) {
@@ -121,7 +113,6 @@ public class OrderJpaEntity extends TenantScopedEntity {
         return entity;
     }
 
-    /** Rebuilds the domain aggregate from this entity. */
     public Order toDomain() {
         return Order.reconstitute(
                 new OrderId(id),
@@ -137,10 +128,6 @@ public class OrderJpaEntity extends TenantScopedEntity {
                 updatedAt,
                 connectedAt);
     }
-
-    // -------------------------------------------------------------------------
-    // Accessors
-    // -------------------------------------------------------------------------
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }

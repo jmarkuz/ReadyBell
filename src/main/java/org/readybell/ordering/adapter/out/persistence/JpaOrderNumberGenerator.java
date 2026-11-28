@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @Transactional
 public class JpaOrderNumberGenerator implements OrderNumberGenerator {
-
     @PersistenceContext
     private EntityManager entityManager;
 

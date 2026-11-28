@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Component
 public class PushDeliveryWorker implements DeliveryTrigger {
-
     private static final Logger log = LoggerFactory.getLogger(PushDeliveryWorker.class);
 
     private final NotificationRepository notifications;
@@ -86,7 +85,6 @@ public class PushDeliveryWorker implements DeliveryTrigger {
         };
     }
 
-    /** Asks for a round soon, without blocking the caller (used right after the pushes were queued). */
     @Override
     public void wake() {
         if (async) {

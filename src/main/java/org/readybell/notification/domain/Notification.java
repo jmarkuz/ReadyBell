@@ -15,7 +15,7 @@ import java.util.UUID;
 /**
  * Aggregate representing a single push notification composed for one device subscription.
  *
- * <p>Lifecycle transitions (Req 6.4, 6.5):
+ * <p>Lifecycle transitions:
  * <pre>
  *   PENDING ──▶ SENT ──▶ DELIVERED
  *      └──▶ FAILED
@@ -31,13 +31,11 @@ import java.util.UUID;
  * transaction commits.
  */
 public class Notification {
-
     private final NotificationId id;
     private final TenantId tenantId;
     private final DeviceSubscriptionId subscriptionId;
     private NotificationStatus status;
     private final String payload;
-    /** The order that triggered this notification; lets a replayed event be recognised (may be null). */
     private final UUID orderId;
 
     private final List<DomainEvent> pendingEvents = new ArrayList<>();
@@ -45,15 +43,12 @@ public class Notification {
     /** Title and click target of the push; the body is {@link #payload}. Null for notifications stored before retries existed. */
     private String title;
     private String url;
-    /** When the order became READY (latency metric); may be null. */
     private Instant readyAt;
     private int attempts;
     /** When the next attempt is due; null once the notification is no longer waiting for one. */
     private Instant nextAttemptAt;
-    /** After this instant a delivery is pointless ("ready" a quarter of an hour late is noise); null means no deadline. */
     private Instant expiresAt;
     private String lastError;
-    /** What the push is about: {@link #KIND_READY} or {@link #KIND_CANCELLED}. */
     private String kind = KIND_READY;
 
     public static final String KIND_READY = "READY";
@@ -73,14 +68,7 @@ public class Notification {
         this.payload = Objects.requireNonNull(payload, "payload must not be null");
     }
 
-    /**
-     * Factory method — creates a new {@code Notification} in {@link NotificationStatus#PENDING}.
-     *
-     * @param tenantId       the tenant that owns the notification
-     * @param subscriptionId the target device subscription
-     * @param payload        the push message body
-     * @return a new {@code Notification} in PENDING status with no pending events
-     */
+    /** Factory method — creates a new {@code Notification} in {@link NotificationStatus#PENDING}. */
     public static Notification compose(TenantId tenantId,
                                        DeviceSubscriptionId subscriptionId,
                                        String payload) {
@@ -130,12 +118,10 @@ public class Notification {
         return new NotificationPayload(title == null || title.isBlank() ? "ReadyBell" : title, payload, url);
     }
 
-    /** Whether a worker should attempt this notification now. */
     public boolean isDue(Instant now) {
         return status == NotificationStatus.PENDING && nextAttemptAt != null && !nextAttemptAt.isAfter(now);
     }
 
-    /** Whether the deadline has passed. */
     public boolean isExpired(Instant now) {
         return expiresAt != null && now.isAfter(expiresAt);
     }
@@ -150,9 +136,8 @@ public class Notification {
 
     /**
      * Transitions from {@link NotificationStatus#PENDING} to {@link NotificationStatus#SENT}
-     * and records a {@link NotificationSent} domain event (Req 6.4).
+     * and records a {@link NotificationSent} domain event.
      *
-     * @param clock used to timestamp the event
      * @throws IllegalStateException if the notification is not in PENDING status
      */
     public void markSent(Clock clock) {
@@ -170,9 +155,8 @@ public class Notification {
 
     /**
      * Transitions from {@link NotificationStatus#SENT} to {@link NotificationStatus#DELIVERED}
-     * and records a {@link NotificationDelivered} domain event (Req 6.5).
+     * and records a {@link NotificationDelivered} domain event.
      *
-     * @param clock used to timestamp the event
      * @throws IllegalStateException if the notification is not in SENT status
      */
     public void markDelivered(Clock clock) {
@@ -247,13 +231,6 @@ public class Notification {
      *
      * <p>Intended for use by the JPA persistence adapter only; no domain events are
      * recorded.
-     *
-     * @param id             the persisted notification identity
-     * @param tenantId       the persisted tenant
-     * @param subscriptionId the persisted subscription
-     * @param status         the persisted notification status
-     * @param payload        the persisted payload
-     * @return a notification aggregate with no pending events
      */
     public static Notification reconstitute(NotificationId id,
                                             TenantId tenantId,

@@ -15,7 +15,6 @@ import java.util.List;
 @Component
 @Profile("!dev & !test")
 class ProductionStartupChecks {
-
     private static final Logger log = LoggerFactory.getLogger(ProductionStartupChecks.class);
 
     ProductionStartupChecks(

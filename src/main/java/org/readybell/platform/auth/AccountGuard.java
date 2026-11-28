@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * access within the cache time instead of when the token expires.
  */
 public class AccountGuard {
-
     private static final int MAX_ENTRIES = 10_000;
 
     private record Verdict(boolean active, Instant checkedAt) {}
@@ -32,7 +31,6 @@ public class AccountGuard {
         this.cacheFor = cacheFor;
     }
 
-    /** @param tenant the token's tenant ({@code null} for the platform operator): a username is unique per tenant only */
     public boolean isActive(TenantId tenant, String username) {
         String key = (tenant == null ? "" : tenant.value().toString()) + "/" + username;
         Instant now = clock.instant();

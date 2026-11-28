@@ -14,7 +14,6 @@ import java.time.Instant;
  * (the alternative would log every staff member out whenever Redis blips).
  */
 public class RedisTokenRevocationStore implements TokenRevocationStore {
-
     private static final Logger log = LoggerFactory.getLogger(RedisTokenRevocationStore.class);
 
     private final StringRedisTemplate redis;

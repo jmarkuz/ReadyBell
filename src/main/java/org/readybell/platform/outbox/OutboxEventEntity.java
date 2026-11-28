@@ -15,7 +15,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "outbox_event")
 public class OutboxEventEntity {
-
     @Id
     @Column(name = "id", nullable = false, updatable = false)
     UUID id;

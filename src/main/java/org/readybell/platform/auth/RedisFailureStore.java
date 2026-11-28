@@ -17,7 +17,6 @@ import org.springframework.data.redis.core.ZSetOperations;
  * than disabling the throttle.
  */
 public class RedisFailureStore implements FailureStore {
-
     private static final Logger log = LoggerFactory.getLogger(RedisFailureStore.class);
 
     private final StringRedisTemplate redis;

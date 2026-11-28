@@ -10,30 +10,24 @@ import org.readybell.session.domain.CustomerSession;
  * and the application service that orchestrates the domain. Nothing outside the
  * application layer depends on the concrete implementation; wiring happens in the
  * composition root.
- *
- * <p>Requirements covered: 1.1, 1.4, 1.6, 1.7, 9.6.
  */
 public interface StartSessionUseCase {
-
     /**
      * Starts a new customer session for the restaurant identified by {@code qrToken}.
      *
      * <p>The token is the restaurant's unique business identifier (or a simple
      * parseable format encoding it). The service:
      * <ol>
-     *   <li>Validates the token is non-null and non-blank (Req 1.7).</li>
-     *   <li>Resolves the Restaurant by its identifier (Req 1.4).</li>
-     *   <li>Asserts the Restaurant is active (Req 9.6).</li>
-     *   <li>Creates and persists a new {@link CustomerSession} (Req 1.1, 1.6).</li>
-     *   <li>Publishes all pending domain events (Req 1.2).</li>
+     *   <li>Validates the token is non-null and non-blank.</li>
+     *   <li>Resolves the Restaurant by its identifier.</li>
+     *   <li>Asserts the Restaurant is active.</li>
+     *   <li>Creates and persists a new {@link CustomerSession}.</li>
+     *   <li>Publishes all pending domain events.</li>
      * </ol>
      *
-     * @param qrToken the QR-code payload (restaurant identifier or parseable token)
-     * @return the newly created, ACTIVE {@link CustomerSession}
      * @throws InvalidQrTokenException         if {@code qrToken} is blank or does not
-     *                                         resolve to a known restaurant (Req 1.4, 1.7)
+     *                                         resolve to a known restaurant
      * @throws DeactivatedRestaurantException  if the resolved restaurant is deactivated
-     *                                         (Req 9.6)
      */
     CustomerSession startSession(String qrToken);
 }

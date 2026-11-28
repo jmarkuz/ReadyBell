@@ -15,7 +15,6 @@ import java.util.UUID;
 /** Database access of the outbox. Every method runs in its own (or the caller's) transaction. */
 @Component
 public class OutboxStore {
-
     /** A claimed event, ready to be dispatched. */
     public record Claimed(UUID id, String type, String payload, int attempts) {}
 

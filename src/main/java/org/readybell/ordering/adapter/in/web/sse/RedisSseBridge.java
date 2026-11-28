@@ -20,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 @Component
 @ConditionalOnProperty(name = "readybell.sse.redis.enabled", havingValue = "true")
 public class RedisSseBridge {
-
     static final String CHANNEL = "readybell:order-status";
 
     private static final Logger log = LoggerFactory.getLogger(RedisSseBridge.class);
@@ -47,7 +46,6 @@ public class RedisSseBridge {
         container.start();
     }
 
-    /** @return {@code true} if the message was handed to Redis, {@code false} if the caller should deliver locally. */
     boolean publish(SseMessage message) {
         try {
             redis.convertAndSend(CHANNEL, mapper.writeValueAsString(message));

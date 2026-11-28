@@ -10,7 +10,6 @@ import java.util.List;
  * elsewhere is answered exactly like a wrong password.
  */
 public class OperatorNetworkPolicy {
-
     private final List<IpAddressMatcher> allowed;
 
     public OperatorNetworkPolicy(List<String> networks) {

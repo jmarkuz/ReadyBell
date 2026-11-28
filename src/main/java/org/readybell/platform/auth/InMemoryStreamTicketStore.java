@@ -11,7 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** Per-node ticket store (the default; also the fallback when Redis is unreachable). */
 public class InMemoryStreamTicketStore implements StreamTicketStore {
-
     private static final int MAX_TICKETS = 10_000;
     private static final SecureRandom RANDOM = new SecureRandom();
 

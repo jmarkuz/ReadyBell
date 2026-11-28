@@ -22,7 +22,6 @@ import java.lang.reflect.Modifier;
 @Configuration
 @EnableTransactionManagement(proxyTargetClass = true, order = Ordered.LOWEST_PRECEDENCE - 100)
 public class TenantFilterConfig {
-
     @Bean
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     public DefaultPointcutAdvisor tenantFilterAdvisor(EntityManagerFactory entityManagerFactory) {

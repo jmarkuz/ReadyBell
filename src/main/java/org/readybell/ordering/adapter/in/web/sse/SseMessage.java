@@ -10,7 +10,6 @@ import java.util.UUID;
  * Messages relayed by a node that predates {@code event} are status updates.
  */
 public record SseMessage(UUID orderId, UUID sessionId, UUID tenantId, String status, String event, String orderNumber) {
-
     public static final String STATUS_UPDATED = "order-status-updated";
     public static final String ORDER_CREATED = "order-created";
     public static final String ORDER_CONNECTED = "order-connected";
@@ -21,7 +20,6 @@ public record SseMessage(UUID orderId, UUID sessionId, UUID tenantId, String sta
         }
     }
 
-    /** A status change. */
     public SseMessage(UUID orderId, UUID sessionId, UUID tenantId, String status) {
         this(orderId, sessionId, tenantId, status, STATUS_UPDATED, null);
     }

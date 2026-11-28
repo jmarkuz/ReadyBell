@@ -16,9 +16,9 @@ import java.util.Objects;
  *
  * <p>Design invariants:
  * <ul>
- *   <li>A session always has a non-null {@link TenantId} assigned at creation (Req 1.6, 10.1).</li>
- *   <li>Creation requires no customer credentials (Req 1.5).</li>
- *   <li>Each QR scan produces a distinct {@link CustomerSessionId} (Req 1.1).</li>
+ *   <li>A session always has a non-null {@link TenantId} assigned at creation.</li>
+ *   <li>Creation requires no customer credentials.</li>
+ *   <li>Each QR scan produces a distinct {@link CustomerSessionId}.</li>
  *   <li>There is no public constructor; {@link #start(TenantId, Clock)} is the sole
  *       creation path so invariants cannot be bypassed.</li>
  * </ul>
@@ -27,7 +27,6 @@ import java.util.Objects;
  * The application layer drains and publishes these events after the transaction commits.
  */
 public class CustomerSession {
-
     private final CustomerSessionId id;
     private final TenantId tenantId;
     private SessionStatus status;
@@ -35,10 +34,6 @@ public class CustomerSession {
 
     /** Pending events to be published by the application layer after transaction commit. */
     private final List<DomainEvent> pendingEvents = new ArrayList<>();
-
-    // -------------------------------------------------------------------------
-    // Private constructor — use the factory method
-    // -------------------------------------------------------------------------
 
     private CustomerSession(CustomerSessionId id,
                              TenantId tenantId,
@@ -54,20 +49,14 @@ public class CustomerSession {
         this.startedAt = startedAt;
     }
 
-    // -------------------------------------------------------------------------
-    // Factory — only way to create a session (Req 1.5)
-    // -------------------------------------------------------------------------
+    // Factory — only way to create a session
 
     /**
      * Creates a new, ACTIVE {@code CustomerSession} for the given tenant.
      *
      * <p>Automatically assigns a fresh {@link CustomerSessionId} so every scan
-     * produces a distinct session (Req 1.1). Records a {@link CustomerSessionStarted}
-     * event for later publication (Req 1.2).
-     *
-     * @param tenantId the restaurant whose QR code was scanned (Req 1.6)
-     * @param clock    clock used to timestamp the session and its event
-     * @return a new ACTIVE session with one pending {@link CustomerSessionStarted} event
+     * produces a distinct session. Records a {@link CustomerSessionStarted}
+     * event for later publication.
      */
     public static CustomerSession start(TenantId tenantId, Clock clock) {
         Objects.requireNonNull(tenantId, "tenantId must not be null");
@@ -79,10 +68,6 @@ public class CustomerSession {
         session.record(CustomerSessionStarted.of(id, tenantId, now));
         return session;
     }
-
-    // -------------------------------------------------------------------------
-    // Query methods
-    // -------------------------------------------------------------------------
 
     public CustomerSessionId getId() {
         return id;
@@ -100,22 +85,13 @@ public class CustomerSession {
         return startedAt;
     }
 
-    /** Returns {@code true} when this session is in the {@link SessionStatus#ACTIVE} state. */
     public boolean isActive() {
         return status == SessionStatus.ACTIVE;
     }
 
-    /**
-     * Returns an unmodifiable snapshot of the pending domain events.
-     * The application layer should call {@link #clearPendingEvents()} after publishing.
-     */
     public List<DomainEvent> getPendingEvents() {
         return Collections.unmodifiableList(pendingEvents);
     }
-
-    // -------------------------------------------------------------------------
-    // Internal helpers
-    // -------------------------------------------------------------------------
 
     private void record(DomainEvent event) {
         pendingEvents.add(event);
@@ -126,10 +102,8 @@ public class CustomerSession {
         pendingEvents.clear();
     }
 
-    // -------------------------------------------------------------------------
     // Reconstitution — used by the JPA adapter to rebuild the aggregate from a
     // stored entity without recording any domain events (no side-effects).
-    // -------------------------------------------------------------------------
 
     /**
      * Rebuilds a {@code CustomerSession} from its stored state.
@@ -137,12 +111,6 @@ public class CustomerSession {
      * <p>Unlike the {@link #start} factory this method does <em>not</em> generate a new id
      * or record any domain event — it simply restores the aggregate to the state that was
      * persisted. Intended for use by the JPA persistence adapter only.
-     *
-     * @param id        the persisted session identity
-     * @param tenantId  the persisted tenant
-     * @param status    the persisted status
-     * @param startedAt the persisted start timestamp
-     * @return a session aggregate with no pending events
      */
     public static CustomerSession reconstitute(CustomerSessionId id,
                                                TenantId tenantId,

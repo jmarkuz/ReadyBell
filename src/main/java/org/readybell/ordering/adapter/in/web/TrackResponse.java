@@ -14,7 +14,6 @@ import java.util.List;
  * every order of the session. Deliberately contains no tenant, customer or staff identifiers.
  */
 public record TrackResponse(String restaurantName, boolean sessionActive, List<TrackedOrder> orders) {
-
     static TrackResponse from(SessionTracking tracking, Clock clock) {
         return new TrackResponse(tracking.restaurantName(), tracking.sessionActive(),
                 tracking.orders().stream().map(o -> TrackedOrder.from(o, clock)).toList());
@@ -22,7 +21,6 @@ public record TrackResponse(String restaurantName, boolean sessionActive, List<T
 
     public record TrackedOrder(String orderNumber, String status, Instant estimatedReadyAt,
                                Long estimatedWaitMinutes, List<Item> items, Instant updatedAt) {
-
         static TrackedOrder from(Order order, Clock clock) {
             Instant eta = order.getEstimatedReadyAt();
             Long wait = eta == null ? null : Math.max(0, Duration.between(clock.instant(), eta).toMinutes());

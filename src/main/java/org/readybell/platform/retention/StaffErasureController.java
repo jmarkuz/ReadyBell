@@ -25,7 +25,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/staff")
 public class StaffErasureController {
-
     private final RetentionService retention;
 
     @PersistenceContext

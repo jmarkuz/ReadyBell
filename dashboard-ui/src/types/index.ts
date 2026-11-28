@@ -1,11 +1,6 @@
-/**
- * Core Types and Interfaces for Dashboard UI
- * Aligned with Backend API contracts from the backend spec
- */
 
 import React from 'react';
 
-// Export error types from errors module
 export type {
   ProblemDetail,
   ErrorContext,
@@ -26,10 +21,6 @@ export {
   handleErrorResponse,
 } from './errors';
 
-/* ============================================================================
-   THEME & UI TYPES
-   ============================================================================ */
-
 /** Theme type - light or dark mode */
 export type Theme = 'light' | 'dark';
 
@@ -43,10 +34,6 @@ export interface ThemeContextType {
   setTheme: (theme: Theme) => void;
   currentMode: Theme;
 }
-
-/* ============================================================================
-   ORDER MANAGEMENT TYPES (BACKEND ALIGNED)
-   ============================================================================ */
 
 /**
  * OrderStatus - Backend enum values (exactly matching backend)
@@ -74,9 +61,7 @@ export interface Order {
   version?: number;                     // Optimistic locking version
 }
 
-/**
- * OrderItem - Line item in an order
- */
+/** OrderItem - Line item in an order */
 export interface OrderItem {
   id: string;
   menuItemId: string;
@@ -116,18 +101,14 @@ export interface OrderMetrics {
   cancelled?: number;           // Count where status === 'CANCELLED'
 }
 
-/**
- * Trend - Metric trend indicator (up/down with percentage)
- */
+/** Trend - Metric trend indicator (up/down with percentage) */
 export interface Trend {
   value: number;                // Percentage (e.g., 12.5)
   direction: 'up' | 'down';
   label: string;                // e.g., "vs. last hour"
 }
 
-/**
- * OrderFilters - Query parameters for order listing
- */
+/** OrderFilters - Query parameters for order listing */
 export interface OrderFilters {
   status?: OrderStatus[];
   dateRange?: {
@@ -141,13 +122,7 @@ export interface OrderFilters {
   sortOrder?: 'asc' | 'desc';
 }
 
-/* ============================================================================
-   USER MANAGEMENT TYPES
-   ============================================================================ */
-
-/**
- * UserProfile - Staff or admin user information
- */
+/** UserProfile - Staff or admin user information */
 export interface UserProfile {
   id: string;
   name: string;
@@ -159,13 +134,7 @@ export interface UserProfile {
   tenantId?: string;
 }
 
-/* ============================================================================
-   MENU TYPES
-   ============================================================================ */
-
-/**
- * MenuItem - Menu item available for ordering
- */
+/** MenuItem - Menu item available for ordering */
 export interface MenuItem {
   id: string;
   name: string;
@@ -176,13 +145,6 @@ export interface MenuItem {
   imageUrl?: string;
 }
 
-/* ============================================================================
-   API RESPONSE TYPES
-   ============================================================================ */
-
-/**
- * Generic API response wrapper
- */
 export interface ApiResponse<T> {
   data: T;
   status: number;
@@ -213,9 +175,7 @@ export interface ErrorResponse {
   code?: string;                // Application-specific error code
 }
 
-/**
- * Frontend error display format (mapped from ErrorResponse)
- */
+/** Frontend error display format (mapped from ErrorResponse) */
 export interface DisplayError {
   type: 'network' | 'auth' | 'validation' | 'server' | 'unknown';
   message: string;
@@ -224,13 +184,7 @@ export interface DisplayError {
   timestamp: Date;
 }
 
-/* ============================================================================
-   UI COMPONENT TYPES
-   ============================================================================ */
-
-/**
- * Status Color Configuration - for displaying status badges
- */
+/** Status Color Configuration - for displaying status badges */
 export interface OrderStatusConfig {
   label: string;
   color: {
@@ -241,9 +195,7 @@ export interface OrderStatusConfig {
   priority: number;             // Sort order
 }
 
-/**
- * Card Component Props - for summary cards
- */
+/** Card Component Props - for summary cards */
 export interface CardProps {
   title: string;
   value: number | string;
@@ -255,9 +207,6 @@ export interface CardProps {
   className?: string;
 }
 
-/**
- * Table Column Definition
- */
 export interface ColumnDefinition<T> {
   id: string;
   header: string;

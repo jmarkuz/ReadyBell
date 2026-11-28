@@ -10,8 +10,5 @@ import org.readybell.ordering.domain.OrderStatus;
  * <p>The caller provides the target status name (e.g. {@code "IN_PROGRESS"}).
  * Valid values are the names of {@link OrderStatus}
  * enum constants.
- *
- * @param status the target order status label (case-sensitive, must match an
- *               {@code OrderStatus} enum constant name)
  */
 public record TransitionOrderRequest(@NotBlank String status) {}

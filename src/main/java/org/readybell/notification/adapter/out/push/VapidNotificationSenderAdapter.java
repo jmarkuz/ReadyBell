@@ -26,13 +26,13 @@ import java.util.concurrent.TimeoutException;
  * VAPID Web Push implementation of {@link NotificationSender}.
  *
  * <p>All VAPID credentials and web-push library details are confined to this adapter;
- * the domain sees only {@link NotificationSender} (Req 6.2, ADR-005).
+ * the domain sees only {@link NotificationSender} (, ADR-005).
  *
  * <p>HTTP outcome mapping:
  * <ul>
  *   <li>201 → {@link SendResult#ACCEPTED}</li>
- *   <li>404 / 410 → {@link SendResult#ENDPOINT_EXPIRED} (Req 3.6)</li>
- *   <li>any other status / exception → {@link SendResult#REJECTED} (Req 6.7, 6.8)</li>
+ *   <li>404 / 410 → {@link SendResult#ENDPOINT_EXPIRED}</li>
+ *   <li>any other status / exception → {@link SendResult#REJECTED}</li>
  * </ul>
  *
  * <p>This bean is only created in non-test profiles. In test profiles, a
@@ -42,7 +42,6 @@ import java.util.concurrent.TimeoutException;
 @Component
 @Profile("!test")
 class VapidNotificationSenderAdapter implements NotificationSender {
-
     private static final Logger log = LoggerFactory.getLogger(VapidNotificationSenderAdapter.class);
 
     /** Default limit for one push request: a push service that does not answer in this time counts as unavailable. */
@@ -76,7 +75,6 @@ class VapidNotificationSenderAdapter implements NotificationSender {
         }
     }
 
-    /** For tests: use the given push service (empty means credentials are not configured). */
     VapidNotificationSenderAdapter(Optional<PushService> pushService) {
         this(pushService, PushEndpointPolicy.defaults());
     }
@@ -110,8 +108,8 @@ class VapidNotificationSenderAdapter implements NotificationSender {
     }
 
     private static boolean isPlaceholder(String key) {
-        return key == null || key.isBlank() || 
-               key.startsWith("placeholder-") || 
+        return key == null || key.isBlank() ||
+               key.startsWith("placeholder-") ||
                key.equals("${VAPID_PUBLIC_KEY:placeholder-public-key}") ||
                key.equals("${VAPID_PRIVATE_KEY:placeholder-private-key}");
     }
@@ -125,7 +123,6 @@ class VapidNotificationSenderAdapter implements NotificationSender {
         }
 
         // Subscriptions stored before the policy existed (or edited in the database) are checked again at send time:
-        // this is the call that leaves the server
         if (!endpointPolicy.isAllowed(endpoint.endpointUrl())) {
             log.warn("Refusing to send Web Push: endpoint host {} is not an allowed push service",
                     PushEndpointPolicy.hostForLog(endpoint.endpointUrl()));
@@ -160,10 +157,9 @@ class VapidNotificationSenderAdapter implements NotificationSender {
             int statusCode = response.getStatusLine().getStatusCode();
 
             return mapStatusCode(statusCode);
-
         } catch (Exception e) {
             // Any I/O, security, or encoding exception is treated as a transient
-            // delivery failure so processing can continue for other subscriptions (Req 6.7)
+            // delivery failure so processing can continue for other subscriptions
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
@@ -181,9 +177,6 @@ class VapidNotificationSenderAdapter implements NotificationSender {
         return "{\"title\":\"" + escapedTitle + "\",\"body\":\"" + escapedBody + "\"" + url + "}";
     }
 
-    /**
-     * Escapes the characters that JSON requires to be escaped inside a string value.
-     */
     private static String escapeJson(String value) {
         return value
                 .replace("\\", "\\\\")
@@ -195,12 +188,6 @@ class VapidNotificationSenderAdapter implements NotificationSender {
                 .replace("\t", "\\t");
     }
 
-    /**
-     * Maps a push-service HTTP status code to a {@link SendResult}.
-     *
-     * @param statusCode HTTP status returned by the push service
-     * @return the corresponding {@link SendResult}
-     */
     private static SendResult mapStatusCode(int statusCode) {
         return switch (statusCode) {
             case 201 -> SendResult.ACCEPTED;

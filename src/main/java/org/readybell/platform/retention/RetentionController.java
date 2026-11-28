@@ -11,7 +11,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/platform/retention")
 public class RetentionController {
-
     private final RetentionService retention;
     private final Clock clock;
 
@@ -20,7 +19,6 @@ public class RetentionController {
         this.clock = clock;
     }
 
-    /** @return rows changed per task (rows that would change when {@code readybell.retention.dry-run} is on) */
     @PostMapping("/run")
     public Map<String, Integer> run() {
         return retention.run(clock.instant(), null);

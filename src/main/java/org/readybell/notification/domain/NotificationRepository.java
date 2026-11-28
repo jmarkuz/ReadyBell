@@ -13,31 +13,19 @@ import java.util.UUID;
 /**
  * Repository port for {@link Notification} aggregates.
  *
- * <p>This is an outbound port defined in the domain layer (Req 11.1, 11.2). Production
+ * <p>This is an outbound port defined in the domain layer. Production
  * adapters (JPA, tenant-filtered) implement it in the adapter layer; in-memory fakes
  * implement it in tests.
  *
  * <p>Notifications are append-mostly: they are composed and persisted in
  * {@link NotificationStatus#PENDING}, then updated to {@link NotificationStatus#SENT},
  * {@link NotificationStatus#DELIVERED}, or {@link NotificationStatus#FAILED} as the
- * delivery flow progresses (Req 6.4, 6.5, 6.7, 6.8).
+ * delivery flow progresses.
  */
 public interface NotificationRepository {
-
-    /**
-     * Persists a new or updated {@link Notification}.
-     *
-     * @param notification the notification to save (must not be null)
-     */
     void save(Notification notification);
 
-    /**
-     * Finds one of the tenant's notifications by its identity.
-     *
-     * @param tenantId the tenant scope (must not be null)
-     * @param id the notification identity (must not be null)
-     * @return the notification, or {@link Optional#empty()} if not found
-     */
+    /** Finds one of the tenant's notifications by its identity. */
     /**
      * Whether a push for this order was already accepted by the push service for this subscription
      * (status SENT or DELIVERED). Used to make a replayed {@code OrderReady} event harmless.

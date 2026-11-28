@@ -21,65 +21,48 @@ import java.util.UUID;
 /**
  * Inbound REST adapter for Web Push subscription management.
  *
- * <p>Exposes two endpoints over HTTPS (Req 3.7):
+ * <p>Exposes two endpoints over HTTPS:
  * <ul>
  *   <li>{@code POST /api/sessions/{sessionId}/subscriptions} — registers a new
  *       {@link DeviceSubscription} or updates the keys of an existing one for the same
- *       {@code (session, endpoint)} pair (Req 3.1, 3.2, 3.4).</li>
+ *       {@code (session, endpoint)} pair.</li>
  *   <li>{@code DELETE /api/sessions/{sessionId}/subscriptions/{subscriptionId}} — revokes
- *       the subscription so no further Web Push messages are sent (Req 3.5).</li>
+ *       the subscription so no further Web Push messages are sent.</li>
  * </ul>
  *
  * <p>The current tenant is resolved from {@link TenantContextHolder#require()} which
- * is populated by the inbound tenant-resolution filter before this controller is reached
- * (Req 10.4, 10.5).
+ * is populated by the inbound tenant-resolution filter before this controller is reached.
  *
  * <p>This class contains no business logic; all domain work is delegated to
- * {@link ManageSubscriptionUseCase}. Requirements covered: 3.1–3.5, 3.7.
+ * {@link ManageSubscriptionUseCase}.
  */
 @RestController
 @RequestMapping("/api/sessions/{sessionId}/subscriptions")
 public class SubscriptionController {
-
     private final ManageSubscriptionUseCase manageSubscriptionUseCase;
 
-    /**
-     * Constructor injection — the implementation is wired by the composition root.
-     *
-     * @param manageSubscriptionUseCase the use-case port; must not be {@code null}
-     */
     public SubscriptionController(ManageSubscriptionUseCase manageSubscriptionUseCase) {
         this.manageSubscriptionUseCase = Objects.requireNonNull(
                 manageSubscriptionUseCase, "manageSubscriptionUseCase must not be null");
     }
 
-    // -------------------------------------------------------------------------
     // POST /api/sessions/{sessionId}/subscriptions
-    // -------------------------------------------------------------------------
 
     /**
      * Registers a new device subscription or updates the keys of an existing one for
-     * the same {@code (session, endpointUrl)} pair (Req 3.1, 3.4).
+     * the same {@code (session, endpointUrl)} pair.
      *
      * <p>Tenant identity is resolved from the thread-bound {@link TenantContextHolder}
-     * so no explicit tenant parameter is required in the URL (Req 10.4).
+     * so no explicit tenant parameter is required in the URL.
      *
      * <p>Returns HTTP 201 Created with a {@link SubscriptionResponse} body containing
      * the subscription id and a {@code Location} header pointing to the newly created
      * resource.
-     *
-     * @param sessionId UUID string of the customer session (path variable)
-     * @param request   JSON body with {@code endpointUrl}, {@code p256dhKey},
-     *                  {@code authKey}; missing/blank fields are rejected by the domain
-     *                  with {@link IllegalArgumentException} (Req 3.3)
-     * @return 201 with subscription id, or an error if the session is inactive or the
-     *         request is incomplete
      */
     @PostMapping
     public ResponseEntity<SubscriptionResponse> registerSubscription(
             @PathVariable UUID sessionId,
             @RequestBody RegisterSubscriptionRequest request) {
-
         var tenantId = TenantContextHolder.require();
         var customerSessionId = new CustomerSessionId(sessionId);
 
@@ -99,27 +82,19 @@ public class SubscriptionController {
         return ResponseEntity.created(location).body(response);
     }
 
-    // -------------------------------------------------------------------------
     // DELETE /api/sessions/{sessionId}/subscriptions/{subscriptionId}
-    // -------------------------------------------------------------------------
 
     /**
      * Revokes a device subscription so that no further Web Push messages are delivered
-     * to it (Req 3.5).
+     * to it.
      *
      * <p>The use case verifies that the subscription belongs to the current tenant before
-     * deleting it, enforcing cross-tenant isolation (Req 10.3).
-     *
-     * @param sessionId      UUID string of the customer session (path variable; carried
-     *                       for URL consistency, ownership is enforced by tenant)
-     * @param subscriptionId UUID string of the subscription to delete
-     * @return 204 No Content on success
+     * deleting it, enforcing cross-tenant isolation.
      */
     @DeleteMapping("/{subscriptionId}")
     public ResponseEntity<Void> deleteSubscription(
             @PathVariable UUID sessionId,
             @PathVariable UUID subscriptionId) {
-
         var tenantId = TenantContextHolder.require();
         var subId = new DeviceSubscriptionId(subscriptionId);
 

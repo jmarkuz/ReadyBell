@@ -19,7 +19,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/sessions/{sessionId}/data")
 public class CustomerDataController {
-
     private final CustomerDataService data;
 
     public CustomerDataController(CustomerDataService data) {

@@ -19,7 +19,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 @Component
 public class SseEmitterRegistry {
-
     /** A customer page opens one stream (a reload or a second tab, a few); more means a script holding connections open. */
     static final int MAX_CUSTOMER_STREAMS_PER_SESSION = 5;
     /** Staff screens of one restaurant: tablets in the kitchen, the counter, the office. */
@@ -104,7 +103,6 @@ public class SseEmitterRegistry {
             try {
                 oldest.complete();
             } catch (RuntimeException ignored) {
-                // already closed
             }
         }
         emitters.add(emitter);

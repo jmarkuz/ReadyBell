@@ -13,7 +13,6 @@ import java.time.Duration;
 /** Issues the single-use ticket that opens {@code GET /api/orders/stream} (see {@link StreamTicketStore}). */
 @RestController
 public class StreamTicketController {
-
     /** How long a ticket can be redeemed. */
     public static final Duration TTL = Duration.ofSeconds(30);
 
@@ -25,9 +24,6 @@ public class StreamTicketController {
         this.jwtService = jwtService;
     }
 
-    /**
-     * @return 200 with {@code {ticket, expiresIn}}; the ticket is bound to the caller's identity and tenant
-     */
     @PostMapping("/api/orders/stream/ticket")
     public TicketResponse issue(Authentication authentication) {
         String jwt;

@@ -13,7 +13,6 @@ import java.util.Optional;
  * replica opens the stream on another. If Redis is unreachable it degrades to per-node tickets.
  */
 public class RedisStreamTicketStore implements StreamTicketStore {
-
     private static final Logger log = LoggerFactory.getLogger(RedisStreamTicketStore.class);
 
     private final StringRedisTemplate redis;

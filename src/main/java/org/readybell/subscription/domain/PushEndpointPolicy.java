@@ -16,7 +16,6 @@ import java.util.Objects;
  * matched by name against services we trust, no DNS lookup of attacker-controlled names is involved.
  */
 public final class PushEndpointPolicy {
-
     /** Chrome/Android (FCM), Firefox, Safari/iOS and Edge/Windows push services. A leading {@code *.} means any subdomain. */
     public static final List<String> DEFAULT_ALLOWED_HOSTS = List.of(
             "fcm.googleapis.com",
@@ -32,7 +31,6 @@ public final class PushEndpointPolicy {
 
     private final List<String> allowedHosts;
 
-    /** The default push services plus {@code extraAllowedHosts} (for a push service of your own). */
     public PushEndpointPolicy(List<String> extraAllowedHosts) {
         var hosts = new java.util.ArrayList<>(DEFAULT_ALLOWED_HOSTS);
         Objects.requireNonNull(extraAllowedHosts, "extraAllowedHosts must not be null").stream()
@@ -89,7 +87,6 @@ public final class PushEndpointPolicy {
         }
     }
 
-    /** Same check without the reason: for the sender, which also re-checks subscriptions stored before this policy existed. */
     public boolean isAllowed(String endpointUrl) {
         try {
             validateEndpoint(endpointUrl);
@@ -127,7 +124,6 @@ public final class PushEndpointPolicy {
         return false;
     }
 
-    /** IPv6 literals contain ':' (and brackets); IPv4 literals are digits and dots, also in the short forms like 2130706433. */
     private static boolean looksLikeIpAddress(String host) {
         if (host.contains(":") || host.startsWith("[")) {
             return true;

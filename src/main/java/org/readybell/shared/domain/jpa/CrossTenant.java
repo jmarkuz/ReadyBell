@@ -18,7 +18,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface CrossTenant {
-
     /** Why this method may see or write rows of any tenant. */
     String value();
 }

@@ -13,8 +13,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Inbound SSE adapter that pushes live order-state updates to PWA customers (Req 2.3, ≤5s)
- * and Restaurant Staff panel clients (Req 7.4, ≤10s).
+ * Inbound SSE adapter that pushes live order-state updates to PWA customers (, ≤5s)
+ * and Restaurant Staff panel clients (, ≤10s).
  *
  * <p>Two streams are exposed:
  * <ul>
@@ -32,7 +32,6 @@ import java.util.UUID;
  */
 @RestController
 public class OrderSseController {
-
     private final SseEmitterRegistry registry;
 
     public OrderSseController(SseEmitterRegistry registry) {
@@ -40,24 +39,17 @@ public class OrderSseController {
     }
 
     /**
-     * Opens an SSE stream for a customer session (Req 2.3, ≤5 s latency).
+     * Opens an SSE stream for a customer session (, ≤5 s latency).
      *
      * <p>No authentication is required — the session ID in the path is the customer's
      * opaque handle to their own order list, consistent with the session-scoped public endpoints.
-     *
-     * @param sessionId the customer session UUID from the path
-     * @return an {@link SseEmitter} without timeout; it stays open until the client disconnects
      */
     @GetMapping("/api/sessions/{sessionId}/orders/stream")
     public SseEmitter customerOrderStream(@PathVariable("sessionId") UUID sessionId) {
         return registry.registerCustomer(new CustomerSessionId(sessionId));
     }
 
-    /**
-     * Opens an SSE stream for the authenticated tenant's orders (Req 7.4, ≤10 s latency).
-     *
-     * @return an {@link SseEmitter} without timeout scoped to the current tenant
-     */
+    /** Opens an SSE stream for the authenticated tenant's orders (, ≤10 s latency). */
     @GetMapping("/api/orders/stream")
     public SseEmitter staffOrderStream() {
         TenantId tenantId = TenantContextHolder.require();

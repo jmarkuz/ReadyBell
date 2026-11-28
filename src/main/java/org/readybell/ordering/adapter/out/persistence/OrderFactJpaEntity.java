@@ -17,7 +17,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "order_fact", indexes = @Index(name = "idx_order_fact_tenant_created", columnList = "tenant_id,created_at"))
 class OrderFactJpaEntity {
-
     @Id
     @Column(name = "order_id")
     UUID orderId;

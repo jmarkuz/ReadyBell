@@ -26,21 +26,7 @@ interface HeaderProps {
   onThemeToggle?: () => void;
 }
 
-/**
- * Header Component
- * 
- * Navigation bar with:
- * - Logo/home link (left)
- * - Search input with 300ms debouncing (center)
- * - Notification icon with badge count (right)
- * - Theme toggle button (right, before settings)
- * - Settings menu / profile dropdown (right)
- * 
- * Responsive:
- * - Desktop: All elements visible
- * - Tablet: Compact spacing, hide some text labels
- * - Mobile: Search in dropdown, compact icons
- */
+/** Header Component */
 export default memo(function Header({
   showSearch = true,
   onMenuToggle,
@@ -55,17 +41,14 @@ export default memo(function Header({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
 
-  // Debounced search handler (300ms delay)
   const handleSearchChange = useCallback(
     (value: string) => {
       setSearchQuery(value);
 
-      // Clear existing timer
       if (debounceTimer) {
         clearTimeout(debounceTimer);
       }
 
-      // Set new debounce timer
       const timer = setTimeout(() => {
         onSearch?.(value);
       }, 300);
@@ -75,14 +58,12 @@ export default memo(function Header({
     [debounceTimer, onSearch]
   );
 
-  // Handle theme toggle
   const restaurant = useRestaurant();
   const handleThemeToggle = useCallback(() => {
     toggleTheme();
     onThemeToggle?.();
   }, [toggleTheme, onThemeToggle]);
 
-  // Clear search
   const handleClearSearch = useCallback(() => {
     setSearchQuery('');
     onSearch?.('');
@@ -92,7 +73,6 @@ export default memo(function Header({
     <nav className="flex items-center justify-between h-16 px-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
       {/* Left: Menu toggle (mobile only) + Logo */}
       <div className="flex items-center gap-3">
-        {/* Menu toggle - visible on mobile/tablet */}
         <button
           onClick={onMenuToggle}
           className="lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -102,7 +82,6 @@ export default memo(function Header({
           <Menu className="w-5 h-5" aria-hidden="true" />
         </button>
 
-        {/* Restaurant brand - Home link */}
         <a
           href="/"
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
@@ -120,7 +99,6 @@ export default memo(function Header({
         </a>
       </div>
 
-      {/* Center: Search input (desktop and tablet) */}
       {showSearch ? (
       <div className="hidden md:flex flex-1 max-w-md mx-4">
         <div className="relative w-full">
@@ -155,7 +133,6 @@ export default memo(function Header({
         <div className="flex-1" />
       )}
 
-      {/* Right: Notifications, Theme Toggle, Settings */}
       <div className="flex items-center gap-2 md:gap-4" role="toolbar" aria-label="Header actions">
         {/* Search toggle (mobile only) */}
         <button
@@ -168,7 +145,6 @@ export default memo(function Header({
           <Search className="w-5 h-5" aria-hidden="true" />
         </button>
 
-        {/* Notification icon with badge */}
         <button
           className="relative p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label={`Notifications ${notificationCount > 0 ? `${notificationCount} unread` : 'none'}`}
@@ -202,7 +178,6 @@ export default memo(function Header({
           )}
         </button>
 
-        {/* Theme toggle button */}
         <button
           onClick={handleThemeToggle}
           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
@@ -216,7 +191,6 @@ export default memo(function Header({
           )}
         </button>
 
-        {/* Settings menu button */}
         <div className="relative">
           <button
             onClick={() => setSettingsOpen(!settingsOpen)}
@@ -229,7 +203,6 @@ export default memo(function Header({
             <Settings className="w-5 h-5" aria-hidden="true" />
           </button>
 
-          {/* Settings dropdown menu */}
           {settingsOpen && (
             <div 
               className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg z-50"
@@ -262,7 +235,6 @@ export default memo(function Header({
         </div>
       </div>
 
-      {/* Mobile search dropdown */}
       {searchOpen && (
         <div 
           className="absolute top-16 left-0 right-0 md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4"

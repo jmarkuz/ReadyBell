@@ -10,11 +10,9 @@ import java.util.Set;
  * character or a plain run like {@code 1234567890}.
  */
 public final class PasswordPolicy {
-
     public static final int MIN_LENGTH = 10;
     public static final int MAX_LENGTH = 72;
 
-    /** The passwords attackers try first, plus this product's own name. All compared in lower case. */
     private static final Set<String> COMMON = Set.of(
             "password", "password1", "password12", "password123", "password1234", "passw0rd123", "p@ssw0rd123",
             "1234567890", "12345678910", "123456789012", "0123456789", "0987654321", "1q2w3e4r5t", "1qaz2wsx3edc",
@@ -27,7 +25,6 @@ public final class PasswordPolicy {
     private PasswordPolicy() {
     }
 
-    /** @return why the password is not acceptable, or {@code null} if it is */
     public static String violation(String username, String password) {
         if (password == null || password.length() < MIN_LENGTH) {
             return "Password must be at least " + MIN_LENGTH + " characters";
@@ -48,7 +45,6 @@ public final class PasswordPolicy {
         return null;
     }
 
-    /** True for a plain ascending or descending run of characters such as {@code abcdefghij} or {@code 9876543210}. */
     private static boolean isRun(String s) {
         boolean up = true;
         boolean down = true;
