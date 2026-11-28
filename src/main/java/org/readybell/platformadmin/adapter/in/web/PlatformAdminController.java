@@ -26,13 +26,6 @@ import java.util.List;
  * <p>Exposes tenant-management operations across all restaurants. Only principals
  * holding the platform-admin role may invoke these endpoints; non-admin
  * requests are denied by Spring Security in the composition root (task 21).
- *
- * <p>Endpoints:
- * <ul>
- *   <li>{@code POST   /api/platform/restaurants}            — create a restaurant tenant</li>
- *   <li>{@code PUT    /api/platform/restaurants/{tenantId}} — update restaurant config</li>
- *   <li>{@code DELETE /api/platform/restaurants/{tenantId}} — deactivate a restaurant</li>
- * </ul>
  */
 @RestController
 @RequestMapping("/api/platform/restaurants")
@@ -98,11 +91,7 @@ public class PlatformAdminController {
 
     // DELETE /api/platform/restaurants/{tenantId} — deactivate restaurant
 
-    /**
-     * Deactivates the restaurant identified by its tenant id.
-     *
-     * <p>After deactivation, new customer sessions for this restaurant are rejected.
-     */
+    /** Deactivates the restaurant identified by its tenant id. */
     @DeleteMapping("/{tenantId}")
     public RestaurantResponse deactivateRestaurant(@PathVariable("tenantId") UUID tenantId) {
         TenantId tid = new TenantId(tenantId);

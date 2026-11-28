@@ -6,7 +6,6 @@ import org.readybell.restaurant.application.RestaurantNotFoundException;
 import org.readybell.ordering.application.CrossTenantAccessException;
 import org.readybell.ordering.application.InvalidSessionException;
 import org.readybell.ordering.application.OrderNotFoundException;
-import org.readybell.subscription.domain.PushEndpoint;
 import org.readybell.ordering.domain.InvalidTransitionException;
 import org.readybell.ordering.domain.TerminalStateException;
 import org.readybell.restaurant.application.DuplicateUsernameException;
@@ -190,14 +189,7 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles subscription registration with missing or blank endpoint/key fields.
-     *
-     * <p>The {@link PushEndpoint} compact constructor
-     * throws {@link IllegalArgumentException} when any of its required fields is null or
-     * blank, so we surface that as a 400 Bad Request with an RFC 7807 problem detail that
-     * identifies the offending field.
-     */
+    /** Handles subscription registration with missing or blank endpoint/key fields. */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         return problem(
@@ -208,10 +200,7 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles registration attempts against a session that does not exist or is not
-     * active for the given tenant.
-     */
+    /** Handles registration attempts against a session that does not exist or is not active for the given tenant. */
     @ExceptionHandler(SessionNotActiveException.class)
     public ResponseEntity<Map<String, Object>> handleSessionNotActive(SessionNotActiveException ex) {
         return problem(
@@ -222,10 +211,7 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles delete requests for a subscription that does not exist or belongs to a
-     * different tenant.
-     */
+    /** Handles delete requests for a subscription that does not exist or belongs to a different tenant. */
     @ExceptionHandler(SubscriptionNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleSubscriptionNotFound(SubscriptionNotFoundException ex) {
         return problem(
@@ -286,11 +272,7 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Framework-level request errors that carry their own status: unknown route (404), wrong
-     * method (405), unsupported/unacceptable media type (415/406), missing parameters (400).
-     * Without this they would fall into the catch-all and be reported as 500.
-     */
+    /** Framework-level request errors that carry their own status: unknown route (404), wrong method (405), unsupported/unacceptable media type (415/406), missing parameters (400). */
     @ExceptionHandler({
             NoResourceFoundException.class,
             HttpRequestMethodNotSupportedException.class,
@@ -335,10 +317,7 @@ public class GlobalExceptionHandler {
                 status.getReasonPhrase(), ex.getReason() == null ? status.getReasonPhrase() : ex.getReason());
     }
 
-    /**
-     * Catch-all handler for any unexpected exception. The cause is logged; the client only gets a
-     * generic problem detail.
-     */
+    /** Catch-all handler for any unexpected exception. */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
         log.error("Unhandled exception", ex);

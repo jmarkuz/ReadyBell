@@ -12,30 +12,11 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Aggregate root representing a customer order and its lifecycle.
+ * A customer order and its lifecycle: CREATED, IN_PROGRESS, READY, COMPLETED, with CANCELLED reachable from any open state.
+ * Self-transitions and transitions out of a terminal state are rejected. {@link #create} is the only way to make a new one.
  *
- * <p>Design invariants:
- * <ul>
- *   <li>An order is always created in the {@link OrderStatus#CREATED} state.</li>
- *   <li>The creating staff member's {@link TenantId} is assigned at creation and never
- *       changes.</li>
- *   <li>An order is always associated with a {@link CustomerSessionId}.</li>
- *   <li>Transitions follow the allowed lifecycle graph only:
- *       CREATED → IN_PROGRESS → READY → COMPLETED, with CANCELLED reachable from
- *       CREATED, IN_PROGRESS, or READY.</li>
- *   <li>Self-transitions are rejected.</li>
- *   <li>Transitions out of a terminal state ({@link OrderStatus#COMPLETED} or
- *       {@link OrderStatus#CANCELLED}) are rejected.</li>
- *   <li>Reaching {@link OrderStatus#READY} records both {@link OrderStatusUpdated}
- *       and {@link OrderReady}.</li>
- *   <li>{@link #version} is an optimistic-lock guard; the persistence adapter maps it to
- *       a JPA {@code @Version} column.</li>
- * </ul>
- *
- * <p>There is no public constructor; {@link #create(TenantId, CustomerSessionId, Clock)}
- * is the sole creation path. State-changing methods record {@link DomainEvent}s on
- * {@link #pendingEvents}; the application layer drains and publishes them after
- * the transaction commits.
+ * <p>State changes record {@link DomainEvent}s in {@link #pendingEvents}; the application layer publishes them. Reaching
+ * READY records both {@link OrderStatusUpdated} and {@link OrderReady}.
  */
 public class Order {
     private final OrderId id;
@@ -53,9 +34,9 @@ public class Order {
 
     private long version;
 
-    /** Pending events to be published by the application layer after transaction commit. */
     private final List<DomainEvent> pendingEvents = new ArrayList<>();
 
+    /** True from {@link #create} until the persistence adapter has stored the order, so it is inserted rather than merged. */
     private boolean newlyCreated;
 
     private Order(OrderId id,
@@ -86,21 +67,10 @@ public class Order {
         this.version   = 0L;
     }
 
-    /**
-     * Creates a new {@code Order} in the {@link OrderStatus#CREATED} state.
-     *
-     * <p>Assigns a fresh {@link OrderId}, stamps the provided {@code tenantId} and
-     * {@code sessionId}, and records an {@link OrderCreated} event for later
-     * publication.
-     */
     public static Order create(TenantId tenantId, CustomerSessionId sessionId, Clock clock) {
         return create(tenantId, sessionId, clock, OrderDetails.NONE, 1);
     }
 
-    /**
-     * As {@link #create(TenantId, CustomerSessionId, Clock)}, with customer name, items and ETA, and the
-     * restaurant's next sequential order number (allocated by an {@code OrderNumberGenerator}).
-     */
     public static Order create(TenantId tenantId, CustomerSessionId sessionId, Clock clock, OrderDetails details,
                                int orderNumber) {
         Objects.requireNonNull(tenantId,  "tenantId must not be null");
@@ -116,23 +86,8 @@ public class Order {
     }
 
     /**
-     * Transitions this order to the given {@code target} status, enforcing all
-     * lifecycle invariants.
-     *
-     * <p>Invariant checks (in evaluation order):
-     * <ol>
-     *   <li>Self-transition → {@link InvalidTransitionException}</li>
-     *   <li>Already terminal → {@link TerminalStateException}</li>
-     *   <li>Disallowed pair → {@link InvalidTransitionException}</li>
-     * </ol>
-     *
-     * <p>On success, records an {@link OrderStatusUpdated} event. If
-     * {@code target} is {@link OrderStatus#READY}, additionally records an
-     * {@link OrderReady} event.
-     *
-     * @throws InvalidTransitionException if {@code target} equals the current status,
-     *                                    or if the transition is not in the allowed set
-     * @throws TerminalStateException     if the order is already in a terminal state
+     * @throws InvalidTransitionException if {@code target} is the current status or not an allowed next status
+     * @throws TerminalStateException     if the order is already completed or cancelled
      */
     public void transitionTo(OrderStatus target, Clock clock) {
         Objects.requireNonNull(target, "target must not be null");
@@ -234,22 +189,15 @@ public class Order {
         return newlyCreated;
     }
 
-    /** Called by the persistence adapter once the order has been stored; later saves are updates. */
     public void markPersisted() {
         newlyCreated = false;
     }
 
-    /** Clears the pending events list after they have been published. */
     public void clearPendingEvents() {
         pendingEvents.clear();
     }
 
-    /**
-     * Rebuilds an {@code Order} from its stored state.
-     *
-     * <p>Unlike the {@link #create} factory this method does <em>not</em> generate a new id
-     * or record any domain event. Intended for use by the JPA persistence adapter only.
-     */
+    /** Rebuilds an order from its stored state, without a new id or events (persistence adapter only). */
     public static Order reconstitute(OrderId id,
                                      TenantId tenantId,
                                      CustomerSessionId sessionId,
@@ -259,7 +207,6 @@ public class Order {
                 Instant.EPOCH, Instant.EPOCH);
     }
 
-    /** Full reconstitution including descriptive data and timestamps (persistence adapter only). */
     public static Order reconstitute(OrderId id,
                                      int orderNumber,
                                      TenantId tenantId,
@@ -272,7 +219,6 @@ public class Order {
         return reconstitute(id, orderNumber, tenantId, sessionId, status, version, details, createdAt, updatedAt, null);
     }
 
-    /** Full reconstitution including the first-open marker (persistence adapter only). */
     public static Order reconstitute(OrderId id,
                                      int orderNumber,
                                      TenantId tenantId,

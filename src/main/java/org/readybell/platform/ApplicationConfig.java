@@ -53,12 +53,7 @@ public class ApplicationConfig {
         return new SessionService(restaurantRepository, sessionRepository, eventPublisher);
     }
 
-    /**
-     * Wires {@link ManageOrderService} to the {@link ManageOrderUseCase} port.
-     *
-     * <p>Uses {@link Clock#systemUTC()} in production; tests override this via the
-     * constructor when exercising the service directly against fakes.
-     */
+    /** Wires {@link ManageOrderService} to the {@link ManageOrderUseCase} port. */
     @Bean
     public ManageOrderUseCase manageOrderUseCase(
             CustomerSessionRepository sessionRepository,
@@ -84,10 +79,7 @@ public class ApplicationConfig {
         return new TrackSessionService(sessionRepository, orderRepository, restaurantRepository, eventPublisher, clock);
     }
 
-    /**
-     * Which push endpoints the server may call: the known push services, plus any hosts listed in
-     * {@code readybell.push.extra-allowed-hosts} (comma separated, {@code *.} for subdomains).
-     */
+    /** Which push endpoints the server may call: the known push services, plus any hosts listed in {@code readybell.push.extra-allowed-hosts} (comma separated, {@code *.} for subdomains). */
     @Bean
     public org.readybell.subscription.domain.PushEndpointPolicy pushEndpointPolicy(
             @org.springframework.beans.factory.annotation.Value("${readybell.push.extra-allowed-hosts:}")
@@ -109,18 +101,8 @@ public class ApplicationConfig {
         return new ManageSubscriptionService(sessionRepository, subscriptionRepository, pushEndpointPolicy);
     }
 
-    /**
-     * Wires {@link OrderReadyHandler} as a plain bean so {@link SpringOrderReadyEventListener}
-     * can receive it via constructor injection.
-     *
-     * <p>{@code ManageSubscriptionUseCase} is declared as a dependency so Spring resolves
-     * it from the bean above, ensuring both the handler and the subscription service share
-     * the same wired instance.
-     */
-    /**
-     * Retry pauses after a transient push failure; empty means no retries (tests). The n-th failed attempt is followed
-     * by the n-th pause, as a later {@code next_attempt_at} rather than a sleeping thread.
-     */
+    /** Wires {@link OrderReadyHandler} as a plain bean so {@link SpringOrderReadyEventListener} can receive it via constructor injection. */
+    /** Retry pauses after a transient push failure; empty means no retries (tests). */
     @Bean
     public PushRetryPolicy pushRetryPolicy(
             @Value("${readybell.push.retry-delays-ms:1000,5000,30000,120000}") List<Long> retryDelaysMs) {

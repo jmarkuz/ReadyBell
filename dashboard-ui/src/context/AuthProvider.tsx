@@ -1,9 +1,4 @@
-/**
- * AuthProvider Component
- *
- * Provides authentication context to the entire app.
- * Handles token validation on app initialization and redirects to login if needed.
- */
+/** Validates the stored token on start-up, redirects to the login page when it is missing or invalid, and provides the auth context. */
 
 import { isPublicCustomerPath } from '@/utils/publicPaths';
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
@@ -24,7 +19,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-/** AuthProvider Component */
 export function AuthProvider({ children }: AuthProviderProps) {
   const navigate = useNavigate();
 
@@ -33,12 +27,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  /**
-   * Validate token on component mount
-   * - Check if token exists and is valid
-   * - Redirect to login if token is invalid/expired
-   * - Show loading UI while validating
-   */
   useEffect(() => {
     const validateTokenOnMount = async () => {
       // Customers on a tracking page never sign in
@@ -58,8 +46,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           console.debug('[AuthProvider] No stored token found, redirecting to login');
           setIsValidating(false);
           setIsInitialized(true);
-          
-          // Only redirect if we're not already on the login page
+
           if (window.location.pathname !== '/login') {
             // the customer display is opened on its own screen: come back to it after signing in
             navigate(window.location.pathname === '/display' ? '/login?next=/display' : '/login', { replace: true });
@@ -67,7 +54,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           return;
         }
 
-        // Token exists, check if it's valid
         const isValid = tokenManager.validate();
 
         if (!isValid) {
@@ -90,7 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setValidationError(errorMessage);
         setIsValidating(false);
         setIsInitialized(true);
-        
+
         tokenManager.clear();
         navigate('/login', { replace: true });
       }
@@ -99,11 +85,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     validateTokenOnMount();
   }, [navigate]);
 
-  // While validating token, show loading UI only if on authenticated routes (not on login)
-  // Check current pathname to avoid showing loader on login page
+  // No loader on the login page or the customer pages, which render without a session.
   const isOnLoginPage =
     window.location.pathname === '/login' || isPublicCustomerPath(window.location.pathname);
-  
+
   if (isValidating && !isOnLoginPage) {
     return (
       <div
@@ -117,7 +102,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     );
   }
 
-  // After validation, provide context to children
   return (
     <AuthContext.Provider
       value={{

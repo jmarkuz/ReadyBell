@@ -1,4 +1,4 @@
-/** TokenManager - Secure Bearer Token Management */
+/** Stores the bearer token (sessionStorage, falling back to localStorage) and reads its claims client-side. */
 
 export interface DecodedToken {
   sub?: string;
@@ -17,15 +17,10 @@ export class TokenManager {
   private readonly storageKey = 'auth-token';
   private readonly storageType: 'sessionStorage' | 'localStorage';
 
-  /**
-   * Initialize TokenManager
-   * Uses sessionStorage by default (more secure, cleared on browser close)
-   * Falls back to localStorage if sessionStorage unavailable
-   */
+  /** Uses sessionStorage (cleared when the browser closes) and falls back to localStorage if that is unavailable. */
   constructor(useSessionStorage: boolean = true) {
     this.storageType = useSessionStorage ? 'sessionStorage' : 'localStorage';
     
-    // Test if storage is available
     if (!this.isStorageAvailable(this.storageType)) {
       console.warn(
         `${this.storageType} not available, attempting fallback`,
@@ -40,7 +35,7 @@ export class TokenManager {
     }
   }
 
-  /** Check if storage type is available (not disabled, not full) */
+  /** False when the storage is disabled or full. */
   private isStorageAvailable(storageType: 'sessionStorage' | 'localStorage'): boolean {
     try {
       const storage = storageType === 'sessionStorage' ? sessionStorage : localStorage;
@@ -57,10 +52,7 @@ export class TokenManager {
     return this.storageType === 'sessionStorage' ? sessionStorage : localStorage;
   }
 
-  /**
-   * Decode JWT payload without verifying signature (client-side only)
-   * Note: Signature verification must happen on backend
-   */
+  /** Decodes the payload without verifying the signature; only the backend can trust a token. */
   private decodeJWT(token: string): DecodedToken | null {
     try {
       const parts = token.split('.');
@@ -71,7 +63,6 @@ export class TokenManager {
 
       const payload = parts[1];
       
-      // Add padding if needed
       const padded = payload + '='.repeat((4 - payload.length % 4) % 4);
       
       const decoded = atob(padded);
@@ -91,14 +82,12 @@ export class TokenManager {
     }
 
     try {
-      // Validate token format before storing
       const decoded = this.decodeJWT(token);
       if (!decoded) {
         console.error('Token validation failed during store');
         return false;
       }
 
-      // Check expiry before storing
       if (this.isTokenExpired(decoded)) {
         console.warn('Cannot store expired token');
         return false;
@@ -107,7 +96,6 @@ export class TokenManager {
       const storage = this.getStorage();
       storage.setItem(this.storageKey, token);
       
-      // Log success without exposing token
       console.debug(`Token stored successfully in ${this.storageType}`);
       return true;
     } catch (error) {
@@ -125,7 +113,6 @@ export class TokenManager {
         return null;
       }
 
-      // Validate token before returning
       const decoded = this.decodeJWT(token);
       if (!decoded) {
         console.warn('Stored token is invalid, clearing it');
@@ -162,14 +149,7 @@ export class TokenManager {
     return isExpired;
   }
 
-  /**
-   * Validate stored token
-   * Checks:
-   * - Token exists
-   * - Token is properly formatted (valid JWT)
-   * - Token is not expired
-   * - Token has required claims (role, tenant_id)
-   */
+  /** True if a token exists, is a well-formed JWT, has not expired and carries the required claims. */
   public validate(): boolean {
     try {
       const token = this.get();
@@ -206,10 +186,7 @@ export class TokenManager {
     }
   }
 
-  /**
-   * Clear stored bearer token
-   * Securely removes token from storage
-   */
+  /** Removes the token from storage. */
   public clear(): void {
     try {
       const storage = this.getStorage();
@@ -225,10 +202,7 @@ export class TokenManager {
     }
   }
 
-  /**
-   * Get decoded token payload for inspection
-   * Returns token claims without verifying signature
-   */
+  /** The token's claims, unverified. */
   public getDecodedToken(): DecodedToken | null {
     const token = this.get();
     if (!token) {

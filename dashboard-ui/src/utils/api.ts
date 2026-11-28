@@ -1,7 +1,4 @@
-/**
- * API Client Configuration
- * Handles all HTTP requests to the backend with authentication, interceptors, and error handling
- */
+/** HTTP client for the backend: bearer-token injection, 401 refresh-and-replay, and error mapping. */
 
 import { ErrorResponse, DisplayError, PaginatedResponse, OrderRow, OrderStatus, OrderMetrics } from '@/types';
 import { tokenManager } from './TokenManager';
@@ -110,48 +107,29 @@ export class ApiClient {
     this.setupDefaultRequestInterceptor();
   }
 
-  /**
-   * Setup default request interceptor to inject Bearer token
-   * This interceptor:
-   * - Retrieves the stored bearer token from TokenManager
-   * - Injects Authorization: Bearer {token} header
-   * - Skips token injection if no token available (graceful fallback)
-   * - Logs warning if token is missing (but allows request to proceed)
-   */
   private setupDefaultRequestInterceptor(): void {
     this.addRequestInterceptor((config: RequestConfig) => {
       const token = tokenManager.get();
-      
+
       if (token) {
         (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
         console.debug(`[API] Request interceptor: Bearer token injected for ${config.method} ${config.endpoint}`);
       } else {
-        // No token available: log warning but allow request to proceed
         console.warn(
           `[API] Request interceptor: No bearer token available for ${config.method} ${config.endpoint}. ` +
           `Request will proceed without authentication. This may result in 401 Unauthorized response.`
         );
       }
-      
+
       return config;
     });
 
-    // Setup response interceptor to handle 401 and token refresh
     this.setupDefaultResponseInterceptor();
   }
 
-  /**
-   * Setup default response interceptor to handle 401 Unauthorized responses
-   * This interceptor:
-   * - Detects 401 Unauthorized responses
-   * - Attempts token refresh (if available)
-   * - Retries original request with new token
-   * - Logs out user if refresh fails or no refresh token available
-   * - Handles edge cases: multiple simultaneous 401s via request queue
-   */
+  /** On a 401, refreshes the token once (shared by concurrent requests) and replays the request; logs out if that fails. */
   private setupDefaultResponseInterceptor(): void {
     this.addResponseInterceptor(async (response: Response, context?: RequestContext) => {
-      // Only handle 401 Unauthorized responses
       if (response.status !== 401) {
         return response;
       }
@@ -169,7 +147,6 @@ export class ApiClient {
 
       console.warn(`[API] Response interceptor: 401 Unauthorized detected for ${response.url}`);
 
-      // Parse error details if available
       try {
         const contentType = response.headers.get('content-type');
         if (contentType?.includes('json')) {
@@ -182,7 +159,6 @@ export class ApiClient {
         console.debug('Could not parse 401 error response body');
       }
 
-      // If no token available, cannot refresh - redirect to login immediately
       const currentToken = tokenManager.get();
       if (!currentToken) {
         console.warn('[API] Response interceptor: No token available, cannot refresh. Logging out.');
@@ -191,17 +167,15 @@ export class ApiClient {
         return response;
       }
 
-      // Attempt token refresh
-      // Use a promise to prevent multiple simultaneous refresh attempts
       if (!this.refreshPromise) {
         console.debug('[API] Response interceptor: Initiating token refresh');
         this.refreshPromise = this.attemptTokenRefresh()
           .then((newToken) => {
-            this.refreshPromise = null; // Clear the promise queue
+            this.refreshPromise = null;
             return newToken;
           })
           .catch((error) => {
-            this.refreshPromise = null; // Clear the promise queue
+            this.refreshPromise = null;
             console.error('[API] Response interceptor: Token refresh failed:', error);
             return null;
           });
@@ -212,10 +186,8 @@ export class ApiClient {
       const newToken = await this.refreshPromise;
 
       if (newToken) {
-        // Refresh succeeded - retry original request with new token
         console.debug('[API] Response interceptor: Token refresh successful, retrying original request');
-        
-        // Create a new request with the same URL, method, and body, but with updated Authorization header
+
         // Replay the original request (same method, headers and body) with the new token.
         // `context` is always provided by request(); the fallback only guards against direct callers.
         const url = context?.url ?? response.url;
@@ -240,20 +212,10 @@ export class ApiClient {
     });
   }
 
-  /** Attempt to refresh the bearer token using refresh endpoint */
-  /**
-   * Attempt to refresh the bearer token with exponential backoff retry
-   *
-   * Retry Strategy:
-   * - Max 3 attempts total
-   * - Exponential backoff: 1s, 2s, 4s between attempts
-   * - No retry on permanent failures (401, 403, 400)
-   * - Retry on transient failures (5xx, network errors, timeouts)
-   * - Detailed logging of each attempt
-   */
+  /** Refreshes the token: up to 3 attempts with 1s/2s/4s backoff, retrying only transient failures (5xx, network, timeout). */
   private async attemptTokenRefresh(): Promise<string | null> {
     const MAX_ATTEMPTS = 3;
-    const BACKOFF_DELAYS = [1000, 2000, 4000]; // 1s, 2s, 4s in milliseconds
+    const BACKOFF_DELAYS = [1000, 2000, 4000];
 
     const currentToken = tokenManager.get();
     if (!currentToken) {
@@ -272,7 +234,7 @@ export class ApiClient {
         // Call refresh endpoint without going through the normal request method
         // to avoid infinite loops if refresh endpoint returns 401
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
 
         const response = await fetch(`${this.baseURL}/api/auth/refresh`, {
           method: 'POST',
@@ -386,10 +348,7 @@ export class ApiClient {
     return null;
   }
 
-  /**
-   * Add a request interceptor
-   * Interceptors are called in order before the request is sent
-   */
+  /** Interceptors run in registration order. */
   public addRequestInterceptor(interceptor: RequestInterceptor): void {
     this.requestInterceptors.push(interceptor);
   }
@@ -402,10 +361,7 @@ export class ApiClient {
     this.errorInterceptors.push(interceptor);
   }
 
-  /**
-   * Load user profile from token or localStorage
-   * Priority: Token (decoded JWT) > localStorage (fallback)
-   */
+  /** The decoded token wins; the stored profile is a fallback. */
   private loadUserProfile(): void {
     try {
       const decodedToken = tokenManager.getDecodedToken();
@@ -431,10 +387,7 @@ export class ApiClient {
     }
   }
 
-  /**
-   * Build request headers with default headers
-   * Note: Bearer token is injected by request interceptor, not here
-   */
+  /** The bearer token is added by the request interceptor, not here. */
   private getHeaders(): HeadersInit {
     return { ...this.defaultHeaders };
   }
@@ -453,12 +406,11 @@ export class ApiClient {
 
   private mapError(response: Response, data: unknown): DisplayError {
     let errorData: Partial<ErrorResponse> = {};
-    
+
     if (data && typeof data === 'object' && 'type' in data) {
       errorData = data as Partial<ErrorResponse>;
     }
 
-    // Determine error type based on HTTP status and error type
     let type: DisplayError['type'] = 'unknown';
     if (response.status === 401 || response.status === 403) {
       type = 'auth';
@@ -709,7 +661,7 @@ export class ApiClient {
     password: string;
   }): Promise<{ token: string; role: string; tenantId: string; expiresIn: number }> {
     const response = await this.post('/api/login', credentials);
-    
+
     const typedResponse = response as {
       token: string;
       role: string;
@@ -732,7 +684,7 @@ export class ApiClient {
         role: typedResponse.role as UserProfile['role'],
         tenantId: typedResponse.tenantId,
       };
-      
+
       localStorage.setItem('user-profile', JSON.stringify(userProfile));
       this.userProfile = userProfile;
     }
@@ -757,11 +709,11 @@ export class ApiClient {
     }
 
     tokenManager.clear();
-    
+
     localStorage.removeItem('user-profile');
     localStorage.removeItem('auth-token'); // Legacy fallback
     this.userProfile = null;
-    
+
     console.debug('[API] User logged out, tokens cleared');
   }
 

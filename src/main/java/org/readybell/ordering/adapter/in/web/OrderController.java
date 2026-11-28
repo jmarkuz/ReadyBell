@@ -2,20 +2,14 @@ package org.readybell.ordering.adapter.in.web;
 
 import jakarta.validation.Valid;
 
-import org.readybell.ordering.application.CrossTenantAccessException;
-import org.readybell.ordering.application.InvalidSessionException;
-import org.readybell.ordering.application.OrderNotFoundException;
 import org.readybell.ordering.application.CreateOrderCommand;
 import org.readybell.ordering.application.ManageOrderUseCase;
 import org.readybell.ordering.application.TransitionOrderCommand;
-import org.readybell.ordering.domain.InvalidTransitionException;
 import org.readybell.ordering.domain.Order;
 import org.readybell.ordering.domain.OrderId;
 import org.readybell.ordering.domain.OrderQuery;
 import org.readybell.ordering.domain.OrderRepository;
 import org.readybell.ordering.domain.OrderStatus;
-import org.readybell.ordering.domain.TerminalStateException;
-import org.readybell.platform.GlobalExceptionHandler;
 import org.readybell.session.domain.CustomerSessionId;
 import org.readybell.shared.domain.TenantId;
 import org.readybell.shared.tenancy.TenantContextHolder;
@@ -47,20 +41,6 @@ import java.util.UUID;
  *   <li>{@code GET   /api/orders/poll}        — polling fallback with ETag.</li>
  *   <li>{@code PATCH /api/orders/{id}/status} — transitions order status.</li>
  * </ul>
- *
- * <p>All endpoints resolve the current tenant via {@link TenantContextHolder#require()}.
- * Tenant isolation is enforced at the repository query layer. Cross-tenant
- * access is denied at both the application service and repository levels.
- *
- * <p>Error responses are produced by {@link GlobalExceptionHandler}
- * as RFC 7807 {@code application/problem+json} bodies for:
- * <ul>
- *   <li>{@link InvalidSessionException} → 422</li>
- *   <li>{@link CrossTenantAccessException} → 403</li>
- *   <li>{@link OrderNotFoundException} → 404</li>
- *   <li>{@link InvalidTransitionException} → 422</li>
- *   <li>{@link TerminalStateException} → 422</li>
- * </ul>
  */
 @RestController
 @RequestMapping("/api/orders")
@@ -81,14 +61,7 @@ public class OrderController {
         this.clock              = Objects.requireNonNull(clock, "clock must not be null");
     }
 
-    /**
-     * Creates a new order for the given customer session, scoped to the authenticated tenant.
-     *
-     * <p>The resolved tenant is stamped on the order. Optional customer name, items and
-     * ETA are stored with the order. Throws {@link InvalidSessionException} if the session
-     * does not exist or is inactive, or {@link CrossTenantAccessException} if the
-     * session belongs to a different tenant.
-     */
+    /** Creates a new order for the given customer session, scoped to the authenticated tenant. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public OrderResponse createOrder(@Valid @RequestBody CreateOrderRequest request) {
@@ -122,10 +95,7 @@ public class OrderController {
                 result.totalCount(), result.pageCount(), result.page());
     }
 
-    /**
-     * Order counts per status for the dashboard cards: always the tenant's real totals, independent
-     * of any list filter or page.
-     */
+    /** Order counts per status for the dashboard cards: always the tenant's real totals, independent of any list filter or page. */
     @GetMapping("/metrics")
     public OrderMetricsResponse metrics() {
         var counts = orderRepository.countByStatus(TenantContextHolder.require());
@@ -137,10 +107,6 @@ public class OrderController {
     public record OrderMetricsResponse(long totalOrders, long created, long inProgress, long ready,
                                        long completed, long cancelled) {}
 
-    /**
-     * Polling fallback for the SSE stream: orders changed since {@code since} (default: most
-     * recent), with an ETag over their ids and versions.
-     */
     @GetMapping("/poll")
     public ResponseEntity<OrderPollResponse> pollOrders(
             @RequestParam(name = "since", required = false) Instant since,
@@ -196,20 +162,7 @@ public class OrderController {
         return t.replace("\"", "");
     }
 
-    /**
-     * Transitions an order to a new status.
-     *
-     * <p>Enforces lifecycle invariants in the domain. Returns the order
-     * after the successful transition. Throws:
-     * <ul>
-     *   <li>{@link OrderNotFoundException} → 404 if the
-     *       order does not exist for this tenant.</li>
-     *   <li>{@link InvalidTransitionException} → 422 for
-     *       disallowed or self-transitions.</li>
-     *   <li>{@link TerminalStateException} → 422 for
-     *       already-terminal orders.</li>
-     * </ul>
-     */
+    /** Transitions an order to a new status. */
     @PatchMapping("/{id}/status")
     public OrderResponse transitionOrderStatus(@PathVariable("id") UUID id,
                                                @Valid @RequestBody TransitionOrderRequest request) {

@@ -21,13 +21,8 @@ export {
   handleErrorResponse,
 } from './errors';
 
-/** Theme type - light or dark mode */
 export type Theme = 'light' | 'dark';
 
-/**
- * Theme Context Type
- * Provides theme state and control functions to components
- */
 export interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
@@ -35,16 +30,9 @@ export interface ThemeContextType {
   currentMode: Theme;
 }
 
-/**
- * OrderStatus - Backend enum values (exactly matching backend)
- * From the backend spec: Backend defines OrderStatus as enum
- */
+/** Order status as the UI names it: the backend's IN_PROGRESS is PREPARING here. */
 export type OrderStatus = 'CREATED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
 
-/**
- * Order Entity - Core order data from backend
- * Maps to backend Order entity
- */
 export interface Order {
   id: string;                           // UUID
   orderId: string;                      // Display ID
@@ -71,10 +59,7 @@ export interface OrderItem {
   price: number;
 }
 
-/**
- * OrderRow - Display model for table rows
- * Maps to backend Order response, formatted for UI
- */
+/** An order as a table row, formatted for the UI. */
 export interface OrderRow {
   id: string;                           // Backend Order.id
   orderId: string;                      // Backend Order.orderId (display)
@@ -151,10 +136,6 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-/**
- * Paginated API response (backend format)
- * From backend endpoints GET /api/orders
- */
 export interface PaginatedResponse<T> {
   items: T[];
   totalCount: number;
@@ -162,10 +143,7 @@ export interface PaginatedResponse<T> {
   currentPage: number;
 }
 
-/**
- * ErrorResponse - RFC 7807 Problem+JSON format (backend error format)
- * From the backend spec: Backend returns RFC 7807 problem+json
- */
+/** RFC 7807 problem+json, the backend's error format. */
 export interface ErrorResponse {
   type: string;                 // e.g., "urn:readybell:orders:invalid-transition"
   title: string;                // e.g., "Invalid State Transition"

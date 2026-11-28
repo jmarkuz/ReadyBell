@@ -29,12 +29,6 @@ import java.util.UUID;
  *   <li>{@code DELETE /api/sessions/{sessionId}/subscriptions/{subscriptionId}} — revokes
  *       the subscription so no further Web Push messages are sent.</li>
  * </ul>
- *
- * <p>The current tenant is resolved from {@link TenantContextHolder#require()} which
- * is populated by the inbound tenant-resolution filter before this controller is reached.
- *
- * <p>This class contains no business logic; all domain work is delegated to
- * {@link ManageSubscriptionUseCase}.
  */
 @RestController
 @RequestMapping("/api/sessions/{sessionId}/subscriptions")
@@ -48,17 +42,7 @@ public class SubscriptionController {
 
     // POST /api/sessions/{sessionId}/subscriptions
 
-    /**
-     * Registers a new device subscription or updates the keys of an existing one for
-     * the same {@code (session, endpointUrl)} pair.
-     *
-     * <p>Tenant identity is resolved from the thread-bound {@link TenantContextHolder}
-     * so no explicit tenant parameter is required in the URL.
-     *
-     * <p>Returns HTTP 201 Created with a {@link SubscriptionResponse} body containing
-     * the subscription id and a {@code Location} header pointing to the newly created
-     * resource.
-     */
+    /** Registers a new device subscription or updates the keys of an existing one for the same {@code (session, endpointUrl)} pair. */
     @PostMapping
     public ResponseEntity<SubscriptionResponse> registerSubscription(
             @PathVariable UUID sessionId,
@@ -84,13 +68,7 @@ public class SubscriptionController {
 
     // DELETE /api/sessions/{sessionId}/subscriptions/{subscriptionId}
 
-    /**
-     * Revokes a device subscription so that no further Web Push messages are delivered
-     * to it.
-     *
-     * <p>The use case verifies that the subscription belongs to the current tenant before
-     * deleting it, enforcing cross-tenant isolation.
-     */
+    /** Revokes a device subscription so that no further Web Push messages are delivered to it. */
     @DeleteMapping("/{subscriptionId}")
     public ResponseEntity<Void> deleteSubscription(
             @PathVariable UUID sessionId,

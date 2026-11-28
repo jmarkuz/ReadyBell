@@ -2,7 +2,6 @@ package org.readybell.ordering.adapter.in.web;
 
 import org.readybell.ordering.domain.OrderRepository;
 import org.readybell.session.domain.CustomerSessionId;
-import org.readybell.shared.domain.TenantId;
 import org.readybell.shared.tenancy.TenantContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,30 +17,6 @@ import java.util.UUID;
  * <p>Returns the current snapshot of orders for a customer session so that the PWA can
  * implement a polling loop as a fallback when SSE is unavailable or disconnected (,
  * ADR-009).
- *
- * <p>This endpoint intentionally mirrors the behaviour of the SSE stream but returns a
- * one-shot HTTP response rather than a persistent connection. The client is responsible for
- * scheduling repeated calls at an appropriate interval (e.g. every 5 seconds for PWA, every
- * 10 seconds for the panel).
- *
- * <h2>Endpoint</h2>
- * <pre>GET /api/sessions/{sessionId}/orders/poll</pre>
- *
- * <p>The endpoint is public — no authentication is required — consistent with the other
- * customer session endpoints ( applies only to staff-panel endpoints).
- *
- * <h2>Response</h2>
- * A JSON array of order state objects for the session:
- * <pre>[{"orderId":"&lt;uuid&gt;","status":"&lt;LIFECYCLE_STATE&gt;"},...]</pre>
- *
- * <p>Returns an empty array when the session has no orders.
- *
- * <p>The tenant context is derived from the session itself. Since the polling endpoint
- * serves the customer PWA (unauthenticated), the tenant is not available from the
- * security context. The session's {@link TenantId} is encoded in the session token
- * resolved upstream; for simplicity in the MVP the tenant context is populated by the
- * inbound filter from the session. Where no tenant context is present the repository
- * returns an empty list (safe, fail-closed).
  */
 @RestController
 public class OrderPollingController {
@@ -52,16 +27,7 @@ public class OrderPollingController {
                 "orderRepository must not be null");
     }
 
-    /**
-     * Returns the current order states for a customer session as a JSON snapshot
-     * suitable for polling.
-     *
-     * <p>Tenant isolation is enforced by the repository's
-     * {@link OrderRepository#findByTenantAndSession} method, which constrains results to
-     * the resolved tenant. If the tenant context is not resolvable for
-     * the current request the returned list is empty rather than an error (fail-closed for
-     * unauthenticated customer requests).
-     */
+    /** Returns the current order states for a customer session as a JSON snapshot suitable for polling. */
     @GetMapping("/api/sessions/{sessionId}/orders/poll")
     public List<OrderStatusSnapshot> pollOrders(@PathVariable("sessionId") UUID sessionId) {
         CustomerSessionId csid = new CustomerSessionId(sessionId);

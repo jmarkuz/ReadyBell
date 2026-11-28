@@ -1,58 +1,39 @@
 
-/**
- * RFC 7807 Problem Detail response from backend
- *
- * Standardized error format returned by all backend endpoints
- * Frontend must parse this format and map to user-friendly messages
- */
+/** RFC 7807 problem detail, the error format of every backend endpoint. */
 export interface ProblemDetail {
   type: string;
-  
   title: string;
-  
   status: number;
-  
   detail: string;
-  
   instance?: string;
-  
   code?: string;
-  
   [key: string]: unknown;
 }
 
-/**
- * Error context and code combinations
- * Format: urn:readybell:{context}:{error}
- */
+/** Error kinds, the tail of the problem type `urn:readybell:{context}:{error}`. */
 export type ErrorContext =
-  | 'auth:invalid-token'              // 401 - Token expired, invalid, or malformed
-  | 'auth:tenant-mismatch'            // 403 - User attempting to access different tenant
-  | 'auth:insufficient-permissions'   // 403 - User role does not allow this action
-  
-  | 'validation:invalid-request'      // 400 - Request body or parameters invalid
-  | 'validation:invalid-filter'       // 400 - Filter parameter value invalid
-  | 'validation:invalid-sort'         // 400 - Sort parameter value invalid
-  | 'validation:missing-required'     // 400 - Required field missing
-  
-  | 'orders:not-found'                // 404 - Order does not exist
-  | 'orders:invalid-transition'       // 400 - Invalid status transition
-  | 'orders:concurrent-modification'  // 409 - Order version conflict (optimistic lock)
-  
-  | 'admin:staff-not-found'           // 404 - Staff account not found
-  | 'admin:staff-duplicate'           // 409 - Staff username or email already exists
-  | 'admin:config-not-found'          // 404 - Restaurant config not found
-  | 'admin:restaurant-not-found'      // 404 - Restaurant/tenant not found
-  | 'admin:restaurant-inactive'       // 403 - Restaurant is inactive
-  | 'admin:restaurant-duplicate'      // 409 - Restaurant name or tenant already exists
-  
-  | 'session:invalid-qr'              // 400 - QR code token invalid or expired
-  | 'session:session-expired'         // 410 - Customer session expired
-  | 'session:session-not-found'       // 404 - Session does not exist
-  
-  | 'server:internal-error'           // 500 - Unspecified server error
-  | 'server:database-error'           // 500 - Database operation failed
-  | 'server:service-unavailable'      // 503 - Backend service temporarily unavailable;
+  | 'auth:invalid-token'
+  | 'auth:tenant-mismatch'
+  | 'auth:insufficient-permissions'
+  | 'validation:invalid-request'
+  | 'validation:invalid-filter'
+  | 'validation:invalid-sort'
+  | 'validation:missing-required'
+  | 'orders:not-found'
+  | 'orders:invalid-transition'
+  | 'orders:concurrent-modification'
+  | 'admin:staff-not-found'
+  | 'admin:staff-duplicate'
+  | 'admin:config-not-found'
+  | 'admin:restaurant-not-found'
+  | 'admin:restaurant-inactive'
+  | 'admin:restaurant-duplicate'
+  | 'session:invalid-qr'
+  | 'session:session-expired'
+  | 'session:session-not-found'
+  | 'server:internal-error'
+  | 'server:database-error'
+  | 'server:service-unavailable'
 
 /** Mapping from error context/status to user-friendly messages */
 export const ERROR_MESSAGES: Record<ErrorContext, string> = {

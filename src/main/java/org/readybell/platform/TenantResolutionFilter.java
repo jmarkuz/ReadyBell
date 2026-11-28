@@ -39,9 +39,6 @@ import java.util.regex.Pattern;
  *       {@link MissingTenantContextException} and reject the
  *       access at the repository layer.
  * </ol>
- *
- * <p>The {@code finally} block always calls {@link TenantContextHolder#clear()} to prevent
- * tenant leakage across pooled-thread reuse.
  */
 @Component
 @Order(1)
@@ -49,7 +46,6 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
     /** Legacy header; only checked against the principal's tenant, never trusted. */
     static final String TENANT_ID_HEADER = "X-Tenant-Id";
 
-    /** Paths that are fully public — no tenant resolution is attempted. */
     private static final String[] PUBLIC_PATH_PREFIXES = {
         "/actuator",
         "/api/platform",
@@ -59,10 +55,7 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         "/error"
     };
 
-    /**
-     * POST /api/sessions is the QR-based session-start endpoint; it creates a new session
-     * and therefore has no existing session to derive a tenant from.
-     */
+    /** Session start has no existing session to derive a tenant from. */
     private static final String SESSION_START_PATH = "/api/sessions";
 
     private static final Pattern SESSION_SUB_PATH =
@@ -111,18 +104,7 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         }
     }
 
-    /**
-     * Attempts to resolve the tenant for the current request and, on success, calls
-     * {@link TenantContextHolder#set(TenantId)}.
-     *
-     * <p>Resolution order:
-     * <ol>
-     *   <li>Authenticated {@link TenantUser} principal.
-     *   <li>Customer-session sub-path — derive from the session's stored tenant.
-     * </ol>
-     * If neither strategy succeeds the holder is left unset; a downstream
-     * {@code require()} call will raise {@code MissingTenantContextException}.
-     */
+    /** Attempts to resolve the tenant for the current request and, on success, calls {@link TenantContextHolder#set(TenantId)}. */
     private void resolveTenant(HttpServletRequest request) {
         // 1. Authenticated principal: the tenant is fixed server-side and the client-supplied
         // header can never override it.
