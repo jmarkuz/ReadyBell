@@ -8,7 +8,6 @@ const LANGUAGE_KEY = 'readybell-staff-language';
 export type StaffLanguage = 'en' | 'uk';
 
 const en = {
-  // navigation and layout
   navDashboard: 'Dashboard',
   navStaff: 'Staff',
   navSettings: 'Settings',
@@ -18,7 +17,6 @@ const en = {
   languageSwitch: 'Українська',
   languageSwitchLabel: 'Switch to Ukrainian',
 
-  // dashboard
   dashboardWelcome: 'Welcome to the ReadyBell restaurant dashboard. Monitor incoming orders and track operations.',
   customerDisplay: 'Customer display',
   newOrder: 'New order',
@@ -31,7 +29,6 @@ const en = {
   loadingOrders: 'Loading orders…',
   incomingOrders: 'Incoming Orders',
 
-  // order statuses and metrics
   statusCreated: 'New Order',
   statusPreparing: 'Preparing',
   statusReady: 'Ready for Pickup',
@@ -40,7 +37,6 @@ const en = {
   metricTotal: 'Total Orders',
   metricNew: 'New Orders',
 
-  // orders table
   colOrderId: 'Order ID',
   colCustomer: 'Customer',
   colItems: 'Items',
@@ -62,7 +58,6 @@ const en = {
   previous: 'Previous',
   next: 'Next',
 
-  // new order dialog
   newOrderTitle: 'New order',
   orderCreatedTitle: 'Order created',
   customerName: 'Customer name',
@@ -76,7 +71,6 @@ const en = {
   creating: 'Creating…',
   close: 'Close',
 
-  // order QR
   orderQrTitle: 'Order QR code',
   preparingCode: 'Preparing the code…',
   customerConnected: 'Customer connected',
@@ -87,13 +81,11 @@ const en = {
   copyLink: 'Copy link',
   copied: 'Copied',
 
-  // customer display
   displayConnected: 'You are connected',
   displayNotify: 'We will notify you when your order is ready.',
   displayScan: 'Scan with your phone to follow your order',
   displayWelcome: 'Welcome! Your order will appear here.',
 
-  // login
   loginRestaurant: 'Restaurant',
   loginRestaurantHint: "The restaurant's code, as given to you. Leave empty only for the platform operator.",
   loginUsername: 'Username',
@@ -104,7 +96,6 @@ const en = {
   loginThrottled: 'Too many failed attempts. Please wait a few minutes and try again.',
   loginFailed: 'Sign-in failed. Check your connection and try again.',
 
-  // settings and staff pages
   settingsTitle: 'Settings',
   settingsIntro: "Your restaurant's public details.",
   settingsRestaurant: 'Restaurant',

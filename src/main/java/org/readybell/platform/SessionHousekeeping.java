@@ -21,7 +21,6 @@ import java.time.Instant;
  */
 @Component
 public class SessionHousekeeping {
-
     private static final Logger log = LoggerFactory.getLogger(SessionHousekeeping.class);
 
     /** Transaction-level advisory lock key ("READYBLL"): one replica at a time runs the cleanup. */
@@ -45,8 +44,6 @@ public class SessionHousekeeping {
      * Ends old finished sessions and deletes their subscriptions. Every replica schedules this, but the first one to
      * take a PostgreSQL advisory lock does the work and the others skip the round (the lock is released with the
      * transaction, and a replica that dies releases it with its connection).
-     *
-     * @return {ended sessions, deleted subscriptions}; zeros when another replica holds the lock
      */
     @Transactional
     public int[] run(Duration olderThan) {

@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("dev")
 class DevProfileBanner {
-
     private static final Logger log = LoggerFactory.getLogger(DevProfileBanner.class);
 
     DevProfileBanner() {

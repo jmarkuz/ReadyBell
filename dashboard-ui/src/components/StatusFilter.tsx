@@ -9,21 +9,7 @@ interface StatusFilterProps {
   selectedStatuses?: OrderStatus[];
 }
 
-/**
- * Status Filter Dropdown Component
- * 
- * Provides filtering by order status with:
- * - Checkboxes for each status: CREATED, PREPARING, READY, COMPLETED
- * - Select/Clear All toggle
- * - Apply and Cancel buttons
- * - Badge showing count of active filters
- * 
- * Status options available:
- * - CREATED: New orders
- * - PREPARING: Being prepared
- * - READY: Ready for pickup
- * - COMPLETED: Completed orders
- */
+/** Status Filter Dropdown Component */
 export default function StatusFilter({
   onApply,
   onCancel,
@@ -36,7 +22,6 @@ export default function StatusFilter({
   // All available status options (excluding CANCELLED per design - task specifies CREATED, PREPARING, READY, COMPLETED)
   const availableStatuses: OrderStatus[] = ['CREATED', 'PREPARING', 'READY', 'COMPLETED'];
 
-  // Status labels for display
   const statusLabels: Record<OrderStatus, string> = {
     CREATED: t.statusCreated,
     PREPARING: t.statusPreparing,
@@ -45,7 +30,6 @@ export default function StatusFilter({
     CANCELLED: t.statusCancelled,
   };
 
-  // Toggle individual checkbox
   const handleToggleStatus = useCallback((status: OrderStatus) => {
     setTempSelectedStatuses((prev) => {
       if (prev.includes(status)) {
@@ -56,23 +40,19 @@ export default function StatusFilter({
     });
   }, []);
 
-  // Select all statuses
   const handleSelectAll = useCallback(() => {
     setTempSelectedStatuses(availableStatuses);
   }, []);
 
-  // Clear all statuses
   const handleClearAll = useCallback(() => {
     setTempSelectedStatuses([]);
   }, []);
 
-  // Apply filters and close dropdown
   const handleApply = useCallback(() => {
     onApply?.(tempSelectedStatuses);
     setIsOpen(false);
   }, [tempSelectedStatuses, onApply]);
 
-  // Cancel and reset to previous state
   const handleCancel = useCallback(() => {
     setTempSelectedStatuses(selectedStatuses);
     setIsOpen(false);
@@ -84,7 +64,6 @@ export default function StatusFilter({
 
   return (
     <div className="relative inline-block">
-      {/* Filter button with badge */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
@@ -96,7 +75,6 @@ export default function StatusFilter({
         <span className="text-sm font-medium">{t.status}</span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
         
-        {/* Active filters badge */}
         {selectedStatuses.length > 0 && (
           <span 
             className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
@@ -107,14 +85,12 @@ export default function StatusFilter({
         )}
       </button>
 
-      {/* Dropdown menu */}
       {isOpen && (
         <div 
           className="absolute top-full mt-2 right-0 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50"
           role="menu"
           aria-label="Status filter options"
         >
-          {/* Header with Select/Clear All */}
           <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Filter by Status</h3>
             <button
@@ -127,7 +103,6 @@ export default function StatusFilter({
             </button>
           </div>
 
-          {/* Checkbox list */}
           <fieldset className="px-4 py-2 space-y-2" role="group" aria-label="Status options">
             <legend className="sr-only">Select statuses to filter by</legend>
             {availableStatuses.map((status) => (
@@ -147,7 +122,6 @@ export default function StatusFilter({
             ))}
           </fieldset>
 
-          {/* Select All / Clear All buttons */}
           <div className="px-4 py-2 border-t border-slate-200 dark:border-slate-700 flex gap-2">
             <button
               onClick={handleSelectAll}
@@ -169,7 +143,6 @@ export default function StatusFilter({
             </button>
           </div>
 
-          {/* Apply / Cancel buttons */}
           <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700 flex gap-2">
             <button
               onClick={handleCancel}

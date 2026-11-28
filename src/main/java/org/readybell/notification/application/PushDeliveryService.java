@@ -20,9 +20,9 @@ import java.util.logging.Logger;
 /**
  * One delivery attempt for a notification that is due, and what follows from its outcome:
  * <ul>
- *   <li>{@link SendResult#ACCEPTED}: SENT and {@code NotificationSent} (Req 6.4);</li>
- *   <li>{@link SendResult#REJECTED}: FAILED, no retry (Req 6.7, 6.8);</li>
- *   <li>{@link SendResult#ENDPOINT_EXPIRED}: FAILED and the subscription is deleted (Req 3.6, 6.7);</li>
+ *   <li>{@link SendResult#ACCEPTED}: SENT and {@code NotificationSent};</li>
+ *   <li>{@link SendResult#REJECTED}: FAILED, no retry;</li>
+ *   <li>{@link SendResult#ENDPOINT_EXPIRED}: FAILED and the subscription is deleted;</li>
  *   <li>{@link SendResult#TRANSIENT_FAILURE}: stays PENDING with a later {@code next_attempt_at}, or FAILED when the
  *       retries are used up or the deadline has passed.</li>
  * </ul>
@@ -30,7 +30,6 @@ import java.util.logging.Logger;
  * no thread and no other order. No Spring annotations; wiring is in the composition root.
  */
 public class PushDeliveryService {
-
     private static final Logger LOG = Logger.getLogger(PushDeliveryService.class.getName());
 
     private final NotificationRepository notifications;

@@ -11,23 +11,18 @@ import org.readybell.shared.domain.TenantId;
  * any code executing on the request thread without threading a {@code TenantId}
  * through every method signature. The inbound tenant-resolution mechanics call
  * {@link #set(TenantId)} at the start of a request and {@link #clear()} once the
- * request completes (Req 10.4).
+ * request completes.
  *
  * <p>Kept framework-light: plain Java only, no Spring or persistence annotations.
  */
 public final class TenantContextHolder {
-
     private static final ThreadLocal<TenantContext> CONTEXT =
             ThreadLocal.withInitial(TenantContext::new);
 
     private TenantContextHolder() {
     }
 
-    /**
-     * Resolves the current thread's context to the given tenant (Req 10.4).
-     *
-     * @param tenantId the request's tenant; must not be {@code null}
-     */
+    /** Resolves the current thread's context to the given tenant. */
     public static void set(TenantId tenantId) {
         CONTEXT.get().set(tenantId);
     }
@@ -37,7 +32,6 @@ public final class TenantContextHolder {
         return CONTEXT.get().get();
     }
 
-    /** Returns {@code true} when a tenant is resolved for the current thread. */
     public static boolean isResolved() {
         return CONTEXT.get().isResolved();
     }
@@ -45,9 +39,8 @@ public final class TenantContextHolder {
     /**
      * Returns the current thread's resolved {@link TenantId}.
      *
-     * @return the resolved tenant, never {@code null}
      * @throws MissingTenantContextException if no tenant has been resolved for the
-     *     current request, conveying that the tenant context is missing (Req 10.5)
+     *     current request, conveying that the tenant context is missing
      */
     public static TenantId require() {
         return get().orElseThrow(MissingTenantContextException::new);

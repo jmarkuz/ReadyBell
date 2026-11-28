@@ -12,21 +12,7 @@ interface OrderSummaryCardProps {
   isLoading?: boolean;
 }
 
-/**
- * Order Summary Card Component
- * 
- * Displays a single order metric with:
- * - Large metric value
- * - Descriptive label
- * - Icon
- * - Trend indicator (up/down with percentage, optional)
- * - Hover effect (shadow increase, slight scale)
- * - Loading skeleton state
- * 
- * Accessibility:
- * - aria-label with full context
- * - Keyboard accessible (Tab, Enter)
- */
+/** Order Summary Card Component */
 export default memo(function OrderSummaryCard({
   title,
   value,

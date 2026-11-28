@@ -5,14 +5,11 @@ import { useStaffStrings } from '@/i18n/useStaffStrings';
 
 interface Props {
   orderNumber: string;
-  /** The tracking link the QR code encodes. */
   url: string;
-  /** The QR code as a data URL. */
   qr: string;
   restaurantName: string;
   /** The customer already opened the link: the QR code is hidden so nobody else can scan it. */
   connected: boolean;
-  /** Extra buttons (for example "New order"). */
   children?: ReactNode;
 }
 

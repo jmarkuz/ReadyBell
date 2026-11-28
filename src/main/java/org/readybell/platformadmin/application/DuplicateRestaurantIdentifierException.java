@@ -2,10 +2,9 @@ package org.readybell.platformadmin.application;
 
 /**
  * Thrown when a Platform Admin attempts to create a Restaurant with a business
- * identifier that is already in use by another tenant (Req 9.5).
+ * identifier that is already in use by another tenant.
  */
 public class DuplicateRestaurantIdentifierException extends RuntimeException {
-
     private final String identifier;
 
     public DuplicateRestaurantIdentifierException(String identifier) {
@@ -13,7 +12,6 @@ public class DuplicateRestaurantIdentifierException extends RuntimeException {
         this.identifier = identifier;
     }
 
-    /** The duplicate business identifier that triggered this exception. */
     public String getIdentifier() {
         return identifier;
     }

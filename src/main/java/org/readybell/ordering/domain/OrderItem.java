@@ -4,7 +4,6 @@ import java.util.Objects;
 
 /** One line of an order: what was ordered and how many. */
 public record OrderItem(String name, int quantity) {
-
     public static final int MAX_NAME_LENGTH = 100;
     public static final int MAX_QUANTITY = 99;
 

@@ -5,16 +5,9 @@ import org.readybell.ordering.domain.Order;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Result of creating or transitioning an order.
- *
- * @param id        order UUID (use this in URLs)
- * @param orderId   short display number shown to staff, e.g. {@code #101}
- * @param sessionId owning customer session
- */
+/** Result of creating or transitioning an order. */
 public record OrderResponse(UUID id, String orderId, UUID sessionId, String status, long version,
                             Instant createdAt, Instant updatedAt) {
-
     public static OrderResponse from(Order order) {
         return new OrderResponse(
                 order.getId().value(),

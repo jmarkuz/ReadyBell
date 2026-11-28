@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Component
 public class OutboxRelay {
-
     private static final Logger log = LoggerFactory.getLogger(OutboxRelay.class);
 
     private final OutboxStore store;
@@ -113,7 +112,6 @@ public class OutboxRelay {
         return d.compareTo(props.getMaxBackoff()) > 0 ? props.getMaxBackoff() : d;
     }
 
-    /** Deletes processed events older than the retention. */
     @Scheduled(cron = "${readybell.outbox.cleanup-cron:0 30 3 * * *}")
     public void cleanup() {
         int deleted = store.deleteProcessedBefore(clock.instant().minus(props.getRetention()));

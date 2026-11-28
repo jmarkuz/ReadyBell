@@ -23,7 +23,6 @@ import java.util.Set;
 @Component
 @Primary
 public class OutboxDomainEventPublisher implements DomainEventPublisher {
-
     private static final Set<Class<? extends DomainEvent>> OUTBOXED = Set.of(OrderReady.class, OrderStatusUpdated.class);
 
     private final SpringDomainEventPublisherAdapter direct;

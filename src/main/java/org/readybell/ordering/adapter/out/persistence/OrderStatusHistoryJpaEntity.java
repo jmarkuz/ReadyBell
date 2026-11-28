@@ -21,7 +21,6 @@ import java.util.UUID;
         @Index(name = "idx_order_status_history_order", columnList = "order_id,at"),
         @Index(name = "idx_order_status_history_tenant_at", columnList = "tenant_id,at")})
 class OrderStatusHistoryJpaEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;

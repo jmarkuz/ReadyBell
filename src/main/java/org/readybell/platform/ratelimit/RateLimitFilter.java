@@ -24,7 +24,6 @@ import java.time.Instant;
  * hammering stays blocked.
  */
 public class RateLimitFilter extends OncePerRequestFilter {
-
     private final RateLimitProperties props;
     private final ClientIpResolver ips;
     private final FailureStore store;
@@ -32,10 +31,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final MeterRegistry meters;
     private static final String SESSION_PATH = "/api/sessions/{sessionId}/**";
     private final AntPathMatcher paths = new AntPathMatcher();
-    /**
-     * Resolves the path the way Spring MVC will route it: percent-decoded, {@code ;params} and doubled slashes removed.
-     * Matching the raw request URI let {@code /api/%73essions} reach the controller without ever meeting a rule.
-     */
     private final UrlPathHelper pathHelper = new UrlPathHelper();
 
     public RateLimitFilter(RateLimitProperties props, ClientIpResolver ips, FailureStore store, Clock clock,

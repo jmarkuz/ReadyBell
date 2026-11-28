@@ -17,7 +17,6 @@ public record OrderConnected(
         Instant occurredAt,
         int orderNumber
 ) implements DomainEvent {
-
     public OrderConnected {
         Objects.requireNonNull(eventId, "eventId must not be null");
         Objects.requireNonNull(orderId, "orderId must not be null");

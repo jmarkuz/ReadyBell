@@ -10,20 +10,7 @@ interface OrderMetricsGridProps {
   onCardClick?: (metric: string) => void;
 }
 
-/**
- * Order Metrics Grid Component
- * 
- * Displays 4 order summary cards in a responsive grid:
- * - Total Orders
- * - New Orders (CREATED status)
- * - Preparing (PREPARING status)
- * - Ready for Pickup (READY status)
- * 
- * Responsive:
- * - Desktop (1024px+): 4 columns
- * - Tablet (768px-1023px): 2 columns
- * - Mobile (<768px): 1 column (stacked)
- */
+/** Order Metrics Grid Component */
 export default memo(function OrderMetricsGrid({
   metrics,
   isLoading = false,

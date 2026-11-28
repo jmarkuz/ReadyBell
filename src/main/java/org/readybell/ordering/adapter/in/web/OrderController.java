@@ -2,20 +2,14 @@ package org.readybell.ordering.adapter.in.web;
 
 import jakarta.validation.Valid;
 
-import org.readybell.ordering.application.CrossTenantAccessException;
-import org.readybell.ordering.application.InvalidSessionException;
-import org.readybell.ordering.application.OrderNotFoundException;
 import org.readybell.ordering.application.CreateOrderCommand;
 import org.readybell.ordering.application.ManageOrderUseCase;
 import org.readybell.ordering.application.TransitionOrderCommand;
-import org.readybell.ordering.domain.InvalidTransitionException;
 import org.readybell.ordering.domain.Order;
 import org.readybell.ordering.domain.OrderId;
 import org.readybell.ordering.domain.OrderQuery;
 import org.readybell.ordering.domain.OrderRepository;
 import org.readybell.ordering.domain.OrderStatus;
-import org.readybell.ordering.domain.TerminalStateException;
-import org.readybell.platform.GlobalExceptionHandler;
 import org.readybell.session.domain.CustomerSessionId;
 import org.readybell.shared.domain.TenantId;
 import org.readybell.shared.tenancy.TenantContextHolder;
@@ -41,31 +35,16 @@ import java.util.UUID;
  *
  * <p>Exposes these endpoints:
  * <ul>
- *   <li>{@code POST  /api/orders}             — creates an order for a session (Req 4.1–4.6).</li>
- *   <li>{@code GET   /api/orders}             — paginated, filterable, sortable list (Req 7.3, 7.7).</li>
+ *   <li>{@code POST  /api/orders}             — creates an order for a session.</li>
+ *   <li>{@code GET   /api/orders}             — paginated, filterable, sortable list.</li>
  *   <li>{@code GET   /api/orders/metrics}     — order counts per status for the dashboard cards.</li>
  *   <li>{@code GET   /api/orders/poll}        — polling fallback with ETag.</li>
- *   <li>{@code PATCH /api/orders/{id}/status} — transitions order status (Req 5.1–5.8).</li>
- * </ul>
- *
- * <p>All endpoints resolve the current tenant via {@link TenantContextHolder#require()}.
- * Tenant isolation is enforced at the repository query layer (Req 10.2, 10.4). Cross-tenant
- * access is denied at both the application service and repository levels (Req 7.7, 10.3).
- *
- * <p>Error responses are produced by {@link GlobalExceptionHandler}
- * as RFC 7807 {@code application/problem+json} bodies for:
- * <ul>
- *   <li>{@link InvalidSessionException} → 422 (Req 4.5)</li>
- *   <li>{@link CrossTenantAccessException} → 403 (Req 4.6, 7.7)</li>
- *   <li>{@link OrderNotFoundException} → 404 (Req 7.7, 10.3)</li>
- *   <li>{@link InvalidTransitionException} → 422 (Req 5.3, 5.4)</li>
- *   <li>{@link TerminalStateException} → 422 (Req 5.7)</li>
+ *   <li>{@code PATCH /api/orders/{id}/status} — transitions order status.</li>
  * </ul>
  */
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
-
     private final ManageOrderUseCase manageOrderUseCase;
     private static final int POLL_LIMIT = 200;
 
@@ -82,17 +61,7 @@ public class OrderController {
         this.clock              = Objects.requireNonNull(clock, "clock must not be null");
     }
 
-    /**
-     * Creates a new order for the given customer session, scoped to the authenticated tenant.
-     *
-     * <p>The resolved tenant is stamped on the order (Req 4.2). Optional customer name, items and
-     * ETA are stored with the order. Throws {@link InvalidSessionException} if the session
-     * does not exist or is inactive (Req 4.5), or {@link CrossTenantAccessException} if the
-     * session belongs to a different tenant (Req 4.6).
-     *
-     * @param request body containing the {@code sessionId} and optional details
-     * @return 201 Created with the new order summary
-     */
+    /** Creates a new order for the given customer session, scoped to the authenticated tenant. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public OrderResponse createOrder(@Valid @RequestBody CreateOrderRequest request) {
@@ -104,20 +73,7 @@ public class OrderController {
         return OrderResponse.from(order);
     }
 
-    /**
-     * Lists the authenticated tenant's orders: paginated, filterable, sortable, searchable
-     * (Req 7.3, 7.7).
-     *
-     * @param page      1-based page (default 1)
-     * @param pageSize  items per page (default 25, max 100)
-     * @param status    repeatable or comma-separated {@link OrderStatus} names
-     * @param sortBy    {@code created} (default), {@code eta}, {@code status}, {@code customerName}, {@code orderId}
-     * @param sortOrder {@code asc} or {@code desc} (default {@code desc})
-     * @param search    text matched against order number, customer name and item names
-     * @param from      ISO-8601 instant; only orders created at or after it
-     * @param to        ISO-8601 instant; only orders created at or before it (400 if before {@code from})
-     * @return 200 OK with {@code {items, totalCount, pageCount, currentPage}}
-     */
+    /** Lists the authenticated tenant's orders: paginated, filterable, sortable, searchable. */
     @GetMapping
     public OrderPageResponse listOrders(
             @RequestParam(name = "page", defaultValue = "1") int page,
@@ -139,12 +95,7 @@ public class OrderController {
                 result.totalCount(), result.pageCount(), result.page());
     }
 
-    /**
-     * Order counts per status for the dashboard cards: always the tenant's real totals, independent
-     * of any list filter or page.
-     *
-     * @return 200 OK with {@code {totalOrders, created, inProgress, ready, completed, cancelled}}
-     */
+    /** Order counts per status for the dashboard cards: always the tenant's real totals, independent of any list filter or page. */
     @GetMapping("/metrics")
     public OrderMetricsResponse metrics() {
         var counts = orderRepository.countByStatus(TenantContextHolder.require());
@@ -156,14 +107,6 @@ public class OrderController {
     public record OrderMetricsResponse(long totalOrders, long created, long inProgress, long ready,
                                        long completed, long cancelled) {}
 
-    /**
-     * Polling fallback for the SSE stream: orders changed since {@code since} (default: most
-     * recent), with an ETag over their ids and versions.
-     *
-     * @param since ISO-8601 instant; only orders updated at or after it are returned
-     * @param eTag  the ETag from the previous response; if unchanged the answer is 304
-     * @return 200 with {@code {orders, eTag}} or 304 Not Modified
-     */
     @GetMapping("/poll")
     public ResponseEntity<OrderPollResponse> pollOrders(
             @RequestParam(name = "since", required = false) Instant since,
@@ -219,24 +162,7 @@ public class OrderController {
         return t.replace("\"", "");
     }
 
-    /**
-     * Transitions an order to a new status.
-     *
-     * <p>Enforces lifecycle invariants in the domain (Req 5.1–5.7). Returns the order
-     * after the successful transition. Throws:
-     * <ul>
-     *   <li>{@link OrderNotFoundException} → 404 if the
-     *       order does not exist for this tenant (Req 7.7, 10.3).</li>
-     *   <li>{@link InvalidTransitionException} → 422 for
-     *       disallowed or self-transitions (Req 5.3, 5.4).</li>
-     *   <li>{@link TerminalStateException} → 422 for
-     *       already-terminal orders (Req 5.7).</li>
-     * </ul>
-     *
-     * @param id      the order UUID path variable
-     * @param request body containing the target {@code status}
-     * @return 200 OK with the updated order summary
-     */
+    /** Transitions an order to a new status. */
     @PatchMapping("/{id}/status")
     public OrderResponse transitionOrderStatus(@PathVariable("id") UUID id,
                                                @Valid @RequestBody TransitionOrderRequest request) {

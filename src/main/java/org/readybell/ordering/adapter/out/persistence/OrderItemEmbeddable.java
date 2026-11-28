@@ -7,7 +7,6 @@ import org.readybell.ordering.domain.OrderItem;
 /** Persistent form of {@link OrderItem} (one row in {@code order_item}). */
 @Embeddable
 public class OrderItemEmbeddable {
-
     @Column(name = "name", nullable = false, length = OrderItem.MAX_NAME_LENGTH)
     private String name;
 

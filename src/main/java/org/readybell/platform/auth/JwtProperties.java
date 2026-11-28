@@ -12,26 +12,20 @@ import java.time.Duration;
  */
 @ConfigurationProperties(prefix = "readybell.security.jwt")
 public class JwtProperties {
-
     private String secret;
     private Duration ttl = Duration.ofHours(1);
-    /** How long after expiry an old token may still be exchanged at {@code /api/auth/refresh}. */
     private Duration refreshGrace = Duration.ofHours(24);
 
-    /** Failed-login throttling. */
     private final Login login = new Login();
 
     public Login getLogin() { return login; }
 
     public static class Login {
-        /** Failed logins per account and address in the window before that combination is locked. */
         private int maxFailures = 5;
-        /** Failed logins from one address (any accounts) before the address is locked. */
         private int maxFailuresPerAddress = 30;
         /** Failed logins for one account (any addresses) before the account is locked for everyone; deliberately high. */
         private int maxFailuresPerAccount = 100;
         private Duration window = Duration.ofMinutes(15);
-        /** Count failures in Redis so all replicas share one limit (set when running more than one node). */
         private boolean redis = false;
 
         public int getMaxFailuresPerAddress() { return maxFailuresPerAddress; }

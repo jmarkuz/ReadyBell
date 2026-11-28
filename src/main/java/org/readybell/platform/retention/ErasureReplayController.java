@@ -13,7 +13,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/platform/erasures")
 public class ErasureReplayController {
-
     private final CustomerDataService data;
 
     public ErasureReplayController(CustomerDataService data) {

@@ -8,13 +8,6 @@ import Layout from '@/components/Layout';
 import { PageLoader } from '@/components/PageLoader';
 import RequireRole from '@/components/RequireRole';
 
-/**
- * Lazy-loaded page components for code splitting
- * 
- * Validates: AC1 (Split main bundle into chunks - header, sidebar, pages)
- * Validates: AC2 (Lazy load each page with React.lazy())
- * Validates: AC3 (Use Suspense for loading fallback)
- */
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Staff = lazy(() => import('@/pages/Staff'));
 const Settings = lazy(() => import('@/pages/Settings'));
@@ -23,38 +16,7 @@ const LoginPage = lazy(() => import('@/pages/Login'));
 const Display = lazy(() => import('@/pages/Display'));
 const TrackPage = lazy(() => import('@/pages/Track'));
 
-/**
- * App Root Component
- * 
- * Sets up:
- * - Auth provider for bearer token authentication and validation on app init
- * - Theme provider for light/dark theme support with persistence
- * - Search context for global search state
- * - Router with Layout and lazy-loaded page routes
- * - Suspense boundaries with PageLoader fallback for code-split pages
- * 
- * Authentication Flow:
- * - On app initialization, AuthProvider validates stored bearer token
- * - If token is valid, authenticated state is restored (no redirect)
- * - If token is invalid/expired, user is redirected to /login
- * - While validating, PageLoader is shown (loading UI)
- * 
- * Route structure:
- * - / (Dashboard)
- * - /orders (Orders)
- * - /menu (Menu Management)
- * - /payments (Payments)
- * - /analytics (Analytics)
- * - /settings (Settings)
- * - /support (Support)
- * 
- * Validates: Task 1.1.6 - Token Validation on App Initialization
- * - Token validation runs on app mount (AuthProvider effect)
- * - Valid token restores authenticated state (Layout/pages render normally)
- * - Invalid/expired token redirects to /login (navigate() in AuthProvider)
- * - Loading UI shown during validation (PageLoader in AuthProvider)
- * - App component updated with useAuth integration (AuthProvider wraps app)
- */
+/** App Root Component */
 function App() {
   return (
     <Router>

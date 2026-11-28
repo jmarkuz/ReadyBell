@@ -17,12 +17,11 @@ import java.util.List;
  * Hibernate tenant filter is not applied here — the restaurant entity IS the tenant
  * root and must be loadable both by platform admins (cross-tenant) and by the session
  * start flow (lookup by identifier). Cross-tenant isolation is enforced at the
- * application service level for restaurant management operations (Req 10.3).
+ * application service level for restaurant management operations.
  */
 @Repository
 @Transactional
 public class JpaRestaurantRepository implements RestaurantRepository {
-
     private final RestaurantJpaRepository springRepo;
 
     public JpaRestaurantRepository(RestaurantJpaRepository springRepo) {

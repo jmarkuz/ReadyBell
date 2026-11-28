@@ -21,23 +21,15 @@ import java.util.UUID;
 import java.util.List;
 
 /**
- * Inbound REST adapter for the Platform Admin API (Req 9.1, 9.3, 9.4).
+ * Inbound REST adapter for the Platform Admin API.
  *
  * <p>Exposes tenant-management operations across all restaurants. Only principals
- * holding the platform-admin role may invoke these endpoints (Req 9.4); non-admin
+ * holding the platform-admin role may invoke these endpoints; non-admin
  * requests are denied by Spring Security in the composition root (task 21).
- *
- * <p>Endpoints:
- * <ul>
- *   <li>{@code POST   /api/platform/restaurants}            — create a restaurant tenant (Req 9.2, 9.5)</li>
- *   <li>{@code PUT    /api/platform/restaurants/{tenantId}} — update restaurant config (Req 9.3)</li>
- *   <li>{@code DELETE /api/platform/restaurants/{tenantId}} — deactivate a restaurant (Req 9.3, 9.6)</li>
- * </ul>
  */
 @RestController
 @RequestMapping("/api/platform/restaurants")
 public class PlatformAdminController {
-
     private static final MediaType PROBLEM_JSON =
             MediaType.parseMediaType("application/problem+json");
 
@@ -54,16 +46,9 @@ public class PlatformAdminController {
         this.transaction = new TransactionTemplate(transactionManager);
     }
 
-    // -------------------------------------------------------------------------
-    // POST /api/platform/restaurants — create restaurant (Req 9.2, 9.5)
-    // -------------------------------------------------------------------------
+    // POST /api/platform/restaurants — create restaurant
 
-    /**
-     * Creates a new Restaurant tenant with a unique, platform-assigned {@link TenantId}.
-     *
-     * @param request body containing {@code identifier} and {@code name}
-     * @return 201 Created with the new tenant details
-     */
+    /** Creates a new Restaurant tenant with a unique, platform-assigned {@link TenantId}. */
     /** All restaurants, newest first by identifier (platform operator overview). */
     @GetMapping
     public List<RestaurantResponse> listRestaurants() {
@@ -92,17 +77,9 @@ public class PlatformAdminController {
         return RestaurantResponse.withAdmin(restaurant, UsernamePolicy.normalize(request.adminUsername()));
     }
 
-    // -------------------------------------------------------------------------
-    // PUT /api/platform/restaurants/{tenantId} — update restaurant (Req 9.3)
-    // -------------------------------------------------------------------------
+    // PUT /api/platform/restaurants/{tenantId} — update restaurant
 
-    /**
-     * Updates the configuration of an existing restaurant identified by its tenant id.
-     *
-     * @param tenantId the UUID path variable of the tenant to update
-     * @param request  body containing the new {@code name}
-     * @return 200 OK with the updated restaurant details
-     */
+    /** Updates the configuration of an existing restaurant identified by its tenant id. */
     @PutMapping("/{tenantId}")
     public RestaurantResponse updateRestaurant(@PathVariable("tenantId") UUID tenantId,
                                                @RequestBody UpdateRestaurantRequest request) {
@@ -112,19 +89,9 @@ public class PlatformAdminController {
         return RestaurantResponse.from(restaurant);
     }
 
-    // -------------------------------------------------------------------------
-    // DELETE /api/platform/restaurants/{tenantId} — deactivate restaurant (Req 9.3, 9.6)
-    // -------------------------------------------------------------------------
+    // DELETE /api/platform/restaurants/{tenantId} — deactivate restaurant
 
-    /**
-     * Deactivates the restaurant identified by its tenant id.
-     *
-     * <p>After deactivation, new customer sessions for this restaurant are rejected
-     * (Req 9.6).
-     *
-     * @param tenantId the UUID path variable of the tenant to deactivate
-     * @return 200 OK with the deactivated restaurant details
-     */
+    /** Deactivates the restaurant identified by its tenant id. */
     @DeleteMapping("/{tenantId}")
     public RestaurantResponse deactivateRestaurant(@PathVariable("tenantId") UUID tenantId) {
         TenantId tid = new TenantId(tenantId);
@@ -132,15 +99,8 @@ public class PlatformAdminController {
         return RestaurantResponse.from(restaurant);
     }
 
-    // -------------------------------------------------------------------------
     // Exception handlers (RFC 7807 Problem Details)
-    // -------------------------------------------------------------------------
 
-    /**
-     * Handles duplicate restaurant identifier on creation (Req 9.5).
-     *
-     * @return 409 Conflict with a problem detail identifying the duplicate identifier
-     */
     @ExceptionHandler(DuplicateRestaurantIdentifierException.class)
     public ResponseEntity<Map<String, Object>> handleDuplicateIdentifier(
             DuplicateRestaurantIdentifierException ex) {
@@ -152,11 +112,7 @@ public class PlatformAdminController {
         );
     }
 
-    /**
-     * Handles invalid input (blank identifier, null config field, etc.).
-     *
-     * @return 400 Bad Request with a problem detail describing the validation failure
-     */
+    /** Handles invalid input (blank identifier, null config field, etc.). */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         return problem(
@@ -166,10 +122,6 @@ public class PlatformAdminController {
                 ex.getMessage()
         );
     }
-
-    // -------------------------------------------------------------------------
-    // Helper
-    // -------------------------------------------------------------------------
 
     private ResponseEntity<Map<String, Object>> problem(HttpStatus status,
                                                         String type,

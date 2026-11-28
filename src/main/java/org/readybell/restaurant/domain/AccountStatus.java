@@ -1,7 +1,7 @@
 package org.readybell.restaurant.domain;
 
 /**
- * Lifecycle status of a {@link StaffAccount} (Req 8.5).
+ * Lifecycle status of a {@link StaffAccount}.
  *
  * <ul>
  *   <li>{@link #ACTIVE} — account is operational and can receive notifications.</li>

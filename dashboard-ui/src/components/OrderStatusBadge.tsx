@@ -7,21 +7,7 @@ interface OrderStatusBadgeProps {
   status: OrderStatus;
 }
 
-/**
- * Order Status Badge Component
- * 
- * Displays a color-coded status badge with:
- * - Appropriate icon for status
- * - Label text
- * - Theme-aware colors (light/dark mode)
- * 
- * Status mapping:
- * - CREATED: blue (New Order) with Clock icon
- * - PREPARING: orange (Preparing) with Flame icon
- * - READY: green (Ready for Pickup) with CheckCircle icon
- * - COMPLETED: gray (Completed) with Archive icon
- * - CANCELLED: red (Cancelled) with XCircle icon
- */
+/** Order Status Badge Component */
 export default memo(function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
   const t = useStaffStrings();
   const statusConfig: Record<OrderStatus, {

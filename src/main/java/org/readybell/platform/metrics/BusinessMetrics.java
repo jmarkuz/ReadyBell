@@ -20,7 +20,6 @@ import java.util.Map;
  */
 @Component
 public class BusinessMetrics {
-
     private final Counter sessionsStarted;
     private final Counter ordersCreated;
     private final Map<OrderStatus, Counter> transitions = new EnumMap<>(OrderStatus.class);

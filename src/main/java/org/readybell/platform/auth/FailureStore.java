@@ -6,11 +6,9 @@ import java.util.Optional;
 
 /** Sliding-window failure log used by {@link LoginAttemptLimiter}; shared between nodes when backed by Redis. */
 public interface FailureStore {
-
     /** Records a failure at {@code now} (and forgets failures older than {@code window}). */
     void add(String key, Instant now, Duration window);
 
-    /** Failures inside the window. */
     Window window(String key, Instant now, Duration window);
 
     void clear(String key);

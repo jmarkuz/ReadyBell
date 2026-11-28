@@ -5,7 +5,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 /** Decoder of the staff access tokens: signature and expiry, then sign-out/rotation state, then the account's status. */
 public class TokenGuard {
-
     private final JwtService jwt;
     private final TokenSessions sessions;
     private final AccountGuard accounts;

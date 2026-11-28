@@ -42,24 +42,9 @@ import java.time.Duration;
  * {@link TenantContextHolderProvider}, and all
  * {@code @Repository}-annotated JPA adapters) are discovered automatically by Spring's
  * component scan and injected by type.
- *
- * <p>Requirements addressed: 7.1, 8.1, 9.1, 10.4, 11.1.
  */
 @Configuration
 public class ApplicationConfig {
-
-    // -------------------------------------------------------------------------
-    // Session bounded context
-    // -------------------------------------------------------------------------
-
-    /**
-     * Wires {@link SessionService} to the {@link StartSessionUseCase} port.
-     *
-     * @param restaurantRepository  JPA adapter auto-discovered by Spring Data
-     * @param sessionRepository     JPA adapter auto-discovered by Spring Data
-     * @param eventPublisher        {@link SpringDomainEventPublisherAdapter} (@Component)
-     * @return the application service as the {@link StartSessionUseCase} port
-     */
     @Bean
     public StartSessionUseCase startSessionUseCase(
             RestaurantRepository restaurantRepository,
@@ -68,21 +53,7 @@ public class ApplicationConfig {
         return new SessionService(restaurantRepository, sessionRepository, eventPublisher);
     }
 
-    // -------------------------------------------------------------------------
-    // Ordering bounded context
-    // -------------------------------------------------------------------------
-
-    /**
-     * Wires {@link ManageOrderService} to the {@link ManageOrderUseCase} port.
-     *
-     * <p>Uses {@link Clock#systemUTC()} in production; tests override this via the
-     * constructor when exercising the service directly against fakes.
-     *
-     * @param sessionRepository JPA adapter auto-discovered by Spring Data
-     * @param orderRepository   JPA adapter auto-discovered by Spring Data
-     * @param eventPublisher    {@link SpringDomainEventPublisherAdapter} (@Component)
-     * @return the application service as the {@link ManageOrderUseCase} port
-     */
+    /** Wires {@link ManageOrderService} to the {@link ManageOrderUseCase} port. */
     @Bean
     public ManageOrderUseCase manageOrderUseCase(
             CustomerSessionRepository sessionRepository,
@@ -108,10 +79,7 @@ public class ApplicationConfig {
         return new TrackSessionService(sessionRepository, orderRepository, restaurantRepository, eventPublisher, clock);
     }
 
-    /**
-     * Which push endpoints the server may call: the known push services, plus any hosts listed in
-     * {@code readybell.push.extra-allowed-hosts} (comma separated, {@code *.} for subdomains).
-     */
+    /** Which push endpoints the server may call: the known push services, plus any hosts listed in {@code readybell.push.extra-allowed-hosts} (comma separated, {@code *.} for subdomains). */
     @Bean
     public org.readybell.subscription.domain.PushEndpointPolicy pushEndpointPolicy(
             @org.springframework.beans.factory.annotation.Value("${readybell.push.extra-allowed-hosts:}")
@@ -125,17 +93,6 @@ public class ApplicationConfig {
         return Clock.systemUTC();
     }
 
-    // -------------------------------------------------------------------------
-    // Subscription bounded context
-    // -------------------------------------------------------------------------
-
-    /**
-     * Wires {@link ManageSubscriptionService} to the {@link ManageSubscriptionUseCase} port.
-     *
-     * @param sessionRepository      JPA adapter auto-discovered by Spring Data
-     * @param subscriptionRepository JPA adapter auto-discovered by Spring Data
-     * @return the application service as the {@link ManageSubscriptionUseCase} port
-     */
     @Bean
     public ManageSubscriptionUseCase manageSubscriptionUseCase(
             CustomerSessionRepository sessionRepository,
@@ -144,29 +101,8 @@ public class ApplicationConfig {
         return new ManageSubscriptionService(sessionRepository, subscriptionRepository, pushEndpointPolicy);
     }
 
-    // -------------------------------------------------------------------------
-    // Notification bounded context
-    // -------------------------------------------------------------------------
-
-    /**
-     * Wires {@link OrderReadyHandler} as a plain bean so {@link SpringOrderReadyEventListener}
-     * can receive it via constructor injection.
-     *
-     * <p>{@code ManageSubscriptionUseCase} is declared as a dependency so Spring resolves
-     * it from the bean above, ensuring both the handler and the subscription service share
-     * the same wired instance.
-     *
-     * @param subscriptionRepository JPA adapter auto-discovered by Spring Data
-     * @param notificationRepository JPA adapter auto-discovered by Spring Data
-     * @param notificationSender     {@link org.readybell.notification.adapter.out.push.VapidNotificationSenderAdapter} (@Component)
-     * @param eventPublisher         {@link SpringDomainEventPublisherAdapter} (@Component)
-     * @param subscriptionUseCase    the {@link ManageSubscriptionUseCase} bean defined above
-     * @return the wired handler
-     */
-    /**
-     * Retry pauses after a transient push failure; empty means no retries (tests). The n-th failed attempt is followed
-     * by the n-th pause, as a later {@code next_attempt_at} rather than a sleeping thread.
-     */
+    /** Wires {@link OrderReadyHandler} as a plain bean so {@link SpringOrderReadyEventListener} can receive it via constructor injection. */
+    /** Retry pauses after a transient push failure; empty means no retries (tests). */
     @Bean
     public PushRetryPolicy pushRetryPolicy(
             @Value("${readybell.push.retry-delays-ms:1000,5000,30000,120000}") List<Long> retryDelaysMs) {
@@ -214,17 +150,6 @@ public class ApplicationConfig {
                 clock);
     }
 
-    // -------------------------------------------------------------------------
-    // Restaurant administration bounded context
-    // -------------------------------------------------------------------------
-
-    /**
-     * Wires {@link RestaurantAdminService} to the {@link RestaurantAdminUseCase} port.
-     *
-     * @param restaurantRepository JPA adapter auto-discovered by Spring Data
-     * @param staffRepository      JPA adapter auto-discovered by Spring Data
-     * @return the application service as the {@link RestaurantAdminUseCase} port
-     */
     @Bean
     public RestaurantAdminUseCase restaurantAdminUseCase(
             RestaurantRepository restaurantRepository,
@@ -232,16 +157,6 @@ public class ApplicationConfig {
         return new RestaurantAdminService(restaurantRepository, staffRepository);
     }
 
-    // -------------------------------------------------------------------------
-    // Platform administration bounded context
-    // -------------------------------------------------------------------------
-
-    /**
-     * Wires {@link PlatformAdminService} to the {@link PlatformAdminUseCase} port.
-     *
-     * @param restaurantRepository JPA adapter auto-discovered by Spring Data
-     * @return the application service as the {@link PlatformAdminUseCase} port
-     */
     @Bean
     public PlatformAdminUseCase platformAdminUseCase(RestaurantRepository restaurantRepository,
                                                       StaffAccountRepository staffRepository) {

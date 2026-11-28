@@ -13,31 +13,17 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Aggregate representing a single push notification composed for one device subscription.
+ * One push notification for one device subscription: PENDING, then SENT (accepted by the push service) and DELIVERED, or FAILED.
  *
- * <p>Lifecycle transitions (Req 6.4, 6.5):
- * <pre>
- *   PENDING ──▶ SENT ──▶ DELIVERED
- *      └──▶ FAILED
- *           SENT ──▶ FAILED
- * </pre>
- *
- * <p>A PENDING notification is a delivery task: it is due at {@link #nextAttemptAt()}, each attempt that fails
- * transiently moves that time forward ({@link #scheduleRetry}), and it is given up on after {@link #expiresAt()}.
- * Nothing waits in a thread between attempts.
- *
- * <p>State changes are recorded as domain events via {@link #pendingEvents()} so that the
- * application layer can publish them through the {@code DomainEventPublisher} port after the
- * transaction commits.
+ * <p>A PENDING notification is a delivery task. It is due at {@link #nextAttemptAt()}, each transient failure moves that time
+ * forward ({@link #scheduleRetry}), and it is given up on after {@link #expiresAt()}. Nothing waits in a thread between attempts.
  */
 public class Notification {
-
     private final NotificationId id;
     private final TenantId tenantId;
     private final DeviceSubscriptionId subscriptionId;
     private NotificationStatus status;
     private final String payload;
-    /** The order that triggered this notification; lets a replayed event be recognised (may be null). */
     private final UUID orderId;
 
     private final List<DomainEvent> pendingEvents = new ArrayList<>();
@@ -45,15 +31,12 @@ public class Notification {
     /** Title and click target of the push; the body is {@link #payload}. Null for notifications stored before retries existed. */
     private String title;
     private String url;
-    /** When the order became READY (latency metric); may be null. */
     private Instant readyAt;
     private int attempts;
     /** When the next attempt is due; null once the notification is no longer waiting for one. */
     private Instant nextAttemptAt;
-    /** After this instant a delivery is pointless ("ready" a quarter of an hour late is noise); null means no deadline. */
     private Instant expiresAt;
     private String lastError;
-    /** What the push is about: {@link #KIND_READY} or {@link #KIND_CANCELLED}. */
     private String kind = KIND_READY;
 
     public static final String KIND_READY = "READY";
@@ -73,21 +56,12 @@ public class Notification {
         this.payload = Objects.requireNonNull(payload, "payload must not be null");
     }
 
-    /**
-     * Factory method — creates a new {@code Notification} in {@link NotificationStatus#PENDING}.
-     *
-     * @param tenantId       the tenant that owns the notification
-     * @param subscriptionId the target device subscription
-     * @param payload        the push message body
-     * @return a new {@code Notification} in PENDING status with no pending events
-     */
     public static Notification compose(TenantId tenantId,
                                        DeviceSubscriptionId subscriptionId,
                                        String payload) {
         return compose(tenantId, subscriptionId, payload, null);
     }
 
-    /** Composes a notification caused by the given order. */
     public static Notification compose(TenantId tenantId,
                                        DeviceSubscriptionId subscriptionId,
                                        String payload,
@@ -125,17 +99,14 @@ public class Notification {
         return n;
     }
 
-    /** The push to send: the stored title and click target with the stored body. */
     public NotificationPayload toMessage() {
         return new NotificationPayload(title == null || title.isBlank() ? "ReadyBell" : title, payload, url);
     }
 
-    /** Whether a worker should attempt this notification now. */
     public boolean isDue(Instant now) {
         return status == NotificationStatus.PENDING && nextAttemptAt != null && !nextAttemptAt.isAfter(now);
     }
 
-    /** Whether the deadline has passed. */
     public boolean isExpired(Instant now) {
         return expiresAt != null && now.isAfter(expiresAt);
     }
@@ -148,13 +119,6 @@ public class Notification {
         lastError = error;
     }
 
-    /**
-     * Transitions from {@link NotificationStatus#PENDING} to {@link NotificationStatus#SENT}
-     * and records a {@link NotificationSent} domain event (Req 6.4).
-     *
-     * @param clock used to timestamp the event
-     * @throws IllegalStateException if the notification is not in PENDING status
-     */
     public void markSent(Clock clock) {
         Objects.requireNonNull(clock, "clock must not be null");
         if (status != NotificationStatus.PENDING) {
@@ -168,13 +132,6 @@ public class Notification {
         pendingEvents.add(new NotificationSent(UUID.randomUUID(), tenantId, id, clock.instant()));
     }
 
-    /**
-     * Transitions from {@link NotificationStatus#SENT} to {@link NotificationStatus#DELIVERED}
-     * and records a {@link NotificationDelivered} domain event (Req 6.5).
-     *
-     * @param clock used to timestamp the event
-     * @throws IllegalStateException if the notification is not in SENT status
-     */
     public void markDelivered(Clock clock) {
         Objects.requireNonNull(clock, "clock must not be null");
         if (status != NotificationStatus.SENT) {
@@ -185,13 +142,7 @@ public class Notification {
         pendingEvents.add(new NotificationDelivered(UUID.randomUUID(), tenantId, id, clock.instant()));
     }
 
-    /**
-     * Transitions to {@link NotificationStatus#FAILED} from any non-terminal state.
-     * Records no domain event — failures are observed by the absence of a success event
-     * and by the persisted FAILED status.
-     *
-     * @throws IllegalStateException if the notification is already DELIVERED
-     */
+    /** Failures record no event: they are seen as the absence of a success event and the persisted FAILED status. */
     public void markFailed() {
         if (status == NotificationStatus.DELIVERED) {
             throw new IllegalStateException(
@@ -213,11 +164,6 @@ public class Notification {
         }
     }
 
-    /**
-     * Returns the domain events recorded since this aggregate was created or loaded.
-     * The returned list is unmodifiable; events are cleared by the application layer after
-     * publishing.
-     */
     public List<DomainEvent> pendingEvents() {
         return Collections.unmodifiableList(pendingEvents);
     }
@@ -242,19 +188,6 @@ public class Notification {
         return payload;
     }
 
-    /**
-     * Rebuilds a {@code Notification} from its stored state.
-     *
-     * <p>Intended for use by the JPA persistence adapter only; no domain events are
-     * recorded.
-     *
-     * @param id             the persisted notification identity
-     * @param tenantId       the persisted tenant
-     * @param subscriptionId the persisted subscription
-     * @param status         the persisted notification status
-     * @param payload        the persisted payload
-     * @return a notification aggregate with no pending events
-     */
     public static Notification reconstitute(NotificationId id,
                                             TenantId tenantId,
                                             DeviceSubscriptionId subscriptionId,
@@ -272,7 +205,6 @@ public class Notification {
         return new Notification(id, tenantId, subscriptionId, status, payload, orderId);
     }
 
-    /** The order that caused this notification, or null when unknown. */
     public UUID orderId() {
         return orderId;
     }
@@ -293,7 +225,6 @@ public class Notification {
 
     public String kind() { return kind; }
 
-    /** Rebuilds a notification including its delivery state (persistence adapter only). */
     public static Notification reconstitute(NotificationId id, TenantId tenantId, DeviceSubscriptionId subscriptionId,
                                             NotificationStatus status, String payload, UUID orderId,
                                             String title, String url, Instant readyAt, int attempts,

@@ -25,7 +25,6 @@ import java.util.UUID;
 @Component
 @Profile("dev")
 public class DevRestaurantSeeder implements ApplicationRunner {
-
     private static final Logger log = LoggerFactory.getLogger(DevRestaurantSeeder.class);
 
     private final SecurityProperties security;

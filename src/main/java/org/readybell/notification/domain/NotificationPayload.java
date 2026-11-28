@@ -5,13 +5,8 @@ package org.readybell.notification.domain;
  *
  * <p>Both {@code title} and {@code body} are required; a payload missing either
  * field cannot produce a meaningful customer notification.
- *
- * @param title the notification title shown in the browser/OS notification center
- * @param body  the notification body text
  */
 public record NotificationPayload(String title, String body, String url) {
-
-    /** Payload without a click target. */
     public NotificationPayload(String title, String body) {
         this(title, body, null);
     }

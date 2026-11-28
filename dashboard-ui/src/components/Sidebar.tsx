@@ -38,7 +38,6 @@ export default memo(function Sidebar({
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-slate-900">
-      {/* Logo/Brand Section */}
       <div className="flex items-center gap-3 px-6 py-6 border-b border-slate-200 dark:border-slate-800">
         <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity" aria-label="ReadyBell Dashboard home">
           <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -51,7 +50,6 @@ export default memo(function Sidebar({
         </a>
       </div>
 
-      {/* Navigation Menu */}
       <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto" id="main-navigation" aria-label="Main navigation">
         {menuItems.map((item) => {
           const Icon = item.icon;
@@ -75,7 +73,6 @@ export default memo(function Sidebar({
                   <Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                   <span className="hidden md:inline text-sm font-medium truncate">{item.label}</span>
                   
-                  {/* Tooltip for mobile/collapsed state */}
                   <div 
                     className="md:hidden absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-700 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50"
                     role="tooltip"
@@ -90,7 +87,6 @@ export default memo(function Sidebar({
         })}
       </nav>
 
-      {/* User Profile Section */}
       <section className="border-t border-slate-200 dark:border-slate-800 p-4" aria-label="User profile">
         {userProfile ? (
           <div className="flex items-center gap-3 mb-3">
@@ -144,7 +140,6 @@ export default memo(function Sidebar({
           <span className="md:hidden" aria-hidden="true">{staffLanguage() === 'uk' ? 'EN' : 'УК'}</span>
         </button>
 
-        {/* Logout button */}
         <button
           className="w-full flex items-center gap-3 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
           aria-label="Logout from dashboard"
@@ -154,7 +149,6 @@ export default memo(function Sidebar({
           <LogOut className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
           <span className="hidden md:inline text-sm font-medium">{t.logout}</span>
           
-          {/* Tooltip for mobile/collapsed state */}
           <div 
             className="md:hidden absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-700 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50"
             role="tooltip"

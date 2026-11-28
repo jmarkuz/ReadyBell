@@ -51,7 +51,6 @@ export default function Track() {
     }
   }, [sessionId]);
 
-  // initial load + polling fallback
   useEffect(() => {
     mounted.current = true;
     void registerServiceWorker();
@@ -85,7 +84,7 @@ export default function Track() {
         try {
           localStorage.setItem(notifiedKey(sessionId), '1');
         } catch {
-          /* private mode: the button simply shows again next visit */
+          // storage may be blocked
         }
         setNotify('on');
       } else {

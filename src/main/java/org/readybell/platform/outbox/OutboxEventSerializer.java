@@ -6,7 +6,6 @@ import org.readybell.shared.domain.DomainEvent;
 
 /** Domain event &lt;-&gt; JSON. Only {@link DomainEvent} classes of this application can be read back. */
 public class OutboxEventSerializer {
-
     private final ObjectMapper mapper;
 
     public OutboxEventSerializer(ObjectMapper mapper) {

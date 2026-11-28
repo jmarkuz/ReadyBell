@@ -28,12 +28,10 @@ import java.util.Optional;
  * user, {@code restaurant/username} for a database account.
  */
 public class AccountDirectory implements AccountLookup, UserDetailsService {
-
     private final Map<String, TenantUser> configured;
     private final StaffAccountRepository staffAccounts;
     private final RestaurantRepository restaurants;
 
-    /** @param configured the configured users by lower-case username (their names are unique among themselves) */
     public AccountDirectory(Map<String, TenantUser> configured, StaffAccountRepository staffAccounts,
                             RestaurantRepository restaurants) {
         this.configured = Map.copyOf(configured);
@@ -76,7 +74,6 @@ public class AccountDirectory implements AccountLookup, UserDetailsService {
                 .flatMap(r -> find(r.getTenantId(), username));
     }
 
-    /** HTTP Basic: {@code username} (configured users) or {@code restaurant/username}. */
     @Override
     public UserDetails loadUserByUsername(String basicName) {
         String raw = basicName == null ? "" : basicName.strip();

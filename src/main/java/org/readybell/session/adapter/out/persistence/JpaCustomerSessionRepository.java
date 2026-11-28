@@ -14,21 +14,20 @@ import java.util.Optional;
 /**
  * JPA adapter implementing the {@link CustomerSessionRepository} port.
  *
- * <h3>Tenant filter activation (Req 10.2, 10.4)</h3>
+ * <h3>Tenant filter activation</h3>
  * <p>Before every query the adapter enables the Hibernate named filter
  * {@code tenantFilter} on the current {@link Session}, binding the resolved
  * {@link TenantId} from {@link TenantContextHolder}. This ensures every
  * {@code SELECT} is automatically constrained to the current tenant and cross-tenant
- * rows are excluded (Req 10.3).
+ * rows are excluded.
  *
- * <h3>Write stamping (Req 10.6)</h3>
+ * <h3>Write stamping</h3>
  * <p>Stamping is handled by the {@link TenantScopedEntity}
  * {@code @PrePersist} listener — no explicit stamping is needed here.
  */
 @Repository
 @Transactional
 public class JpaCustomerSessionRepository implements CustomerSessionRepository {
-
     private final CustomerSessionJpaRepository springRepo;
 
     public JpaCustomerSessionRepository(CustomerSessionJpaRepository springRepo) {

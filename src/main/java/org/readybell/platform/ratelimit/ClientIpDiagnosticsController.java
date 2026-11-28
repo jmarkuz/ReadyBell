@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/platform/diagnostics")
 public class ClientIpDiagnosticsController {
-
     public record ClientIpReport(String clientIp, String peer, String forwardedFor, boolean trustedProxiesConfigured,
                                  boolean peerIsTrustedProxy) {}
 

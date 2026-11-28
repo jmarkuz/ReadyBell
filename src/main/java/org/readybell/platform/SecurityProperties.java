@@ -14,7 +14,6 @@ import java.util.UUID;
  */
 @ConfigurationProperties(prefix = "readybell.security")
 public class SecurityProperties {
-
     private List<User> users = new ArrayList<>();
 
     public List<User> getUsers() {
@@ -28,9 +27,7 @@ public class SecurityProperties {
     public static class User {
         private String username;
         private String password;
-        /** Role names without the {@code ROLE_} prefix, e.g. {@code STAFF}, {@code RESTAURANT_ADMIN}, {@code PLATFORM_ADMIN}. */
         private List<String> roles = new ArrayList<>();
-        /** Tenant the user belongs to; omit for platform admins. */
         private UUID tenantId;
 
         public String getUsername() { return username; }

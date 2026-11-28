@@ -15,8 +15,7 @@ import java.util.UUID;
  * JPA entity mapping the {@code notification} table.
  *
  * <p>Extends {@link TenantScopedEntity} so the Hibernate {@code tenantFilter} is applied
- * automatically and the {@code tenant_id} column is stamped on first persist
- * (Req 10.1, 10.2, 10.4, 10.6).
+ * automatically and the {@code tenant_id} column is stamped on first persist.
  *
  * <p>Table: {@code notification(id PK, tenant_id, subscription_id FK, status, payload, created_at)}
  *
@@ -30,7 +29,6 @@ import java.util.UUID;
         }
 )
 public class NotificationJpaEntity extends TenantScopedEntity {
-
     @Id
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
@@ -79,12 +77,7 @@ public class NotificationJpaEntity extends TenantScopedEntity {
     @Column(name = "kind", nullable = false, length = 16)
     private String kind = Notification.KIND_READY;
 
-    /** Required by JPA. */
     protected NotificationJpaEntity() {}
-
-    // -------------------------------------------------------------------------
-    // Mapping helpers
-    // -------------------------------------------------------------------------
 
     /** Maps the domain aggregate to a JPA entity ready for insert or merge. */
     public static NotificationJpaEntity from(Notification notification) {
@@ -108,7 +101,6 @@ public class NotificationJpaEntity extends TenantScopedEntity {
         return entity;
     }
 
-    /** Rebuilds the domain aggregate from this entity. */
     public Notification toDomain() {
         return Notification.reconstitute(
                 new NotificationId(id),
@@ -119,10 +111,6 @@ public class NotificationJpaEntity extends TenantScopedEntity {
                 orderId,
                 title, url, readyAt, attempts, nextAttemptAt, expiresAt, lastError, kind);
     }
-
-    // -------------------------------------------------------------------------
-    // Accessors
-    // -------------------------------------------------------------------------
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }

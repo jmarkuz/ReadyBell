@@ -4,12 +4,11 @@ import org.readybell.shared.domain.TenantId;
 
 /**
  * Thrown when a Restaurant Admin attempts to create a staff account whose username
- * already exists within the same tenant (Req 8.4).
+ * already exists within the same tenant.
  *
- * <p>The operation is rejected and existing account data is left unchanged (Req 8.4).
+ * <p>The operation is rejected and existing account data is left unchanged.
  */
 public class DuplicateUsernameException extends RuntimeException {
-
     private final TenantId tenantId;
     private final String username;
 

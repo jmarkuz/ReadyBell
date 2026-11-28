@@ -23,27 +23,6 @@ export interface UseSSEState {
 /**
  * Custom hook for Server-Sent Events (SSE) with automatic reconnection
  * and exponential backoff retry strategy.
- *
- * Features:
- * - Auto-reconnect with exponential backoff (1s, 2s, 4s, 8s, max 30s)
- * - Handles connection loss and restoration
- * - Typed message callbacks
- * - Single-use ticket authentication (fresh ticket per connection)
- * - Error handling and reporting
- * - Maximum 1 concurrent SSE connection per hook instance
- *
- * @param options - Configuration options
- * @returns Connection state and status
- *
- * @example
- * ```tsx
- * const state = useSSE({
- *   endpoint: '/api/orders/stream',
- *   getTicket: () => apiClient.createStreamTicket(),
- *   onMessage: (data) => console.log('Order update:', data),
- *   onError: (error) => console.error('SSE error:', error),
- * });
- * ```
  */
 export function useSSE(options: UseSSEOptions): UseSSEState {
   const {
@@ -75,11 +54,9 @@ export function useSSE(options: UseSSEOptions): UseSSEState {
 
   const calculateBackoffDelay = useCallback((): number => {
     const exponentialDelay = initialDelay * Math.pow(2, retryCountRef.current);
-    // Cap at 30 seconds
     return Math.min(exponentialDelay, 30000);
   }, [initialDelay]);
 
-  /** Schedules a reconnect with exponential backoff, or gives up after maxRetries. */
   const scheduleRetry = useCallback(() => {
     if (retryCountRef.current < maxRetries) {
       const delay = calculateBackoffDelay();
@@ -189,13 +166,11 @@ export function useSSE(options: UseSSEOptions): UseSSEState {
     return () => {
       isUnmountingRef.current = true;
 
-      // Clean up EventSource
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
 
-      // Clear any pending retry
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
         retryTimeoutRef.current = null;

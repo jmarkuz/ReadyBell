@@ -10,12 +10,10 @@ import java.util.UUID;
  * assigned at creation time.
  */
 public record OrderId(UUID value) {
-
     public OrderId {
         Objects.requireNonNull(value, "orderId must not be null");
     }
 
-    /** Creates a new, random {@code OrderId}. */
     public static OrderId newId() {
         return new OrderId(UUID.randomUUID());
     }

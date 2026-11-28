@@ -9,14 +9,13 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const [identifier, setIdentifier] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    // a platform operator belongs to no restaurant
     if (apiClient.getUserProfile()?.role === 'PLATFORM_ADMIN') return;
     try {
       const profile = await apiClient.getRestaurantProfile();
       if (profile.name) setName(profile.name);
       setIdentifier(profile.identifier);
     } catch {
-      /* keep the default branding: e.g. a seed user without a restaurant record */
+      /** keep the default branding: e.g. a seed user without a restaurant record */
     }
   }, []);
 

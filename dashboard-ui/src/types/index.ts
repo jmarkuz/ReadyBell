@@ -1,11 +1,6 @@
-/**
- * Core Types and Interfaces for Dashboard UI
- * Aligned with Backend API contracts from the backend spec
- */
 
 import React from 'react';
 
-// Export error types from errors module
 export type {
   ProblemDetail,
   ErrorContext,
@@ -26,17 +21,8 @@ export {
   handleErrorResponse,
 } from './errors';
 
-/* ============================================================================
-   THEME & UI TYPES
-   ============================================================================ */
-
-/** Theme type - light or dark mode */
 export type Theme = 'light' | 'dark';
 
-/**
- * Theme Context Type
- * Provides theme state and control functions to components
- */
 export interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
@@ -44,20 +30,9 @@ export interface ThemeContextType {
   currentMode: Theme;
 }
 
-/* ============================================================================
-   ORDER MANAGEMENT TYPES (BACKEND ALIGNED)
-   ============================================================================ */
-
-/**
- * OrderStatus - Backend enum values (exactly matching backend)
- * From the backend spec: Backend defines OrderStatus as enum
- */
+/** Order status as the UI names it: the backend's IN_PROGRESS is PREPARING here. */
 export type OrderStatus = 'CREATED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
 
-/**
- * Order Entity - Core order data from backend
- * Maps to backend Order entity
- */
 export interface Order {
   id: string;                           // UUID
   orderId: string;                      // Display ID
@@ -74,9 +49,7 @@ export interface Order {
   version?: number;                     // Optimistic locking version
 }
 
-/**
- * OrderItem - Line item in an order
- */
+/** OrderItem - Line item in an order */
 export interface OrderItem {
   id: string;
   menuItemId: string;
@@ -86,10 +59,7 @@ export interface OrderItem {
   price: number;
 }
 
-/**
- * OrderRow - Display model for table rows
- * Maps to backend Order response, formatted for UI
- */
+/** An order as a table row, formatted for the UI. */
 export interface OrderRow {
   id: string;                           // Backend Order.id
   orderId: string;                      // Backend Order.orderId (display)
@@ -116,18 +86,14 @@ export interface OrderMetrics {
   cancelled?: number;           // Count where status === 'CANCELLED'
 }
 
-/**
- * Trend - Metric trend indicator (up/down with percentage)
- */
+/** Trend - Metric trend indicator (up/down with percentage) */
 export interface Trend {
   value: number;                // Percentage (e.g., 12.5)
   direction: 'up' | 'down';
   label: string;                // e.g., "vs. last hour"
 }
 
-/**
- * OrderFilters - Query parameters for order listing
- */
+/** OrderFilters - Query parameters for order listing */
 export interface OrderFilters {
   status?: OrderStatus[];
   dateRange?: {
@@ -141,13 +107,7 @@ export interface OrderFilters {
   sortOrder?: 'asc' | 'desc';
 }
 
-/* ============================================================================
-   USER MANAGEMENT TYPES
-   ============================================================================ */
-
-/**
- * UserProfile - Staff or admin user information
- */
+/** UserProfile - Staff or admin user information */
 export interface UserProfile {
   id: string;
   name: string;
@@ -159,13 +119,7 @@ export interface UserProfile {
   tenantId?: string;
 }
 
-/* ============================================================================
-   MENU TYPES
-   ============================================================================ */
-
-/**
- * MenuItem - Menu item available for ordering
- */
+/** MenuItem - Menu item available for ordering */
 export interface MenuItem {
   id: string;
   name: string;
@@ -176,23 +130,12 @@ export interface MenuItem {
   imageUrl?: string;
 }
 
-/* ============================================================================
-   API RESPONSE TYPES
-   ============================================================================ */
-
-/**
- * Generic API response wrapper
- */
 export interface ApiResponse<T> {
   data: T;
   status: number;
   message?: string;
 }
 
-/**
- * Paginated API response (backend format)
- * From backend endpoints GET /api/orders
- */
 export interface PaginatedResponse<T> {
   items: T[];
   totalCount: number;
@@ -200,10 +143,7 @@ export interface PaginatedResponse<T> {
   currentPage: number;
 }
 
-/**
- * ErrorResponse - RFC 7807 Problem+JSON format (backend error format)
- * From the backend spec: Backend returns RFC 7807 problem+json
- */
+/** RFC 7807 problem+json, the backend's error format. */
 export interface ErrorResponse {
   type: string;                 // e.g., "urn:readybell:orders:invalid-transition"
   title: string;                // e.g., "Invalid State Transition"
@@ -213,9 +153,7 @@ export interface ErrorResponse {
   code?: string;                // Application-specific error code
 }
 
-/**
- * Frontend error display format (mapped from ErrorResponse)
- */
+/** Frontend error display format (mapped from ErrorResponse) */
 export interface DisplayError {
   type: 'network' | 'auth' | 'validation' | 'server' | 'unknown';
   message: string;
@@ -224,13 +162,7 @@ export interface DisplayError {
   timestamp: Date;
 }
 
-/* ============================================================================
-   UI COMPONENT TYPES
-   ============================================================================ */
-
-/**
- * Status Color Configuration - for displaying status badges
- */
+/** Status Color Configuration - for displaying status badges */
 export interface OrderStatusConfig {
   label: string;
   color: {
@@ -241,9 +173,7 @@ export interface OrderStatusConfig {
   priority: number;             // Sort order
 }
 
-/**
- * Card Component Props - for summary cards
- */
+/** Card Component Props - for summary cards */
 export interface CardProps {
   title: string;
   value: number | string;
@@ -255,9 +185,6 @@ export interface CardProps {
   className?: string;
 }
 
-/**
- * Table Column Definition
- */
 export interface ColumnDefinition<T> {
   id: string;
   header: string;

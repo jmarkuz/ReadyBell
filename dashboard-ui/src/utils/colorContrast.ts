@@ -1,20 +1,8 @@
-/**
- * Color Contrast Utility Functions
- * 
- * WCAG 2.1 AA Compliance:
- * - Normal text: ≥ 4.5:1 contrast ratio
- * - Large text (18pt+ or 14pt+bold): ≥ 3:1 contrast ratio  
- * - UI components: ≥ 3:1 contrast ratio
- */
 
-/**
- * Convert hex color to RGB components
- */
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   // Remove # if present
   hex = hex.replace('#', '');
   
-  // Handle 3-digit hex
   if (hex.length === 3) {
     hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
   }
@@ -26,10 +14,6 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
   return { r, g, b };
 }
 
-/**
- * Calculate relative luminance for WCAG contrast calculation
- * Formula from: https://www.w3.org/WAI/GL/wiki/Relative_luminance
- */
 function calculateLuminance(r: number, g: number, b: number): number {
   const [rs, gs, bs] = [r / 255, g / 255, b / 255];
   
@@ -55,16 +39,13 @@ export function calculateContrastRatio(color1: string, color2: string): number {
   const l1 = calculateLuminance(rgb1.r, rgb1.g, rgb1.b);
   const l2 = calculateLuminance(rgb2.r, rgb2.g, rgb2.b);
   
-  // Ensure L1 is the lighter color (higher luminance)
   const lighter = Math.max(l1, l2);
   const darker = Math.min(l1, l2);
   
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-/**
- * Check if contrast ratio meets WCAG AA requirements
- */
+/** Check if contrast ratio meets WCAG AA requirements */
 export function meetsWCAGAA(
   foreground: string,
   background: string,
@@ -80,9 +61,6 @@ export function meetsWCAGAA(
   return ratio >= 4.5; // WCAG AA requirement for normal text
 }
 
-/**
- * Get WCAG compliance level description
- */
 export function getWCAGLevel(
   foreground: string,
   background: string
@@ -100,9 +78,7 @@ export function getWCAGLevel(
   }
 }
 
-/**
- * Test suite for verifying all theme colors meet WCAG AA requirements
- */
+/** Test suite for verifying all theme colors meet WCAG AA requirements */
 export const themeColorTests = {
   light: {
     colors: {
@@ -156,9 +132,7 @@ export const themeColorTests = {
   },
 };
 
-/**
- * Run comprehensive contrast verification for both themes
- */
+/** Run comprehensive contrast verification for both themes */
 export function runContrastVerification(): Array<{
   theme: 'light' | 'dark';
   foreground: string;
@@ -181,7 +155,6 @@ export function runContrastVerification(): Array<{
   const themes = Object.entries(themeColorTests) as Array<['light' | 'dark', typeof themeColorTests.light]>;
 
   for (const [themeName, theme] of themes) {
-    // Test text on backgrounds
     const textColors = [theme.colors.textPrimary, theme.colors.textSecondary, theme.colors.textMuted];
     const backgrounds = [theme.colors.background, theme.colors.surface, theme.colors.border];
     
@@ -225,7 +198,6 @@ export function runContrastVerification(): Array<{
       }
     }
 
-    // Test primary/secondary/accent on backgrounds
     const uiColors = [theme.colors.primary, theme.colors.secondary, theme.colors.accent];
     for (const uiColor of uiColors) {
       for (const bg of backgrounds) {
@@ -250,9 +222,6 @@ export function runContrastVerification(): Array<{
   return results;
 }
 
-/**
- * Generate a verification report
- */
 export function generateContrastReport(): {
   summary: {
     totalTests: number;
@@ -291,7 +260,6 @@ export function generateContrastReport(): {
   };
 }
 
-// Export for testing
 export default {
   calculateContrastRatio,
   meetsWCAGAA,

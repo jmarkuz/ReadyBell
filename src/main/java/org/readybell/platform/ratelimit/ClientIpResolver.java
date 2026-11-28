@@ -14,7 +14,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * client (anything further left is client-supplied and spoofable).
  */
 public class ClientIpResolver {
-
     private static final Logger log = LoggerFactory.getLogger(ClientIpResolver.class);
 
     private final List<IpAddressMatcher> trusted;
@@ -29,7 +28,7 @@ public class ClientIpResolver {
         String peer = request.getRemoteAddr();
         if (!isTrusted(peer)) {
             if (request.getHeader("X-Forwarded-For") != null && warnedAboutUntrustedForwarding.compareAndSet(false, true)) {
-                // The classic misconfiguration: behind a proxy or tunnel every client then shares the proxy's address,
+                // The classic misconfiguration: behind a proxy or tunnel every client then shares the proxy's address
                 // so one visitor can exhaust the limits (and the login lockout) of everyone
                 log.warn("A request from {} carries X-Forwarded-For, but {} is not in readybell.rate-limit.trusted-proxies: "
                         + "rate limits and the login lockout treat that address as the client. Behind a reverse proxy or "
@@ -52,17 +51,14 @@ public class ClientIpResolver {
         return peer;
     }
 
-    /** True when at least one trusted proxy is configured. */
     public boolean hasTrustedProxies() {
         return !trusted.isEmpty();
     }
 
-    /** True when {@code address} is a configured trusted proxy. */
     public boolean isTrustedProxy(String address) {
         return isTrusted(address);
     }
 
-    /** For tests: whether the misconfiguration warning has been logged. */
     boolean hasWarnedAboutUntrustedForwarding() {
         return warnedAboutUntrustedForwarding.get();
     }

@@ -10,12 +10,11 @@ import java.util.Collection;
  * Authenticated principal bound to exactly one tenant.
  *
  * <p>The tenant is taken from server-side configuration, never from the request, so a caller
- * cannot choose which restaurant's data they operate on (Req 10.2, 10.4). Platform admins
+ * cannot choose which restaurant's data they operate on. Platform admins
  * have no tenant ({@link #getTenantId()} is {@code null}) and may only use
  * {@code /api/platform/**}.
  */
 public class TenantUser extends User {
-
     private final TenantId tenantId;
 
     public TenantUser(String username,
@@ -25,7 +24,6 @@ public class TenantUser extends User {
         this(username, password, true, authorities, tenantId);
     }
 
-    /** @param enabled {@code false} for accounts that exist but must not sign in (deactivated, no password) */
     public TenantUser(String username,
                       String password,
                       boolean enabled,
@@ -35,7 +33,6 @@ public class TenantUser extends User {
         this.tenantId = tenantId;
     }
 
-    /** The tenant this user belongs to, or {@code null} for platform-level users. */
     public TenantId getTenantId() {
         return tenantId;
     }

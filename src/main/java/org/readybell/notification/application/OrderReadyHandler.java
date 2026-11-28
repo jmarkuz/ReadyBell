@@ -26,17 +26,16 @@ import java.util.logging.Logger;
  *
  * <p>It does not send anything itself. For every device subscribed to the session it queues a delivery task (a PENDING
  * {@link Notification} due at once, with a deadline) and wakes the delivery worker; {@link PushDeliveryService} makes the
- * attempts, so a slow or failing push service holds up nobody (Req 6.1–6.8, 3.6):
+ * attempts, so a slow or failing push service holds up nobody:
  * <ol>
- *   <li>Query {@link DeviceSubscriptionRepository} for the subscriptions of the event's session and tenant (Req 6.1).</li>
+ *   <li>Query {@link DeviceSubscriptionRepository} for the subscriptions of the event's session and tenant.</li>
  *   <li>For each, queue a notification, unless this order already has one waiting or accepted for that device (a replayed
  *       event must not push twice).</li>
- *   <li>If there are no subscriptions, record that nothing was delivered and return without error (Req 6.6).</li>
+ *   <li>If there are no subscriptions, record that nothing was delivered and return without error.</li>
  * </ol>
  * No Spring annotations are used: wiring happens in the composition root.
  */
 public class OrderReadyHandler {
-
     private static final Logger LOG = Logger.getLogger(OrderReadyHandler.class.getName());
 
     private final DeviceSubscriptionRepository subscriptionRepository;
@@ -47,9 +46,6 @@ public class OrderReadyHandler {
     private final Duration deadline;
     private final Clock clock;
 
-    /**
-     * @param deadline how long after the order became READY a push is still worth sending; later attempts are dropped
-     */
     public OrderReadyHandler(DeviceSubscriptionRepository subscriptionRepository,
                              NotificationRepository notificationRepository,
                              RestaurantRepository restaurantRepository,
@@ -70,11 +66,7 @@ public class OrderReadyHandler {
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
     }
 
-    /**
-     * Queues the push of an {@link OrderReady} event for every device of the session and wakes the worker.
-     *
-     * @param event the order-ready event (must not be {@code null})
-     */
+    /** Queues the push of an {@link OrderReady} event for every device of the session and wakes the worker. */
     public void handle(OrderReady event) {
         Objects.requireNonNull(event, "event must not be null");
         queue(event.tenantId(), event.sessionId(), event.orderId(), event.occurredAt(), Notification.KIND_READY,
@@ -96,10 +88,10 @@ public class OrderReadyHandler {
 
     private void queue(TenantId tenantId, CustomerSessionId sessionId, OrderId orderId, Instant occurredAt, String kind,
                        java.util.function.BiFunction<TenantId, OrderId, String> body) {
-        // Req 6.1: subscriptions of the session, scoped to the event's tenant
+        // : subscriptions of the session, scoped to the event's tenant
         List<DeviceSubscription> subscriptions = subscriptionRepository.findByTenantAndSession(tenantId, sessionId);
 
-        // Req 6.6: no subscriptions, log "none delivered" and return without error
+        // : no subscriptions, log "none delivered" and return without error
         if (subscriptions.isEmpty()) {
             LOG.info(() -> String.format(
                     "Order %s (%s) [session=%s, tenantId=%s]: no device subscriptions — no notification delivered.",
@@ -130,10 +122,6 @@ public class OrderReadyHandler {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
-
     private String restaurantName(TenantId tenantId) {
         return restaurantRepository.findByTenantId(tenantId)
                 .map(r -> r.getConfig().name())
@@ -141,7 +129,6 @@ public class OrderReadyHandler {
                 .orElse("Your order");
     }
 
-    /** "Order #101 is ready for pickup!", tapping the push opens the tracking page. */
     private String readyBody(TenantId tenantId, OrderId orderId) {
         return orderRepository.findByTenantAndId(tenantId, orderId)
                 .map(o -> "Order #" + o.getOrderNumber() + " is ready for pickup!")

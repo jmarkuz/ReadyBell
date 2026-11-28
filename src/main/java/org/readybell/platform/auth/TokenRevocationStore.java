@@ -9,7 +9,6 @@ import java.time.Instant;
  * still be used, so they expire on their own.
  */
 public interface TokenRevocationStore {
-
     /** Invalidates every token of the sign-in chain (sign-out, or a refresh token that was used twice). */
     void revokeSession(String sessionId, Duration keepFor);
 

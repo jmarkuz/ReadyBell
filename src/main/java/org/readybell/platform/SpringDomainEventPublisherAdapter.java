@@ -12,34 +12,24 @@ import java.util.Objects;
 
 /**
  * Production adapter that implements the {@link DomainEventPublisher} port using
- * Spring's in-process {@link ApplicationEventPublisher} (Req 11.1, 11.3; ADR-003).
+ * Spring's in-process {@link ApplicationEventPublisher} (; ADR-003).
  *
- * <p>Replacing this adapter with a Kafka- or RabbitMQ-backed one satisfies Req 11.5
+ * <p>Replacing this adapter with a Kafka- or RabbitMQ-backed one satisfies
  * with no modification to any domain or application class.
  *
  * <p>On any publication failure the adapter throws an {@link EventPublicationException}
  * that names the affected event so the caller can record the failure and retain the
- * event (Req 11.4).
+ * event.
  */
 @Component
 public class SpringDomainEventPublisherAdapter implements DomainEventPublisher {
-
     private final ApplicationEventPublisher applicationEventPublisher;
 
-    /**
-     * @param applicationEventPublisher Spring's event publisher, injected by the container
-     */
     public SpringDomainEventPublisherAdapter(ApplicationEventPublisher applicationEventPublisher) {
         this.applicationEventPublisher = Objects.requireNonNull(
                 applicationEventPublisher, "applicationEventPublisher must not be null");
     }
 
-    /**
-     * Publishes a single domain event through Spring's in-process event bus.
-     *
-     * @param event the event to publish; must not be {@code null}
-     * @throws EventPublicationException if Spring's publisher throws any exception (Req 11.4)
-     */
     @Override
     public void publish(DomainEvent event) {
         Objects.requireNonNull(event, "event must not be null");
@@ -53,16 +43,6 @@ public class SpringDomainEventPublisherAdapter implements DomainEventPublisher {
         }
     }
 
-    /**
-     * Publishes all domain events in order.
-     *
-     * <p>All events are attempted even when one fails; failures are collected and, if
-     * any exist, the first failure is re-thrown after the full list has been processed
-     * (Req 11.4).
-     *
-     * @param events the events to publish; must not be {@code null}
-     * @throws EventPublicationException if one or more publication attempts fail (Req 11.4)
-     */
     @Override
     public void publishAll(List<DomainEvent> events) {
         Objects.requireNonNull(events, "events must not be null");

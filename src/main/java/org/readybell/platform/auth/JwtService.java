@@ -35,7 +35,6 @@ import java.util.UUID;
  * Platform admins have no tenant, so their {@code tenant_id} is the empty string.
  */
 public class JwtService {
-
     private static final Duration CLOCK_SKEW = Duration.ofSeconds(30);
 
     private final JwtEncoder encoder;
@@ -69,7 +68,6 @@ public class JwtService {
     }
 
     /** Creates a signed access token for the given user. */
-    /** A token of a new sign-in chain. */
     public IssuedToken issue(TenantUser user) {
         return issue(user, TokenSessions.newSessionId());
     }

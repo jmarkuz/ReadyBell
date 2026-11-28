@@ -20,15 +20,14 @@ import java.util.UUID;
 /**
  * JPA adapter implementing the {@link NotificationRepository} port.
  *
- * <h3>Tenant filter activation (Req 10.2, 10.4)</h3>
+ * <h3>Tenant filter activation</h3>
  * <p>The Hibernate {@code tenantFilter} is enabled using the resolved tenant from
  * {@link TenantContextHolder} before every {@code SELECT}, constraining results to
- * the current tenant and excluding cross-tenant rows (Req 10.3).
+ * the current tenant and excluding cross-tenant rows.
  */
 @Repository
 @Transactional
 public class JpaNotificationRepository implements NotificationRepository {
-
     private final NotificationJpaRepository springRepo;
 
     @PersistenceContext
@@ -66,10 +65,6 @@ public class JpaNotificationRepository implements NotificationRepository {
                         org.readybell.notification.domain.NotificationStatus.DELIVERED));
     }
 
-    /**
-     * {@code FOR UPDATE SKIP LOCKED} picks rows no other worker holds, and the lease keeps them ours after this short
-     * transaction ends, while the (slow) HTTP call to the push service runs outside any transaction.
-     */
     @Override
     @CrossTenant("the delivery worker serves every tenant")
     @SuppressWarnings("unchecked")

@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableConfigurationProperties(OutboxProperties.class)
 public class OutboxConfig {
-
     @Bean
     public OutboxEventSerializer outboxEventSerializer(ObjectMapper objectMapper) {
         return new OutboxEventSerializer(objectMapper);

@@ -7,19 +7,15 @@ import java.time.Duration;
 /** {@code readybell.outbox.*} */
 @ConfigurationProperties(prefix = "readybell.outbox")
 public class OutboxProperties {
-
     private boolean enabled = true;
     /** How often the relay looks for due events (a commit also wakes it immediately). */
     private Duration pollInterval = Duration.ofSeconds(1);
-    /** Events claimed per round. */
     private int batchSize = 20;
     /** A claimed event that is not finished within this time is claimed again (the worker probably died). */
     private Duration lease = Duration.ofMinutes(2);
-    /** After this many failed attempts the event is parked as failed (metric {@code outbox.failed}). */
     private int maxAttempts = 10;
     private Duration initialBackoff = Duration.ofSeconds(2);
     private Duration maxBackoff = Duration.ofMinutes(5);
-    /** Processed events are deleted after this time. */
     private Duration retention = Duration.ofDays(7);
 
     public boolean isEnabled() { return enabled; }

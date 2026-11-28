@@ -33,7 +33,6 @@ import java.util.UUID;
  */
 @Service
 public class CustomerDataService {
-
     private final RetentionService retention;
     private final Clock clock;
     private final byte[] logKey;
@@ -51,7 +50,6 @@ public class CustomerDataService {
     /** What an erasure did, for the customer. */
     public record Erased(int subscriptions, int ordersAnonymized, int ordersKeptUntilFinished) {}
 
-    /** @return the session's data, or {@code null} when no such session exists */
     @Transactional(readOnly = true)
     @SuppressWarnings("unchecked")
     public Map<String, Object> export(UUID session) {
@@ -101,7 +99,6 @@ public class CustomerDataService {
         return doc;
     }
 
-    /** @return what was done, or {@code null} when no such session exists */
     @Transactional
     public Erased erase(UUID session) {
         UUID tenant = tenantOf(session);
@@ -121,8 +118,6 @@ public class CustomerDataService {
     /**
      * After a restore from a backup: forgets again what the log says was forgotten. The log holds keyed hashes, so each
      * session of the restored database is hashed and looked up; nothing is logged again.
-     *
-     * @return how many sessions had something to erase again
      */
     @Transactional
     @SuppressWarnings("unchecked")
@@ -154,7 +149,6 @@ public class CustomerDataService {
         }
     }
 
-    /** The erasure itself, in the caller's transaction. */
     @SuppressWarnings("unchecked")
     private Erased apply(UUID session, Instant now) {
         List<UUID> subscriptionIds = ((List<Object>) em.createNativeQuery(

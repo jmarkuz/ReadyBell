@@ -37,22 +37,15 @@ import java.util.regex.Pattern;
  *       without a resolved tenant.  Any subsequent call to
  *       {@link TenantContextHolder#require()} will throw
  *       {@link MissingTenantContextException} and reject the
- *       access at the repository layer (Req 10.5).
+ *       access at the repository layer.
  * </ol>
- *
- * <p>The {@code finally} block always calls {@link TenantContextHolder#clear()} to prevent
- * tenant leakage across pooled-thread reuse (Req 10.4).
- *
- * <p>Requirements addressed: 10.4, 10.5, 12.5; ADR-006.
  */
 @Component
 @Order(1)
 public class TenantResolutionFilter extends OncePerRequestFilter {
-
     /** Legacy header; only checked against the principal's tenant, never trusted. */
     static final String TENANT_ID_HEADER = "X-Tenant-Id";
 
-    /** Paths that are fully public — no tenant resolution is attempted. */
     private static final String[] PUBLIC_PATH_PREFIXES = {
         "/actuator",
         "/api/platform",
@@ -62,16 +55,9 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         "/error"
     };
 
-    /**
-     * POST /api/sessions is the QR-based session-start endpoint; it creates a new session
-     * and therefore has no existing session to derive a tenant from.
-     */
+    /** Session start has no existing session to derive a tenant from. */
     private static final String SESSION_START_PATH = "/api/sessions";
 
-    /**
-     * Pattern matching customer session sub-resource paths, e.g.:
-     * {@code /api/sessions/{uuid}/orders}, {@code /api/sessions/{uuid}/subscriptions/…}
-     */
     private static final Pattern SESSION_SUB_PATH =
             Pattern.compile("^/api/sessions/([^/]+)/.*$");
 
@@ -85,7 +71,6 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
 
-        // Skip public/health/platform-admin endpoints
         for (String prefix : PUBLIC_PATH_PREFIXES) {
             if (path.startsWith(prefix)) {
                 return true;
@@ -106,7 +91,6 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
-
         try {
             if (isCrossTenantHeader(request)) {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Tenant mismatch");
@@ -115,30 +99,15 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
             resolveTenant(request);
             filterChain.doFilter(request, response);
         } finally {
-            // Always clear to prevent tenant leaking onto pooled threads (Req 10.4).
+            // Always clear to prevent tenant leaking onto pooled threads.
             TenantContextHolder.clear();
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Internal helpers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Attempts to resolve the tenant for the current request and, on success, calls
-     * {@link TenantContextHolder#set(TenantId)}.
-     *
-     * <p>Resolution order:
-     * <ol>
-     *   <li>Authenticated {@link TenantUser} principal.
-     *   <li>Customer-session sub-path — derive from the session's stored tenant.
-     * </ol>
-     * If neither strategy succeeds the holder is left unset; a downstream
-     * {@code require()} call will raise {@code MissingTenantContextException}.
-     */
+    /** Attempts to resolve the tenant for the current request and, on success, calls {@link TenantContextHolder#set(TenantId)}. */
     private void resolveTenant(HttpServletRequest request) {
         // 1. Authenticated principal: the tenant is fixed server-side and the client-supplied
-        //    header can never override it (Req 10.2, 10.4).
+        // header can never override it.
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof TenantUser user
                 && user.getTenantId() != null) {
@@ -146,7 +115,6 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 2. Customer session sub-paths: /api/sessions/{id}/**
         String path = request.getRequestURI();
         Matcher m = SESSION_SUB_PATH.matcher(path);
         if (m.matches()) {
@@ -162,10 +130,6 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         // TenantContextHolder.require() will reject when any tenant-scoped access is attempted.
     }
 
-    /**
-     * True when an authenticated tenant user sends an {@value #TENANT_ID_HEADER} that differs from
-     * their own tenant — an attempted cross-tenant access.
-     */
     private static boolean isCrossTenantHeader(HttpServletRequest request) {
         String header = request.getHeader(TENANT_ID_HEADER);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -177,7 +141,6 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         return parsed == null || !parsed.equals(user.getTenantId().value());
     }
 
-    /** Returns the {@link UUID} represented by {@code raw}, or {@code null} if malformed. */
     private static UUID tryParseUuid(String raw) {
         if (raw == null || raw.isBlank()) {
             return null;

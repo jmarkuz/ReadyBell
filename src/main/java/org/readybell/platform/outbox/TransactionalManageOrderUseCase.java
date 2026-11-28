@@ -13,7 +13,6 @@ import org.springframework.transaction.support.TransactionTemplate;
  * together. The service itself stays plain Java.
  */
 public class TransactionalManageOrderUseCase implements ManageOrderUseCase {
-
     private final ManageOrderUseCase delegate;
     private final TransactionTemplate tx;
 

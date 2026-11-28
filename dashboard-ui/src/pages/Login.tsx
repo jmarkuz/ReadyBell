@@ -18,7 +18,7 @@ function rememberRestaurant(value: string) {
     if (value) window.localStorage.setItem(RESTAURANT_KEY, value);
     else window.localStorage.removeItem(RESTAURANT_KEY);
   } catch {
-    /* private window or blocked storage: the field is just empty next time */
+    // blocked storage: the field is just empty next time
   }
 }
 

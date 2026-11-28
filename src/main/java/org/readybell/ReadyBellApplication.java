@@ -11,11 +11,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * {@code @Component}-annotated beans in sub-packages are discovered by default.
  *
  * <p>Stateless replicas are expected to run behind a load balancer with
- * liveness/readiness health probes enabled (Req 12.1, 12.4).
+ * liveness/readiness health probes enabled.
  */
 @SpringBootApplication
 public class ReadyBellApplication {
-
     public static void main(String[] args) {
         SpringApplication.run(ReadyBellApplication.class, args);
     }

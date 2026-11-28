@@ -15,7 +15,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "order_counter")
 public class OrderCounterJpaEntity {
-
     @Id
     @Column(name = "tenant_id", nullable = false, updatable = false)
     UUID tenantId;
@@ -23,6 +22,5 @@ public class OrderCounterJpaEntity {
     @Column(name = "last_number", nullable = false)
     int lastNumber;
 
-    /** Required by JPA. */
     protected OrderCounterJpaEntity() {}
 }

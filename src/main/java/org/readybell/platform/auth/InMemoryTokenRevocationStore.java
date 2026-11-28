@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** Per-node revocation list; also the fallback of {@link RedisTokenRevocationStore}. */
 public class InMemoryTokenRevocationStore implements TokenRevocationStore {
-
     private static final int MAX_ENTRIES = 50_000;
 
     private record Entry(Instant revokedAt, Instant forgetAt) {}

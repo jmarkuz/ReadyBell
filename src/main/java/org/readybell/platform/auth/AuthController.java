@@ -35,7 +35,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api")
 public class AuthController {
-
     /** Pre-computed hash compared against when the user is unknown, to equalise timing. */
     private final String dummyHash;
 
@@ -124,7 +123,6 @@ public class AuthController {
         return !operator || operatorNetworks.allows(address);
     }
 
-    /** Disabled = deactivated account/restaurant or no password set: indistinguishable from "unknown". */
     private static TenantUser lookup(Optional<TenantUser> account) {
         return account.filter(TenantUser::isEnabled).orElse(null);
     }
@@ -141,10 +139,6 @@ public class AuthController {
                 user.getUsername(), issued.expiresInSeconds());
     }
 
-    /**
-     * @param restaurant the restaurant's identifier; usernames repeat between restaurants. Empty only for the
-     *                   platform operator
-     */
     public record LoginRequest(String restaurant, @NotBlank String username, @NotBlank String password) {}
 
     public record TokenResponse(String token, String role, String tenantId, String username, long expiresIn) {}

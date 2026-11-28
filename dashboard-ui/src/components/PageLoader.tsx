@@ -2,11 +2,9 @@ import { Loader2 } from 'lucide-react';
 
 /**
  * PageLoader Component
- * 
+ *
  * Displays a loading spinner while lazy-loaded pages are being fetched.
  * Used as the fallback component for React.lazy() code splitting.
- * 
- * Validates: AC3 (Use Suspense for loading fallback)
  */
 export function PageLoader() {
   return (

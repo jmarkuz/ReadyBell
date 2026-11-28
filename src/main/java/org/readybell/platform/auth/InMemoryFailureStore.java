@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** Per-node failure log (the default; also the fallback when Redis is unreachable). */
 public class InMemoryFailureStore implements FailureStore {
-
     private static final int MAX_TRACKED_KEYS = 10_000;
     private final Map<String, Deque<Instant>> failures = new ConcurrentHashMap<>();
 

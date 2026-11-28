@@ -23,7 +23,6 @@ import java.util.UUID;
  */
 @Service
 public class DeliveryProblemsService {
-
     private static final int LIMIT = 100;
 
     @PersistenceContext

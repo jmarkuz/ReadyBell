@@ -14,15 +14,14 @@ import java.util.List;
 /**
  * JPA adapter implementing the {@link StaffAccountRepository} port.
  *
- * <h3>Tenant filter activation (Req 10.2, 10.4)</h3>
+ * <h3>Tenant filter activation</h3>
  * <p>The Hibernate {@code tenantFilter} is enabled per query before any
  * {@code SELECT}, constraining results to the current tenant and excluding
- * cross-tenant staff accounts (Req 10.3, 8.8).
+ * cross-tenant staff accounts.
  */
 @Repository
 @Transactional
 public class JpaStaffAccountRepository implements StaffAccountRepository {
-
     private final StaffAccountJpaRepository springRepo;
 
     public JpaStaffAccountRepository(StaffAccountJpaRepository springRepo) {

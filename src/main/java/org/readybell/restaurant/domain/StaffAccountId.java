@@ -10,7 +10,6 @@ import java.util.UUID;
  * identity when creating a new {@link StaffAccount}.
  */
 public record StaffAccountId(UUID value) {
-
     public StaffAccountId {
         Objects.requireNonNull(value, "staffAccountId must not be null");
     }

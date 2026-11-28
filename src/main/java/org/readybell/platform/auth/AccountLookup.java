@@ -11,7 +11,6 @@ import java.util.Optional;
  */
 @FunctionalInterface
 public interface AccountLookup {
-
     /** The account, enabled or not (a disabled one exists but must not sign in); empty when there is none. */
     Optional<TenantUser> find(TenantId tenant, String username);
 }

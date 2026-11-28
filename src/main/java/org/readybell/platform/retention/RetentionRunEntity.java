@@ -16,7 +16,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "retention_run")
 class RetentionRunEntity {
-
     @Id
     UUID id;
 

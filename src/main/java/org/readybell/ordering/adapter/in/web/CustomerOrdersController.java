@@ -21,7 +21,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/sessions/{id}")
 public class CustomerOrdersController {
-
     private final TrackSessionUseCase tracking;
     private final Clock clock;
 
@@ -30,9 +29,7 @@ public class CustomerOrdersController {
         this.clock = clock;
     }
 
-    /**
-     * Orders of the session with their status; an empty list when there are none (Req 2.5).
-     */
+    /** Orders of the session with their status; an empty list when there are none. */
     @GetMapping("/orders")
     public List<OrderStateResponse> listOrders(@PathVariable("id") UUID id) {
         TenantId tenantId = TenantContextHolder.require();

@@ -4,7 +4,6 @@ import { restaurantBranding } from '@/config/restaurant';
 export interface RestaurantState {
   name: string;
   identifier: string | null;
-  /** Re-reads the profile, e.g. after the restaurant was renamed. */
   refresh: () => Promise<void>;
 }
 

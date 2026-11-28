@@ -15,12 +15,6 @@ import java.util.UUID;
  */
 public interface RestaurantJpaRepository
         extends JpaRepository<RestaurantJpaEntity, UUID> {
-
-    /**
-     * Finds the restaurant with the given unique business identifier (Req 9.5).
-     *
-     * @param identifier the unique business identifier
-     * @return the restaurant entity, or empty if not found
-     */
+    /** Finds the restaurant with the given unique business identifier. */
     Optional<RestaurantJpaEntity> findByIdentifier(String identifier);
 }

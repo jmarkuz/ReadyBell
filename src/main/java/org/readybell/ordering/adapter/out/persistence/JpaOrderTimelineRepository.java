@@ -16,7 +16,6 @@ import java.time.Instant;
 @Repository
 @Transactional
 public class JpaOrderTimelineRepository implements OrderTimelineRepository {
-
     @PersistenceContext
     private EntityManager em;
 

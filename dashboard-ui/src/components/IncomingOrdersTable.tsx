@@ -15,9 +15,7 @@ interface IncomingOrdersTableProps {
   pageSize?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
-  /** Called when staff ask to see the order's QR code. */
   onRowClick?: (orderId: string) => void;
-  /** Orders whose customer opened the tracking link (shown with a "connected" mark). */
   connectedIds?: ReadonlySet<string>;
   /** Called when staff picks a new status from the row's menu (a status the lifecycle allows next). */
   onStatusChange?: (orderId: string, newStatus: OrderStatus) => void;
@@ -40,7 +38,6 @@ export type SortField = 'id' | 'customerName' | 'itemsOrdered' | 'deliveryETA' |
 export type SortOrder = 'asc' | 'desc';
 export interface SortState { field: SortField; order: SortOrder }
 
-/** Clicking the active column flips its direction; clicking another column starts it ascending. */
 const nextSort = (prev: SortState | null, field: SortField): SortState =>
   prev?.field === field
     ? { field, order: prev.order === 'asc' ? 'desc' : 'asc' }
@@ -85,32 +82,7 @@ function SortableHeader({ field, label, sort, onSort }: {
   );
 }
 
-/**
- * Incoming Orders Table Component
- * 
- * Displays paginated, sortable list of incoming orders with:
- * - Columns: Order ID, Customer Name, Items, Delivery ETA, Status, Actions
- * - Sortable columns (click header to toggle sort)
- * - Pagination controls
- * - Status badges with color-coding
- * - Action buttons (View Details, Update Status)
- * - Empty state when no orders
- * - Loading skeleton state
- * 
- * Responsive:
- * - Desktop: All columns visible
- * - Tablet/Mobile: Scrollable horizontally, actions in menu
- * 
- * Accessibility:
- * - Semantic <table> with proper headers
- * - aria-sort on sortable headers
- * - aria-label on buttons
- * 
- * Performance:
- * - Memoized with React.memo to prevent unnecessary re-renders
- * - useMemo for sorted/paginated order lists
- * - useCallback for handlers to maintain stable references
- */
+/** Incoming Orders Table Component */
 export default memo(function IncomingOrdersTable({
   orders = [],
   isLoading = false,
@@ -166,7 +138,6 @@ export default memo(function IncomingOrdersTable({
     };
   }, [statusMenuFor]);
 
-  // Sorting logic - memoized for performance
   const sortedOrders = useMemo(() => {
     if (serverSide) return orders;   // the server already sorted this page
     const sorted = [...orders].sort((a, b) => {
@@ -178,7 +149,6 @@ export default memo(function IncomingOrdersTable({
         compareA = compareA instanceof Date ? compareA.getTime() : Number.MAX_SAFE_INTEGER;
         compareB = compareB instanceof Date ? compareB.getTime() : Number.MAX_SAFE_INTEGER;
       } else if (sortField === 'status') {
-        // Sort by status priority
         const statusPriority: Record<string, number> = {
           CREATED: 1,
           PREPARING: 2,
@@ -254,7 +224,6 @@ export default memo(function IncomingOrdersTable({
     );
   }
 
-  // Empty state
   if (orders.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md p-12 text-center">
@@ -350,7 +319,6 @@ export default memo(function IncomingOrdersTable({
         </table>
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-6 py-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700" role="region" aria-label="Table pagination">
           <div className="text-sm text-slate-600 dark:text-slate-400">

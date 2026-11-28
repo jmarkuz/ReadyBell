@@ -16,7 +16,6 @@ import java.io.IOException;
  */
 @Configuration
 public class SpaWebConfig implements WebMvcConfigurer {
-
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/**")

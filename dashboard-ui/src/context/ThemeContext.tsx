@@ -20,7 +20,6 @@ export function ThemeProvider({
   persistToLocalStorage = true,
 }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    // Try to get from localStorage
     if (persistToLocalStorage) {
       try {
         const stored = localStorage.getItem(storageKey);
@@ -32,7 +31,6 @@ export function ThemeProvider({
       }
     }
 
-    // Check system preference
     if (typeof window !== 'undefined' && window.matchMedia) {
       const prefersLight = !window.matchMedia('(prefers-color-scheme: dark)').matches;
       return prefersLight ? 'light' : 'dark';
@@ -41,21 +39,16 @@ export function ThemeProvider({
     return defaultMode;
   });
 
-  // Update document class and data-theme attribute
   useEffect(() => {
     const root = document.documentElement;
     
-    // Remove old theme class
     root.classList.remove('light', 'dark');
     
-    // Add new theme class
     root.classList.add(theme);
     
-    // Set data-theme attribute
     root.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // Persist to localStorage
   useEffect(() => {
     if (persistToLocalStorage) {
       try {

@@ -17,7 +17,7 @@ import java.lang.reflect.Method;
 
 /**
  * Binds the Hibernate {@code tenantFilter} for every persistence-adapter call, so no repository method has to
- * remember to do it (Req 10.2, 10.4).
+ * remember to do it.
  *
  * <ol>
  *   <li>{@link CrossTenant} method: the filter is switched off (a filter left over on the session must not
@@ -30,7 +30,6 @@ import java.lang.reflect.Method;
  * Runs inside the repository's transaction, so the filter lives on the session the query will use.
  */
 public class TenantFilterInterceptor implements MethodInterceptor {
-
     static final String FILTER = "tenantFilter";
 
     private final EntityManagerFactory entityManagerFactory;

@@ -14,7 +14,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @EnableAsync
 @EnableScheduling
 public class AsyncConfig {
-
     /**
      * Push delivery runs off the request thread. {@code readybell.push.async=false} (used by tests)
      * runs it inline so results are observable immediately.

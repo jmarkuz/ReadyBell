@@ -17,7 +17,7 @@ import java.util.UUID;
  * the {@code tenant_id} column is stamped on first persist.
  *
  * <p>Table: {@code staff_account(id PK, tenant_id FK, username, role, status,
- * UNIQUE(tenant_id, username))} — Req 8.4
+ * UNIQUE(tenant_id, username))} —
  *
  * <p>Index on {@code (tenant_id)} supports tenant-scoped staff lookups (ADR-007).
  */
@@ -25,7 +25,7 @@ import java.util.UUID;
 @Table(
         name = "staff_account",
         uniqueConstraints = {
-                // Usernames are unique within a restaurant; sign-in names the restaurant too (Req 8.4)
+                // Usernames are unique within a restaurant; sign-in names the restaurant too
                 @UniqueConstraint(
                         name = "uq_staff_account_tenant_username",
                         columnNames = {"tenant_id", "username"})
@@ -35,7 +35,6 @@ import java.util.UUID;
         }
 )
 public class StaffAccountJpaEntity extends TenantScopedEntity {
-
     @Id
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
@@ -54,16 +53,10 @@ public class StaffAccountJpaEntity extends TenantScopedEntity {
     @Column(name = "deactivated_at")
     private java.time.Instant deactivatedAt;
 
-    /** Encoded password; null for accounts created before sign-in existed (they cannot sign in). */
     @Column(name = "password_hash", length = 100)
     private String passwordHash;
 
-    /** Required by JPA. */
     protected StaffAccountJpaEntity() {}
-
-    // -------------------------------------------------------------------------
-    // Mapping helpers
-    // -------------------------------------------------------------------------
 
     /** Maps the domain aggregate to a JPA entity ready for insert or merge. */
     public static StaffAccountJpaEntity from(StaffAccount account) {
@@ -78,7 +71,6 @@ public class StaffAccountJpaEntity extends TenantScopedEntity {
         return entity;
     }
 
-    /** Reconstructs the domain aggregate from this entity. */
     public StaffAccount toDomain() {
         return StaffAccount.reconstitute(
                 new StaffAccountId(id),
@@ -90,14 +82,9 @@ public class StaffAccountJpaEntity extends TenantScopedEntity {
                 deactivatedAt);
     }
 
-    /** Returns the typed domain identity. */
     public StaffAccountId getDomainId() {
         return new StaffAccountId(id);
     }
-
-    // -------------------------------------------------------------------------
-    // Accessors
-    // -------------------------------------------------------------------------
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }

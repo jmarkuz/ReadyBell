@@ -9,11 +9,8 @@ import java.util.List;
 /** {@code readybell.rate-limit.*}: per-IP limits for the public endpoints. */
 @ConfigurationProperties(prefix = "readybell.rate-limit")
 public class RateLimitProperties {
-
     private boolean enabled = true;
-    /** Share the counters between replicas through Redis. */
     private boolean redis = false;
-    /** Proxies (IP or CIDR) whose {@code X-Forwarded-For} header is believed; empty means it is ignored. */
     private List<String> trustedProxies = new ArrayList<>();
     private List<Rule> rules = new ArrayList<>();
 
@@ -28,7 +25,6 @@ public class RateLimitProperties {
 
     /** What a rule counts requests per. */
     public enum KeyBy {
-        /** The client address (default). */
         IP,
         /**
          * The customer session in {@code /api/sessions/{id}/...}. Customers of one restaurant share a Wi-Fi, so an
@@ -44,11 +40,8 @@ public class RateLimitProperties {
      * Every rule that matches a request is applied, so a per-session rule and a looser per-address rule can sit side by side.
      */
     public static class Rule {
-        /** Metric tag and counter key, e.g. {@code session-start}. */
         private String name;
-        /** HTTP method, or empty for any. */
         private String method = "";
-        /** Ant path pattern, e.g. {@code /api/sessions/*}{@code /subscriptions}. */
         private String path;
         private KeyBy keyBy = KeyBy.IP;
         private int limit = 60;
